@@ -20,6 +20,11 @@ const env = {
   CLIENT_ORIGIN: required("CLIENT_ORIGIN"),
 
   DATABASE_URL: required("DATABASE_URL"),
+
+  // Cloudinary
+  CLOUDINARY_CLOUD_NAME: required("CLOUDINARY_CLOUD_NAME"),
+  CLOUDINARY_API_KEY: required("CLOUDINARY_API_KEY"),
+  CLOUDINARY_API_SECRET: required("CLOUDINARY_API_SECRET"),
 };
 
 export default env;
