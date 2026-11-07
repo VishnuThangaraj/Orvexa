@@ -1,0 +1,74 @@
+model CalendarEvent {
+  id             BigInt            @id @default(autoincrement())
+  title          String            @db.VarChar(255)
+  description    String?           @db.Text
+  createdBy      BigInt            @map("created_by")
+  startTime      DateTime          @map("start_time") @db.Timestamptz(6)
+  endTime        DateTime          @map("end_time") @db.Timestamptz(6)
+  isAllDay       Boolean           @default(false) @map("is_all_day")
+  timezone       String?           @db.VarChar(100)
+  location       String?           @db.VarChar(255)
+  eventType      CalendarEventType @default(PERSONAL) @map("event_type")
+  visibility     EventVisibility   @default(PRIVATE)
+  recurrenceRule String?           @map("recurrence_rule") @db.Text
+  meetingId      BigInt?           @map("meeting_id")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  cancelledAt    DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+
+  creator      User                  @relation("CalendarEventCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  meeting      Meeting?              @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  participants CalendarParticipant[]
+  reminders    CalendarReminder[]
+
+  @@index([createdBy, startTime])
+  @@index([startTime, endTime])
+  @@map("calendar_events")
+}
+
+model CalendarParticipant {
+  id             BigInt           @id @default(autoincrement())
+  eventId        BigInt           @map("event_id")
+  userId         BigInt           @map("user_id")
+  responseStatus InvitationStatus @default(PENDING) @map("response_status")
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@map("calendar_participants")
+}
+
+model CalendarReminder {
+  id            BigInt    @id @default(autoincrement())
+  eventId       BigInt    @map("event_id")
+  userId        BigInt    @map("user_id")
+  minutesBefore Int       @map("minutes_before")
+  remindAt      DateTime  @map("remind_at") @db.Timestamptz(6)
+  isSent        Boolean   @default(false) @map("is_sent")
+  sentAt        DateTime? @map("sent_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_reminders")
+}
+
+model CalendarShare {
+  id               BigInt              @id @default(autoincrement())
+  ownerId          BigInt              @map("owner_id")
+  sharedWithUserId BigInt              @map("shared_with_user_id")
+  permission       CalendarAccessLevel @default(VIEWER)
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  owner          User @relation("CalendarShareOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  sharedWithUser User @relation("CalendarShareRecipient", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, sharedWithUserId])
+  @@map("calendar_shares")
+}

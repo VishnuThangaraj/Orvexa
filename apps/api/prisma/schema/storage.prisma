@@ -1,0 +1,35 @@
+model FileAsset {
+  id                BigInt                 @id @default(autoincrement())
+  cloudinaryAssetId String?                @unique @map("cloudinary_asset_id") @db.VarChar(64)
+  publicId          String                 @map("public_id") @db.VarChar(500)
+  resourceType      CloudinaryResourceType @map("resource_type")
+  deliveryType      CloudinaryDeliveryType @default(AUTHENTICATED) @map("delivery_type")
+  version           Int?
+  format            String?                @db.VarChar(20)
+  originalFilename  String                 @map("original_filename") @db.VarChar(255)
+  mimeType          String                 @map("mime_type") @db.VarChar(150)
+  bytes             BigInt
+  secureUrl         String?                @map("secure_url") @db.Text
+  width             Int?
+  height            Int?
+  durationSeconds   Float?                 @map("duration_seconds")
+  uploadedBy        BigInt?                @map("uploaded_by")
+  cloudDeletedAt    DateTime?              @map("cloud_deleted_at") @db.Timestamptz(6)
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  uploader             User?                  @relation("AssetUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  userProfileImages    User[]                 @relation("ProfileImage")
+  organizationLogos    OrganizationSettings[] @relation("OrgLogo")
+  conversationImages   Conversation[]         @relation("ConversationImage")
+  mailAttachments      MailAttachment[]
+  mailDraftAttachments MailDraftAttachment[]
+  chatAttachments      ChatAttachment[]
+  driveFiles           DriveFile[]            @relation("CurrentDriveFileAsset")
+  driveFileVersions    DriveFileVersion[]
+  meetingRecordings    MeetingRecording[]
+
+  @@unique([resourceType, deliveryType, publicId])
+  @@index([uploadedBy])
+  @@index([cloudDeletedAt, createdAt])
+  @@map("file_assets")
+}

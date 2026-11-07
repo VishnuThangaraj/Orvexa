@@ -1,0 +1,140 @@
+model User {
+  id             BigInt    @id @default(autoincrement())
+  fullName       String    @map("full_name") @db.VarChar(150)
+  profileImageId BigInt?   @map("profile_image_id")
+  email          String    @unique @db.VarChar(255)
+  phone          String?   @db.VarChar(20)
+  dob            DateTime? @db.Date
+  gender         String?   @db.VarChar(30)
+  address        String?   @db.Text
+  role           UserRole  @default(MEMBER)
+  isActive       Boolean   @default(true) @map("is_active")
+  lastLoginAt    DateTime? @map("last_login_at") @db.Timestamptz(6)
+
+  profileImage        FileAsset?           @relation("ProfileImage", fields: [profileImageId], references: [id], onDelete: SetNull)
+  uploadedAssets      FileAsset[]          @relation("AssetUploader")
+  credentials         Credentials?
+  sessions            UserSession[]
+  passwordResetTokens PasswordResetToken[]
+  preferences         UserPreference?
+
+  // Mail relations
+  sentMailMessages    MailMessage[]        @relation("MailSender")
+  mailRecipients      MailRecipient[]
+  mailUserStates      MailUserState[]
+  mailDrafts          MailDraft[]
+  mailDraftRecipients MailDraftRecipient[]
+  mailFolders         MailFolder[]
+  mailLabels          MailLabel[]
+  mailMessageLabels   MailMessageLabel[]
+
+  // Chat relations
+  createdConversations       Conversation[]            @relation("ConversationCreator")
+  directLowConversations     Conversation[]            @relation("DirectLow")
+  directHighConversations    Conversation[]            @relation("DirectHigh")
+  conversationParticipations ConversationParticipant[]
+  sentChatMessages           ChatMessage[]             @relation("ChatMessageSender")
+  deletedChatMessages        ChatMessage[]             @relation("ChatMessageDeletedBy")
+  chatReactions              ChatReaction[]
+  chatPinnedMessages         ChatPinnedMessage[]       @relation("PinnedBy")
+
+  // Drive relations
+  ownedDriveFolders       DriveFolder[]      @relation("DriveFolderOwner")
+  deletedDriveFolders     DriveFolder[]      @relation("DriveFolderDeletedBy")
+  ownedDriveFiles         DriveFile[]        @relation("DriveFileOwner")
+  deletedDriveFiles       DriveFile[]        @relation("DriveFileDeletedBy")
+  uploadedDriveVersions   DriveFileVersion[] @relation("DriveVersionUploader")
+  drivePermissions        DrivePermission[]  @relation("DrivePermissionUser")
+  grantedDrivePermissions DrivePermission[]  @relation("DrivePermissionGrantedBy")
+  driveFavorites          DriveFavorite[]
+  driveRecentItems        DriveRecentItem[]
+  driveComments           DriveComment[]
+
+  // Calendar relations
+  createdCalendarEvents  CalendarEvent[]       @relation("CalendarEventCreator")
+  calendarParticipations CalendarParticipant[]
+  calendarReminders      CalendarReminder[]
+  ownedCalendarShares    CalendarShare[]       @relation("CalendarShareOwner")
+  receivedCalendarShares CalendarShare[]       @relation("CalendarShareRecipient")
+
+  // Meeting relations
+  hostedMeetings        Meeting[]            @relation("MeetingHost")
+  meetingParticipations MeetingParticipant[]
+  startedRecordings     MeetingRecording[]   @relation("RecordingStartedBy")
+
+  // Notification relations
+  receivedNotifications  Notification[] @relation("NotificationRecipient")
+  triggeredNotifications Notification[] @relation("NotificationActor")
+
+  // Audit relations
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("users")
+}
+
+model Credentials {
+  id                  BigInt    @id @default(autoincrement())
+  userId              BigInt    @unique @map("user_id")
+  passwordHash        String    @map("password_hash") @db.VarChar(255)
+  passwordChangedAt   DateTime? @map("password_changed_at") @db.Timestamptz(6)
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("credentials")
+}
+
+model UserSession {
+  id               BigInt    @id @default(autoincrement())
+  userId           BigInt    @map("user_id")
+  refreshTokenHash String    @map("refresh_token_hash") @db.VarChar(255)
+  deviceName       String?   @map("device_name") @db.VarChar(255)
+  userAgent        String?   @map("user_agent") @db.Text
+  ipAddress        String?   @map("ip_address") @db.VarChar(45)
+  lastUsedAt       DateTime? @map("last_used_at") @db.Timestamptz(6)
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([refreshTokenHash])
+  @@index([userId, expiresAt])
+  @@map("user_sessions")
+}
+
+model PasswordResetToken {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model UserPreference {
+  id                      BigInt   @id @default(autoincrement())
+  userId                  BigInt   @unique @map("user_id")
+  theme                   String   @default("system") @db.VarChar(20)
+  language                String   @default("en") @db.VarChar(20)
+  timezone                String   @default("UTC") @db.VarChar(100)
+  notificationPreferences Json?    @map("notification_preferences") @db.JsonB
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}

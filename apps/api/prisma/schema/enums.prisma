@@ -2,3 +2,96 @@ enum UserRole {
   ADMIN
   MEMBER
 }
+
+enum CloudinaryResourceType {
+  IMAGE
+  VIDEO
+  RAW
+}
+
+enum CloudinaryDeliveryType {
+  UPLOAD
+  AUTHENTICATED
+  PRIVATE
+}
+
+enum MailRecipientType {
+  TO
+  CC
+  BCC
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+enum ChannelVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum ConversationMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  FILE
+  AUDIO
+  SYSTEM
+}
+
+enum DriveAccessLevel {
+  VIEWER
+  EDITOR
+  MANAGER
+}
+
+enum CalendarEventType {
+  PERSONAL
+  SHARED
+}
+
+enum EventVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum CalendarAccessLevel {
+  VIEWER
+  EDITOR
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum MeetingRole {
+  HOST
+  CO_HOST
+  PARTICIPANT
+}
+
+enum NotificationType {
+  MAIL
+  CHAT
+  CALENDAR
+  MEETING
+  DRIVE
+  SYSTEM
+}

@@ -1,0 +1,60 @@
+model Meeting {
+  id             BigInt        @id @default(autoincrement())
+  title          String        @db.VarChar(255)
+  description    String?       @db.Text
+  hostId         BigInt        @map("host_id")
+  roomName       String        @unique @map("room_name") @db.VarChar(255)
+  meetingCode    String        @unique @map("meeting_code") @db.VarChar(100)
+  conversationId BigInt?       @map("conversation_id")
+  scheduledStart DateTime?     @map("scheduled_start") @db.Timestamptz(6)
+  scheduledEnd   DateTime?     @map("scheduled_end") @db.Timestamptz(6)
+  startedAt      DateTime?     @map("started_at") @db.Timestamptz(6)
+  endedAt        DateTime?     @map("ended_at") @db.Timestamptz(6)
+  status         MeetingStatus @default(SCHEDULED)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  host           User                 @relation("MeetingHost", fields: [hostId], references: [id], onDelete: Restrict)
+  conversation   Conversation?        @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  calendarEvents CalendarEvent[]
+  participants   MeetingParticipant[]
+  recordings     MeetingRecording[]
+
+  @@index([hostId, status])
+  @@index([scheduledStart])
+  @@map("meetings")
+}
+
+model MeetingParticipant {
+  id               BigInt           @id @default(autoincrement())
+  meetingId        BigInt           @map("meeting_id")
+  userId           BigInt           @map("user_id")
+  meetingRole      MeetingRole      @default(PARTICIPANT) @map("meeting_role")
+  invitationStatus InvitationStatus @default(PENDING) @map("invitation_status")
+  joinedAt         DateTime?        @map("joined_at") @db.Timestamptz(6)
+  leftAt           DateTime?        @map("left_at") @db.Timestamptz(6)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@index([userId])
+  @@map("meeting_participants")
+}
+
+model MeetingRecording {
+  id        BigInt   @id @default(autoincrement())
+  meetingId BigInt   @map("meeting_id")
+  assetId   BigInt   @map("asset_id")
+  startedBy BigInt?  @map("started_by")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  meeting       Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  asset         FileAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  startedByUser User?     @relation("RecordingStartedBy", fields: [startedBy], references: [id], onDelete: SetNull)
+
+  @@index([meetingId])
+  @@index([assetId])
+  @@map("meeting_recordings")
+}

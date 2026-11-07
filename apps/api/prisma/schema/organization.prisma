@@ -1,0 +1,12 @@
+model OrganizationSettings {
+  id               BigInt   @id @default(autoincrement())
+  organizationName String   @map("organization_name") @db.VarChar(255)
+  logoId           BigInt?  @map("logo_id")
+  timezone         String   @default("UTC") @db.VarChar(100)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  logo FileAsset? @relation("OrgLogo", fields: [logoId], references: [id], onDelete: SetNull)
+
+  @@map("organization_settings")
+}

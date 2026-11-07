@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from "express";
 import env from "./config/env.js";
+import "./common/utils/bigint.js";
 
 const app: Application = express();
 

@@ -1,0 +1,179 @@
+model MailMessage {
+  id              BigInt   @id @default(autoincrement())
+  senderId        BigInt   @map("sender_id")
+  threadId        BigInt?  @map("thread_id")
+  parentMessageId BigInt?  @map("parent_message_id")
+  subject         String   @db.VarChar(255)
+  body            String   @db.Text
+  sentAt          DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sender         User                @relation("MailSender", fields: [senderId], references: [id], onDelete: Restrict)
+  parentMessage  MailMessage?        @relation("MailThread", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  replies        MailMessage[]       @relation("MailThread")
+  recipients     MailRecipient[]
+  userStates     MailUserState[]
+  attachments    MailAttachment[]
+  draftReplies   MailDraft[]         @relation("MailDraftParent")
+  folderMessages MailFolderMessage[]
+  messageLabels  MailMessageLabel[]
+
+  @@index([senderId, sentAt])
+  @@index([threadId])
+  @@index([parentMessageId])
+  @@map("mail_messages")
+}
+
+model MailRecipient {
+  id            BigInt            @id @default(autoincrement())
+  messageId     BigInt            @map("message_id")
+  userId        BigInt            @map("user_id")
+  recipientType MailRecipientType @map("recipient_type")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  message MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, recipientType])
+  @@index([userId, messageId])
+  @@map("mail_recipients")
+}
+
+model MailUserState {
+  id         BigInt    @id @default(autoincrement())
+  messageId  BigInt    @map("message_id")
+  userId     BigInt    @map("user_id")
+  isRead     Boolean   @default(false) @map("is_read")
+  readAt     DateTime? @map("read_at") @db.Timestamptz(6)
+  isStarred  Boolean   @default(false) @map("is_starred")
+  isArchived Boolean   @default(false) @map("is_archived")
+  isTrashed  Boolean   @default(false) @map("is_trashed")
+  trashedAt  DateTime? @map("trashed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  message MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId, isRead])
+  @@map("mail_user_states")
+}
+
+model MailAttachment {
+  id        BigInt   @id @default(autoincrement())
+  messageId BigInt   @map("message_id")
+  assetId   BigInt   @map("asset_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  message MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  asset   FileAsset   @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@unique([messageId, assetId])
+  @@index([assetId])
+  @@map("mail_attachments")
+}
+
+model MailDraft {
+  id              BigInt   @id @default(autoincrement())
+  userId          BigInt   @map("user_id")
+  parentMessageId BigInt?  @map("parent_message_id")
+  subject         String?  @db.VarChar(255)
+  body            String   @default("") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentMessage MailMessage?          @relation("MailDraftParent", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  recipients    MailDraftRecipient[]
+  attachments   MailDraftAttachment[]
+
+  @@index([userId, updatedAt])
+  @@map("mail_drafts")
+}
+
+model MailDraftRecipient {
+  id            BigInt            @id @default(autoincrement())
+  draftId       BigInt            @map("draft_id")
+  userId        BigInt            @map("user_id")
+  recipientType MailRecipientType @map("recipient_type")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  draft MailDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, userId, recipientType])
+  @@map("mail_draft_recipients")
+}
+
+model MailDraftAttachment {
+  id        BigInt   @id @default(autoincrement())
+  draftId   BigInt   @map("draft_id")
+  assetId   BigInt   @map("asset_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  draft MailDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  asset FileAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@unique([draftId, assetId])
+  @@index([assetId])
+  @@map("mail_draft_attachments")
+}
+
+model MailFolder {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderMessages MailFolderMessage[]
+
+  @@unique([userId, name])
+  @@map("mail_folders")
+}
+
+model MailFolderMessage {
+  id        BigInt   @id @default(autoincrement())
+  folderId  BigInt   @map("folder_id")
+  messageId BigInt   @map("message_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  folder  MailFolder  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  message MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, messageId])
+  @@map("mail_folder_messages")
+}
+
+model MailLabel {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  name      String   @db.VarChar(100)
+  color     String?  @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageLabels MailMessageLabel[]
+
+  @@unique([userId, name])
+  @@map("mail_labels")
+}
+
+model MailMessageLabel {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  messageId BigInt   @map("message_id")
+  labelId   BigInt   @map("label_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  label   MailLabel   @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, labelId])
+  @@index([userId])
+  @@map("mail_message_labels")
+}

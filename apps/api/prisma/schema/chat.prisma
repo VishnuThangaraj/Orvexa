@@ -1,0 +1,122 @@
+model Conversation {
+  id               BigInt             @id @default(autoincrement())
+  type             ConversationType
+  visibility       ChannelVisibility?
+  name             String?            @db.VarChar(150)
+  description      String?            @db.Text
+  imageId          BigInt?            @map("image_id")
+  directUserLowId  BigInt?            @map("direct_user_low_id")
+  directUserHighId BigInt?            @map("direct_user_high_id")
+  createdBy        BigInt             @map("created_by")
+  lastMessageAt    DateTime?          @map("last_message_at") @db.Timestamptz(6)
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt       DateTime?          @map("archived_at") @db.Timestamptz(6)
+
+  image          FileAsset?                @relation("ConversationImage", fields: [imageId], references: [id], onDelete: SetNull)
+  directLow      User?                     @relation("DirectLow", fields: [directUserLowId], references: [id], onDelete: SetNull)
+  directHigh     User?                     @relation("DirectHigh", fields: [directUserHighId], references: [id], onDelete: SetNull)
+  creator        User                      @relation("ConversationCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  participants   ConversationParticipant[]
+  messages       ChatMessage[]
+  pinnedMessages ChatPinnedMessage[]
+  meetings       Meeting[]
+
+  @@unique([directUserLowId, directUserHighId])
+  @@index([type, lastMessageAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id                BigInt                 @id @default(autoincrement())
+  conversationId    BigInt                 @map("conversation_id")
+  userId            BigInt                 @map("user_id")
+  memberRole        ConversationMemberRole @default(MEMBER) @map("member_role")
+  joinedAt          DateTime               @default(now()) @map("joined_at") @db.Timestamptz(6)
+  leftAt            DateTime?              @map("left_at") @db.Timestamptz(6)
+  isMuted           Boolean                @default(false) @map("is_muted")
+  isArchived        Boolean                @default(false) @map("is_archived")
+  isPinned          Boolean                @default(false) @map("is_pinned")
+  lastReadMessageId BigInt?                @map("last_read_message_id")
+  lastReadAt        DateTime?              @map("last_read_at") @db.Timestamptz(6)
+
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadMessage ChatMessage? @relation("ParticipantLastRead", fields: [lastReadMessageId], references: [id], onDelete: SetNull)
+
+  @@unique([conversationId, userId])
+  @@index([userId, leftAt])
+  @@map("conversation_participants")
+}
+
+model ChatMessage {
+  id              BigInt          @id @default(autoincrement())
+  conversationId  BigInt          @map("conversation_id")
+  senderId        BigInt          @map("sender_id")
+  parentMessageId BigInt?         @map("parent_message_id")
+  content         String          @db.Text
+  messageType     ChatMessageType @default(TEXT) @map("message_type")
+  isEdited        Boolean         @default(false) @map("is_edited")
+  editedAt        DateTime?       @map("edited_at") @db.Timestamptz(6)
+  deletedAt       DateTime?       @map("deleted_at") @db.Timestamptz(6)
+  deletedBy       BigInt?         @map("deleted_by")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  conversation          Conversation              @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender                User                      @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  parentMessage         ChatMessage?              @relation("ChatThread", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  replies               ChatMessage[]             @relation("ChatThread")
+  deletedByUser         User?                     @relation("ChatMessageDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  attachments           ChatAttachment[]
+  reactions             ChatReaction[]
+  pinnedInConversations ChatPinnedMessage[]
+  participantsLastRead  ConversationParticipant[] @relation("ParticipantLastRead")
+
+  @@index([conversationId, createdAt])
+  @@index([parentMessageId])
+  @@map("chat_messages")
+}
+
+model ChatAttachment {
+  id        BigInt   @id @default(autoincrement())
+  messageId BigInt   @map("message_id")
+  assetId   BigInt   @map("asset_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  asset   FileAsset   @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@unique([messageId, assetId])
+  @@index([assetId])
+  @@map("chat_attachments")
+}
+
+model ChatReaction {
+  id        BigInt   @id @default(autoincrement())
+  messageId BigInt   @map("message_id")
+  userId    BigInt   @map("user_id")
+  emoji     String   @db.VarChar(32)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("chat_reactions")
+}
+
+model ChatPinnedMessage {
+  id             BigInt   @id @default(autoincrement())
+  conversationId BigInt   @map("conversation_id")
+  messageId      BigInt   @map("message_id")
+  pinnedBy       BigInt   @map("pinned_by")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      ChatMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  pinnedByUser User         @relation("PinnedBy", fields: [pinnedBy], references: [id], onDelete: Restrict)
+
+  @@unique([conversationId, messageId])
+  @@map("chat_pinned_messages")
+}
