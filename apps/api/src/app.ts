@@ -1,5 +1,5 @@
 import express, { Application, Request, Response } from "express";
-import env from "./config/env";
+import env from "./config/env.js";
 
 const app: Application = express();
 
@@ -8,9 +8,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // Ping
 app.get("/", (req: Request, res: Response) => {
-  const origin: String = req.headers.origin || "Unknown Origin";
+  const origin: string = (req.headers.origin as string) || "Unknown Origin";
   console.log(`Ping requested from : ${origin}`);
   res.send(`Orvexa - Server Running Version : ${env.PROJECT_VERSION}`);
+});
+
+// Health check
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: "ok",
+    version: env.PROJECT_VERSION,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 export default app;
