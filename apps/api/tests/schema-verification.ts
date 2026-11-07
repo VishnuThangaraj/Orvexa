@@ -340,6 +340,7 @@ async function runVerification() {
     );
 
     // 5e: organization_settings single row constraint
+    await prisma.organizationSettings.deleteMany();
     await prisma.organizationSettings.create({
       data: {
         organizationName: "Orvexa Global",

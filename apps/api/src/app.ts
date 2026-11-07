@@ -1,10 +1,19 @@
+import cors from "cors";
 import express, { Application, Request, Response } from "express";
+
 import env from "./config/env.js";
 import "./common/utils/bigint.js";
+import corsOptions from "./config/cors.js";
 import cloudinary from "./config/cloudinary.js";
+
+import routes from "./routes/index.js";
+import { logger } from "./middleware/logger.middleware.js";
+import { errorHandler } from "./middleware/error.middleware.js";
+import { notFound } from "./middleware/notFound.middleware.js";
 
 const app: Application = express();
 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,5 +43,10 @@ app.get("/health/cloudinary", async (_req: Request, res: Response) => {
     status: result.status,
   });
 });
+
+app.use("/api", routes);
+app.use(logger);
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;
