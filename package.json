@@ -1,0 +1,11 @@
+{
+  "name": "orvexa",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter @orvexa/web --filter @orvexa/api dev",
+    "dev:web": "pnpm --filter @orvexa/web dev",
+    "dev:api": "pnpm --filter @orvexa/api dev",
+    "build": "pnpm -r build"
+  }
+}

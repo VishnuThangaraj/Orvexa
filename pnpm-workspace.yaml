@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  argon2: false
+  esbuild: false
+  msgpackr-extract: false
+  workerd: false
