@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import {
   generateAuthToken,
   verifyRefreshToken,
@@ -5,11 +6,18 @@ import {
 } from "../../common/utils/jwt.js";
 import { Role } from "../../common/types/roles.js";
 import AppError from "../../common/errors/AppError.js";
-import { verifyPassword } from "../../common/utils/password.js";
+import { verifyPassword, hashPassword } from "../../common/utils/password.js";
 import { hashToken, getTokenExpiryDate } from "../../common/utils/hash.js";
 
 import AuthRepository from "./auth.repository.js";
-import { RefreshTokenInput, UserLogin, SessionResponse } from "./auth.types.js";
+import {
+  RefreshTokenInput,
+  UserLogin,
+  SessionResponse,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+  ChangePasswordInput,
+} from "./auth.types.js";
 
 import env from "../../config/env.js";
 
@@ -231,6 +239,111 @@ class AuthService {
     }
 
     return user;
+  }
+
+  // forgot password - initiates reset token generation
+  async forgotPassword(data: ForgotPasswordInput) {
+    const user = await this.authRepository.findByEmail(data.email);
+
+    // Constant-time mitigation / prevent user enumeration
+    if (!user || !user.isActive || !user.credentials) {
+      return {
+        message:
+          "If that email is registered, a password reset link has been sent.",
+      };
+    }
+
+    // Generate secure 32-byte hex token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.authRepository.createPasswordResetToken(
+      user.id,
+      tokenHash,
+      expiresAt,
+    );
+
+    return {
+      message:
+        "If that email is registered, a password reset link has been sent.",
+      ...(process.env.NODE_ENV !== "production"
+        ? { resetToken: rawToken }
+        : {}),
+    };
+  }
+
+  // reset password using token
+  async resetPassword(data: ResetPasswordInput) {
+    const tokenHash = hashToken(data.token);
+    const resetToken =
+      await this.authRepository.findValidPasswordResetToken(tokenHash);
+
+    if (!resetToken) {
+      throw new AppError("Invalid or expired password reset token", 400);
+    }
+
+    if (!resetToken.user.isActive) {
+      throw new AppError("Account is inactive — reset disabled", 403);
+    }
+
+    const newPasswordHash = await hashPassword(data.newPassword);
+
+    // Update password and clear any existing failed attempts / locks
+    await this.authRepository.updatePassword(
+      resetToken.userId,
+      newPasswordHash,
+    );
+
+    // Invalidate reset token
+    await this.authRepository.markPasswordResetTokenUsed(resetToken.id);
+
+    // Revoke all active sessions across devices
+    await this.authRepository.revokeAllUserSessions(resetToken.userId);
+
+    return {
+      message:
+        "Password has been reset successfully. Please log in with your new password.",
+    };
+  }
+
+  // authenticated password change
+  async changePassword(userId: bigint, data: ChangePasswordInput) {
+    const credentials =
+      await this.authRepository.findCredentialsByUserId(userId);
+
+    if (!credentials) {
+      throw new AppError("User credentials not found", 404);
+    }
+
+    const validPassword = await verifyPassword(
+      credentials.passwordHash,
+      data.currentPassword,
+    );
+
+    if (!validPassword) {
+      throw new AppError("Current password is incorrect", 400);
+    }
+
+    if (data.currentPassword === data.newPassword) {
+      throw new AppError(
+        "New password must be different from current password",
+        400,
+      );
+    }
+
+    const newPasswordHash = await hashPassword(data.newPassword);
+
+    // Update credentials
+    await this.authRepository.updatePassword(userId, newPasswordHash);
+
+    // Invalidate all active sessions to enforce fresh login
+    await this.authRepository.revokeAllUserSessions(userId);
+
+    return {
+      message:
+        "Password changed successfully. Please log in again with your new password.",
+    };
   }
 }
 

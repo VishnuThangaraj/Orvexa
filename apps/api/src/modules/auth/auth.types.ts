@@ -24,3 +24,17 @@ export interface SessionResponse {
   expiresAt: Date;
   isCurrent?: boolean;
 }
+
+export type ForgotPasswordInput = {
+  email: string;
+};
+
+export type ResetPasswordInput = {
+  token: string;
+  newPassword: string;
+};
+
+export type ChangePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+};

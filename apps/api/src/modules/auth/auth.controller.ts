@@ -136,6 +136,49 @@ class AuthController {
       next(error);
     }
   };
+
+  // forgot password
+  forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req.body;
+      const result = await this.authService.forgotPassword({ email });
+      return sendResponse(res, 200, result.message, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // reset password
+  resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { token, newPassword } = req.body;
+      const result = await this.authService.resetPassword({
+        token,
+        newPassword,
+      });
+      return sendResponse(res, 200, result.message);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // change password (authenticated)
+  changePassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("Authentication required", 401);
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      const result = await this.authService.changePassword(
+        BigInt(req.user.id),
+        { currentPassword, newPassword },
+      );
+      return sendResponse(res, 200, result.message);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default AuthController;

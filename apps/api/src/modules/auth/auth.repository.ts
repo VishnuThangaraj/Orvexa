@@ -182,6 +182,71 @@ class AuthRepository {
       orderBy: [{ lastUsedAt: "desc" }, { createdAt: "desc" }],
     });
   }
+
+  // create a new password reset token
+  async createPasswordResetToken(
+    userId: bigint,
+    tokenHash: string,
+    expiresAt: Date,
+  ) {
+    return prisma.passwordResetToken.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+      },
+    });
+  }
+
+  // find an active and unused password reset token
+  async findValidPasswordResetToken(tokenHash: string) {
+    return prisma.passwordResetToken.findFirst({
+      where: {
+        tokenHash,
+        usedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        user: {
+          include: {
+            credentials: true,
+          },
+        },
+      },
+    });
+  }
+
+  // mark a password reset token as used
+  async markPasswordResetTokenUsed(id: bigint) {
+    return prisma.passwordResetToken.update({
+      where: { id },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+  }
+
+  // update credentials password and record change timestamp
+  async updatePassword(userId: bigint, newPasswordHash: string) {
+    return prisma.credentials.update({
+      where: { userId },
+      data: {
+        passwordHash: newPasswordHash,
+        passwordChangedAt: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+  }
+
+  // find credentials by user id
+  async findCredentialsByUserId(userId: bigint) {
+    return prisma.credentials.findUnique({
+      where: { userId },
+    });
+  }
 }
 
 export default AuthRepository;

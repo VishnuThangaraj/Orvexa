@@ -8,6 +8,9 @@ import {
   refreshTokenSchema,
   logoutSchema,
   sessionIdParamSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
 } from "./auth.validation.js";
 
 const router: Router = Router();
@@ -21,6 +24,29 @@ router.post("/refresh", validate(refreshTokenSchema), authController.refreshToke
 
 // user logout
 router.post("/logout", validate(logoutSchema), authController.logout);
+
+// forgot password
+router.post(
+  "/forgot-password",
+  validate(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+
+// reset password
+router.post(
+  "/reset-password",
+  validate(resetPasswordSchema),
+  authController.resetPassword,
+);
+
+// change password (authenticated)
+router.post(
+  "/change-password",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(changePasswordSchema),
+  authController.changePassword,
+);
 
 // user profile
 router.get(
