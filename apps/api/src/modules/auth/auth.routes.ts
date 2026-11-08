@@ -3,6 +3,7 @@ import AuthController from "./auth.controller.js";
 import { authenticate } from "../../middleware/auth.middleware.js";
 import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { authRateLimiter } from "../../middleware/rateLimiter.middleware.js";
 import {
   loginSchema,
   refreshTokenSchema,
@@ -16,14 +17,35 @@ import {
 const router: Router = Router();
 const authController = new AuthController();
 
+// Rate limit all auth endpoints against IP-level spraying and abuse
+router.use(authRateLimiter);
+
+// Bridge HttpOnly cookie to body for refresh and logout if not explicitly passed in body
+const attachCookieToken = (req: any, _res: any, next: any) => {
+  if (!req.body?.refreshToken && req.cookies?.refreshToken) {
+    req.body = { ...req.body, refreshToken: req.cookies.refreshToken };
+  }
+  next();
+};
+
 // user login
 router.post("/", validate(loginSchema), authController.userLogin);
 
 // refresh token
-router.post("/refresh", validate(refreshTokenSchema), authController.refreshToken);
+router.post(
+  "/refresh",
+  attachCookieToken,
+  validate(refreshTokenSchema),
+  authController.refreshToken,
+);
 
 // user logout
-router.post("/logout", validate(logoutSchema), authController.logout);
+router.post(
+  "/logout",
+  attachCookieToken,
+  validate(logoutSchema),
+  authController.logout,
+);
 
 // forgot password
 router.post(

@@ -247,6 +247,21 @@ class AuthRepository {
       where: { userId },
     });
   }
+
+  // purge expired or revoked sessions older than threshold days
+  async purgeExpiredSessions(olderThanDays = 30) {
+    const cutoffDate = new Date(
+      Date.now() - olderThanDays * 24 * 60 * 60 * 1000,
+    );
+    return prisma.userSession.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: cutoffDate } },
+          { revokedAt: { lt: cutoffDate } },
+        ],
+      },
+    });
+  }
 }
 
 export default AuthRepository;

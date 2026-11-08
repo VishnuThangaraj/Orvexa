@@ -7,6 +7,8 @@ export interface JwtPayload {
   id: string | bigint;
   role: Role;
   jti?: string;
+  iat?: number;
+  exp?: number;
 }
 
 export const generateAccessToken = (payload: JwtPayload): string => {

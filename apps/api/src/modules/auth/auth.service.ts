@@ -345,6 +345,15 @@ class AuthService {
         "Password changed successfully. Please log in again with your new password.",
     };
   }
+
+  // prune expired and revoked sessions older than retention days (default 30 days)
+  async pruneExpiredSessions(retentionDays = 30) {
+    const result =
+      await this.authRepository.purgeExpiredSessions(retentionDays);
+    return {
+      deletedCount: result.count,
+    };
+  }
 }
 
 export default AuthService;

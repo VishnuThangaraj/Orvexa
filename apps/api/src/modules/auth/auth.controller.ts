@@ -4,6 +4,16 @@ import AuthService from "./auth.service.js";
 import AppError from "../../common/errors/AppError.js";
 import { sendResponse } from "../../common/utils/response.js";
 
+const REFRESH_COOKIE_NAME = "refreshToken";
+
+export const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  path: "/api/auth",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+});
+
 class AuthController {
   private authService: AuthService;
 
@@ -31,6 +41,11 @@ class AuthController {
         deviceName: deviceName || null,
       });
 
+      // Set HttpOnly cookie for web clients
+      if (result.refreshToken) {
+        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getCookieOptions());
+      }
+
       return sendResponse(res, 200, "Login Successful", result);
     } catch (error) {
       next(error);
@@ -40,8 +55,20 @@ class AuthController {
   // refresh token
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { refreshToken } = req.body;
+      const refreshToken =
+        req.body?.refreshToken || req.cookies?.[REFRESH_COOKIE_NAME];
+
+      if (!refreshToken) {
+        throw new AppError("Refresh token is required", 400);
+      }
+
       const result = await this.authService.refreshToken({ refreshToken });
+
+      // Rotate HttpOnly cookie
+      if (result.refreshToken) {
+        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getCookieOptions());
+      }
+
       return sendResponse(res, 200, "Token Refreshed Successfully", result);
     } catch (error) {
       next(error);
@@ -51,8 +78,16 @@ class AuthController {
   // logout current session
   logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { refreshToken } = req.body;
-      await this.authService.logout(refreshToken);
+      const refreshToken =
+        req.body?.refreshToken || req.cookies?.[REFRESH_COOKIE_NAME];
+
+      if (refreshToken) {
+        await this.authService.logout(refreshToken);
+      }
+
+      // Clear HttpOnly cookie
+      res.clearCookie(REFRESH_COOKIE_NAME, getCookieOptions());
+
       return sendResponse(res, 200, "Logged out successfully");
     } catch (error) {
       next(error);
@@ -156,6 +191,9 @@ class AuthController {
         token,
         newPassword,
       });
+
+      res.clearCookie(REFRESH_COOKIE_NAME, getCookieOptions());
+
       return sendResponse(res, 200, result.message);
     } catch (error) {
       next(error);
@@ -174,6 +212,9 @@ class AuthController {
         BigInt(req.user.id),
         { currentPassword, newPassword },
       );
+
+      res.clearCookie(REFRESH_COOKIE_NAME, getCookieOptions());
+
       return sendResponse(res, 200, result.message);
     } catch (error) {
       next(error);
