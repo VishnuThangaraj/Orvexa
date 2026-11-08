@@ -13,12 +13,14 @@ test("Phase 4 (Task 4.1): Comprehensive End-to-End Session & Multi-Device Verifi
   const adminEmail = env.ADMIN_EMAIL;
   const adminPassword = env.ADMIN_PASSWORD;
 
-  const memberEmail = "vignesh@orvexa.com";
+  const memberEmail = "vignesh@gmail.com";
   const memberPassword = "orvexa@123";
 
   // Pre-test DB cleanup for these users
   const adminUser = await prisma.user.findUnique({ where: { email: adminEmail } });
-  const memberUser = await prisma.user.findUnique({ where: { email: memberEmail } });
+  const memberUser = await prisma.user.findFirst({
+    where: { OR: [{ email: memberEmail }, { username: "vignesh" }] },
+  });
   assert.ok(adminUser, "Seeded admin must exist");
   assert.ok(memberUser, "Seeded member must exist");
 
@@ -298,14 +300,14 @@ test("Phase 4 (Task 4.1): Comprehensive End-to-End Session & Multi-Device Verifi
     assert.equal(memberRefreshRes.status, 200);
   });
 
-  await t.test("9. Second seeded member thilakeshwaran@orvexa.com can log in and view profile", async () => {
-    const member2Email = "thilakeshwaran@orvexa.com";
+  await t.test("9. Second seeded member thilakeshwaran can log in and view profile", async () => {
+    const member2Email = "thilakeshwaran@gmail.com";
     const member2Password = "orvexa@123";
 
     const loginRes = await fetch(baseUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: member2Email, password: member2Password }),
+      body: JSON.stringify({ username: "thilakeshwaran", password: member2Password }),
     });
     const loginBody = (await loginRes.json()) as {
       success: boolean;
@@ -314,6 +316,7 @@ test("Phase 4 (Task 4.1): Comprehensive End-to-End Session & Multi-Device Verifi
     assert.equal(loginRes.status, 200);
     assert.equal(loginBody.data.user.email, member2Email);
     assert.equal(loginBody.data.user.fullName, "Thilakeshwaran");
+    assert.equal((loginBody.data.user as any).username, "thilakeshwaran");
 
     // Profile query
     const profileRes = await fetch(baseUrl, {
@@ -321,11 +324,12 @@ test("Phase 4 (Task 4.1): Comprehensive End-to-End Session & Multi-Device Verifi
     });
     const profileBody = (await profileRes.json()) as {
       success: boolean;
-      data: { email: string; role: string };
+      data: { email: string; role: string; username?: string };
     };
     assert.equal(profileRes.status, 200);
     assert.equal(profileBody.data.email, member2Email);
     assert.equal(profileBody.data.role, "MEMBER");
+    assert.equal(profileBody.data.username, "thilakeshwaran");
   });
 
   // Final cleanup

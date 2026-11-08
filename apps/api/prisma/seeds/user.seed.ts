@@ -6,6 +6,7 @@ export const seedAdmin = async () => {
   const name = env.ADMIN_NAME;
   const email = env.ADMIN_EMAIL;
   const password = env.ADMIN_PASSWORD;
+  const username = env.ADMIN_USERNAME;
 
   if (!email) {
     throw new Error("Admin Email is missing from environment variables!");
@@ -23,6 +24,7 @@ export const seedAdmin = async () => {
     },
     update: {
       fullName: name,
+      username,
       role: "ADMIN",
       isActive: true,
       credentials: {
@@ -40,6 +42,7 @@ export const seedAdmin = async () => {
     },
     create: {
       fullName: name,
+      username,
       email,
       role: "ADMIN",
       isActive: true,
@@ -58,6 +61,7 @@ export const seedAdmin = async () => {
     },
     select: {
       id: true,
+      username: true,
       email: true,
       fullName: true,
       role: true,
@@ -66,7 +70,7 @@ export const seedAdmin = async () => {
   });
 
   console.log(
-    `[SEED] Admin User seeded successfully: ${admin.email} (ID: ${admin.id})`,
+    `[SEED] Admin User seeded successfully: ${admin.username} (${admin.email}) [ID: ${admin.id}]`,
   );
   return admin;
 };
@@ -78,7 +82,8 @@ export const seedMembers = async () => {
   const members = [
     {
       fullName: "Vignesh",
-      email: "vignesh@orvexa.com",
+      username: "vignesh",
+      email: "vignesh@gmail.com",
       gender: "male",
       phone: "+919876543210",
       dob: new Date("1998-06-15"),
@@ -86,7 +91,8 @@ export const seedMembers = async () => {
     },
     {
       fullName: "Thilakeshwaran",
-      email: "thilakeshwaran@orvexa.com",
+      username: "thilakeshwaran",
+      email: "thilakeshwaran@gmail.com",
       gender: "male",
       phone: "+919876543211",
       dob: new Date("1997-11-20"),
@@ -103,6 +109,7 @@ export const seedMembers = async () => {
       },
       update: {
         fullName: member.fullName,
+        username: member.username,
         gender: member.gender,
         phone: member.phone,
         dob: member.dob,
@@ -124,6 +131,7 @@ export const seedMembers = async () => {
       },
       create: {
         fullName: member.fullName,
+        username: member.username,
         email: member.email,
         gender: member.gender,
         phone: member.phone,
@@ -146,6 +154,7 @@ export const seedMembers = async () => {
       },
       select: {
         id: true,
+        username: true,
         fullName: true,
         email: true,
         role: true,
@@ -155,7 +164,7 @@ export const seedMembers = async () => {
     });
 
     console.log(
-      `[SEED] Member seeded successfully: ${seeded.fullName} (${seeded.email}) [ID: ${seeded.id}]`,
+      `[SEED] Member seeded successfully: ${seeded.fullName} (${seeded.username} / ${seeded.email}) [ID: ${seeded.id}]`,
     );
     seededMembers.push(seeded);
   }

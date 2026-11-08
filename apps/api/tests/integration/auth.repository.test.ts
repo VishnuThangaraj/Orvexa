@@ -8,8 +8,12 @@ test("Task 1.2: AuthRepository UserSession CRUD operations", async () => {
   const repository = new AuthRepository();
 
   // Find existing seeded member user (distinct from admin to avoid cross-test interference)
-  const user = await repository.findByEmail("vignesh@orvexa.com");
-  assert.ok(user, "Seeded member user vignesh@orvexa.com must exist");
+  const user = await repository.findByEmail("vignesh@gmail.com");
+  assert.ok(user, "Seeded member user vignesh@gmail.com must exist");
+  const userByUsername = await repository.findByUsername("vignesh");
+  assert.ok(userByUsername, "Seeded member user vignesh must be found by username");
+  const userByIdentifier = await repository.findByIdentifier("vignesh@orvexa.com");
+  assert.ok(userByIdentifier, "Seeded member user vignesh must be found by internal mail alias");
   const userId = user.id;
 
   const rawToken1 = "test-token-step-1-2-alpha";

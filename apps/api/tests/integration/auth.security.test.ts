@@ -13,7 +13,7 @@ test("Security Enhancements: JWT Invalidation, Cookies, Rate Limiting & TTL Prun
   const port = (server.address() as AddressInfo).port;
   const baseUrl = `http://127.0.0.1:${port}/api/auth`;
 
-  const memberEmail = "thilakeshwaran@orvexa.com";
+  const memberEmail = "thilakeshwaran@gmail.com";
   const defaultPassword = "orvexa@123";
 
   const memberUser = await prisma.user.findUnique({

@@ -36,6 +36,7 @@ async function runVerification() {
     const userA = await prisma.user.create({
       data: {
         fullName: "Alice User",
+        username: `alice_${testTimestamp}`,
         email: `alice_${testTimestamp}@example.com`,
         phone: "+1234567890",
         dob: new Date("1995-05-15"),
@@ -56,6 +57,7 @@ async function runVerification() {
     const userB = await prisma.user.create({
       data: {
         fullName: "Bob User",
+        username: `bob_${testTimestamp}`,
         email: `bob_${testTimestamp}@example.com`,
         role: "MEMBER",
       },
@@ -339,32 +341,7 @@ async function runVerification() {
       "Raw SQL CHECK constraint: drive_permissions rejects both file_id and folder_id set"
     );
 
-    // 5e: organization_settings single row constraint
-    await prisma.organizationSettings.deleteMany();
-    await prisma.organizationSettings.create({
-      data: {
-        organizationName: "Orvexa Global",
-        timezone: "UTC",
-      },
-    });
-
-    let duplicateOrgRejected = false;
-    try {
-      await prisma.organizationSettings.create({
-        data: {
-          organizationName: "Second Org Attempt",
-          timezone: "UTC",
-        },
-      });
-    } catch {
-      duplicateOrgRejected = true;
-    }
-    assert(
-      duplicateOrgRejected,
-      "Raw SQL UNIQUE index: organization_settings rejects multiple rows ((true))"
-    );
-
-    // 5f: Partial Unique Index on drive_favorites
+    // 5e: drive_favorites partial unique index
     await prisma.driveFavorite.create({
       data: {
         userId: userA.id,

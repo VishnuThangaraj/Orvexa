@@ -15,7 +15,41 @@ import type {
  */
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<LoginPayload> => {
-    const res = await api.post<ApiResponse<LoginPayload>>("/auth", credentials);
+    let payload: {
+      username?: string;
+      email?: string;
+      password: string;
+      deviceName?: string;
+    };
+
+    if (credentials.identifier) {
+      const raw = credentials.identifier.trim();
+      const isExternalEmail =
+        raw.includes("@") && !raw.toLowerCase().endsWith("@orvexa.com");
+
+      if (isExternalEmail) {
+        payload = {
+          email: raw.toLowerCase(),
+          password: credentials.password,
+          deviceName: credentials.deviceName,
+        };
+      } else {
+        payload = {
+          username: raw.replace(/@orvexa\.com$/i, ""),
+          password: credentials.password,
+          deviceName: credentials.deviceName,
+        };
+      }
+    } else {
+      payload = {
+        username: credentials.username,
+        email: credentials.email,
+        password: credentials.password,
+        deviceName: credentials.deviceName,
+      };
+    }
+
+    const res = await api.post<ApiResponse<LoginPayload>>("/auth", payload);
     return res.data.data;
   },
 
@@ -44,7 +78,27 @@ export const authApi = {
   },
 
   forgotPassword: async (data: ForgotPasswordRequest): Promise<string> => {
-    const res = await api.post<ApiResponse<null>>("/auth/forgot-password", data);
+    let payload: { username?: string; email?: string };
+
+    if (data.identifier) {
+      const raw = data.identifier.trim();
+      const isExternalEmail =
+        raw.includes("@") && !raw.toLowerCase().endsWith("@orvexa.com");
+
+      payload = isExternalEmail
+        ? { email: raw.toLowerCase() }
+        : { username: raw.replace(/@orvexa\.com$/i, "") };
+    } else {
+      payload = {
+        username: data.username,
+        email: data.email,
+      };
+    }
+
+    const res = await api.post<ApiResponse<null>>(
+      "/auth/forgot-password",
+      payload,
+    );
     return res.data.message;
   },
 

@@ -1,5 +1,6 @@
 export type UserLogin = {
-  email: string;
+  username?: string;
+  email?: string;
   password: string;
   ipAddress?: string | null;
   userAgent?: string | null;
@@ -26,7 +27,8 @@ export interface SessionResponse {
 }
 
 export type ForgotPasswordInput = {
-  email: string;
+  username?: string;
+  email?: string;
 };
 
 export type ResetPasswordInput = {

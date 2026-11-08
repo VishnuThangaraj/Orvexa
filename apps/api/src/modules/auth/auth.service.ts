@@ -30,7 +30,12 @@ class AuthService {
 
   // user login with session creation
   async userLogin(data: UserLogin) {
-    const user = await this.authRepository.findByEmail(data.email);
+    const identifier = data.username || data.email;
+    if (!identifier) {
+      throw new AppError("Username or email is required", 400);
+    }
+
+    const user = await this.authRepository.findByIdentifier(identifier);
 
     if (!user) {
       await verifyPassword(env.DUMMY_PASSWORD_HASH, data.password);
@@ -243,7 +248,15 @@ class AuthService {
 
   // forgot password - initiates reset token generation
   async forgotPassword(data: ForgotPasswordInput) {
-    const user = await this.authRepository.findByEmail(data.email);
+    const identifier = data.username || data.email;
+    if (!identifier) {
+      return {
+        message:
+          "If that email is registered, a password reset link has been sent.",
+      };
+    }
+
+    const user = await this.authRepository.findByIdentifier(identifier);
 
     // Constant-time mitigation / prevent user enumeration
     if (!user || !user.isActive || !user.credentials) {

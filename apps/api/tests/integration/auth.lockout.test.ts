@@ -9,14 +9,14 @@ test("Phase 2 & 3: Account lockout, email normalization, and timing attack defen
   const port = (server.address() as AddressInfo).port;
   const baseUrl = `http://127.0.0.1:${port}/api/auth`;
 
-  const memberEmail = "thilakeshwaran@orvexa.com";
+  const memberEmail = "thilakeshwaran@gmail.com";
   const memberPassword = "orvexa@123";
 
   const memberUser = await prisma.user.findUnique({
     where: { email: memberEmail },
     include: { credentials: true },
   });
-  assert.ok(memberUser, "Seeded member thilakeshwaran@orvexa.com must exist");
+  assert.ok(memberUser, "Seeded member thilakeshwaran must exist");
   assert.ok(memberUser.credentials, "Member credentials must exist");
 
   // Reset state for this user

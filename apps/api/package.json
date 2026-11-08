@@ -44,7 +44,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
-    "prisma": "^8.0.0-rc.33",
+    "prisma": "7.10.1",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   }

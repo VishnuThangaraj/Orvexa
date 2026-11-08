@@ -8,7 +8,7 @@ import {
 } from "../../src/modules/auth/auth.validation.js";
 
 test("Task 3.1: loginSchema validation", () => {
-  // Valid payload with whitespace and uppercase
+  // Valid payload with whitespace and uppercase email
   const valid = loginSchema.safeParse({
     email: "  TEST@EXAMPLE.COM  ",
     password: "Password123",
@@ -17,6 +17,16 @@ test("Task 3.1: loginSchema validation", () => {
   assert.equal(valid.success, true);
   if (valid.success) {
     assert.equal(valid.data.email, "test@example.com");
+  }
+
+  // Valid payload with username
+  const validUsername = loginSchema.safeParse({
+    username: "vignesh",
+    password: "Password123",
+  });
+  assert.equal(validUsername.success, true);
+  if (validUsername.success) {
+    assert.equal(validUsername.data.username, "vignesh");
   }
 
   // Invalid email
@@ -32,6 +42,12 @@ test("Task 3.1: loginSchema validation", () => {
     password: "123",
   });
   assert.equal(shortPass.success, false);
+
+  // Missing both username and email
+  const missingBoth = loginSchema.safeParse({
+    password: "Password123",
+  });
+  assert.equal(missingBoth.success, false);
 });
 
 test("Task 3.1: logoutSchema & refreshTokenSchema validation", () => {

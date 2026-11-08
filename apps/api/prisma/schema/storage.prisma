@@ -19,7 +19,6 @@ model FileAsset {
 
   uploader             User?                  @relation("AssetUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
   userProfileImages    User[]                 @relation("ProfileImage")
-  organizationLogos    OrganizationSettings[] @relation("OrgLogo")
   conversationImages   Conversation[]         @relation("ConversationImage")
   mailAttachments      MailAttachment[]
   mailDraftAttachments MailDraftAttachment[]

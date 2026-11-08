@@ -24,7 +24,7 @@ class AuthController {
   // user login
   userLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password, deviceName } = req.body;
+      const { username, email, password, deviceName } = req.body;
 
       const ipAddress =
         ((req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
@@ -34,6 +34,7 @@ class AuthController {
       const userAgent = (req.headers["user-agent"] as string) || null;
 
       const result = await this.authService.userLogin({
+        username,
         email,
         password,
         ipAddress,
@@ -175,8 +176,8 @@ class AuthController {
   // forgot password
   forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email } = req.body;
-      const result = await this.authService.forgotPassword({ email });
+      const { username, email } = req.body;
+      const result = await this.authService.forgotPassword({ username, email });
       return sendResponse(res, 200, result.message, result);
     } catch (error) {
       next(error);

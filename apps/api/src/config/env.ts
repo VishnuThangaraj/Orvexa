@@ -30,6 +30,7 @@ const env = {
   ADMIN_NAME: process.env.ADMIN_NAME || "Vishnu Thangaraj",
   ADMIN_EMAIL: required("ADMIN_EMAIL"),
   ADMIN_PASSWORD: required("ADMIN_PASSWORD"),
+  ADMIN_USERNAME: required("ADMIN_USERNAME"),
 
   // JWT
   JWT_SECRET: required("JWT_SECRET"),

@@ -20,10 +20,55 @@ class AuthRepository {
     });
   }
 
-  // find user by email
+  // find user by email (or internal mail alias)
   async findByEmail(email: string) {
-    return prisma.user.findUnique({
-      where: { email },
+    const cleanEmail = email.trim().toLowerCase();
+    const usernameCandidate = cleanEmail.replace(/@orvexa\.com$/i, "");
+    return prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: cleanEmail },
+          { username: cleanEmail },
+          { username: usernameCandidate },
+        ],
+      },
+      include: {
+        credentials: true,
+        preferences: true,
+      },
+    });
+  }
+
+  // find user by username (or internal mail alias)
+  async findByUsername(username: string) {
+    const cleanUsername = username.trim().toLowerCase();
+    const usernameCandidate = cleanUsername.replace(/@orvexa\.com$/i, "");
+    return prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: cleanUsername },
+          { username: usernameCandidate },
+        ],
+      },
+      include: {
+        credentials: true,
+        preferences: true,
+      },
+    });
+  }
+
+  // find user by identifier (username, internal mail @orvexa.com, or communication email)
+  async findByIdentifier(identifier: string) {
+    const clean = identifier.trim().toLowerCase();
+    const usernameCandidate = clean.replace(/@orvexa\.com$/i, "");
+    return prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: clean },
+          { username: usernameCandidate },
+          { email: clean },
+        ],
+      },
       include: {
         credentials: true,
         preferences: true,
