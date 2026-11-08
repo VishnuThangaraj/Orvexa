@@ -31,7 +31,7 @@ The underlying relational database is designed to handle high transaction volume
    To prevent 32-bit integer overflow failures in high-volume collaboration apps (e.g., millions of chat messages, notifications, and mail logs), all surrogate primary keys and foreign key references utilize PostgreSQL `BigInt` (`BIGSERIAL`). The TypeScript application layer serializes `BigInt` values to string format in JSON responses (`BigInt.prototype.toJSON = function() { return this.toString(); }`), preventing IEEE 754 precision loss in JavaScript runtimes.
 
 3. **Timezone Awareness & Temporal Consistency**  
-   All temporal fields utilize `TIMESTAMPTZ(6)` (PostgreSQL `timestamp with time zone` with microsecond precision). Application services persist exclusively in UTC; client applications format timestamps according to the user's localized timezone configured in `user_preferences.timezone` or `organization_settings.timezone`.
+   All temporal fields utilize `TIMESTAMPTZ(6)` (PostgreSQL `timestamp with time zone` with microsecond precision). Application services persist exclusively in UTC; client applications format timestamps according to the user's localized timezone configured in `user_preferences.timezone`.
 
 4. **Decoupled Physical Storage & Digital Asset Management (DAM)**  
    No binary data or base64 blobs are stored inside PostgreSQL. All binary media (attachments, avatars, recordings, drive files) are registered in a central `file_assets` table that abstracts Cloudinary storage, asset metadata (width, height, duration, delivery type, MIME type), and cloud deletion lifecycles. Domain models link to `file_assets` via foreign keys.
@@ -40,7 +40,7 @@ The underlying relational database is designed to handle high transaction volume
    Rather than using anti-pattern polymorphic columns (`entity_type` + `entity_id` without database constraints), shared relationships (such as Drive permissions, favorites, and recent items) use **Exclusive Arc / XOR Foreign Keys** backed by PostgreSQL `CHECK` constraints and partial unique indexes. This guarantees 100% database-enforced referential integrity.
 
 6. **Mathematical Guarantees via Database Invariants**  
-   Critical business rules (such as ensuring only one 1-on-1 direct conversation can ever exist between two users, ensuring calendar event start times precede end times, and restricting organization settings to a single row) are enforced at the database layer via PostgreSQL `CHECK` constraints, functional indexes, and partial unique indexes.
+   Critical business rules (such as ensuring only one 1-on-1 direct conversation can ever exist between two users, and ensuring calendar event start times precede end times) are enforced at the database layer via PostgreSQL `CHECK` constraints, functional indexes, and partial unique indexes.
 
 ---
 
@@ -66,8 +66,7 @@ The underlying relational database is designed to handle high transaction volume
 The database schema is managed via Prisma's `prismaSchemaFolder` preview feature located at `apps/api/prisma/schema/`:
 - `schema.prisma` — Client generator and PostgreSQL datasource configuration.
 - `enums.prisma` — Centralized enumerated types across all platform domains.
-- `organization.prisma` — Workspace and organization-level configuration.
-- `auth.prisma` — Identity, credentials, sessions, tokens, and preferences.
+- `auth.prisma` — Identity, internal mail handle, communication email, credentials, sessions, tokens, and preferences.
 - `storage.prisma` — Cloudinary-backed digital asset storage registry.
 - `drive.prisma` — Document management, folders, versions, permissions, comments.
 - `chat.prisma` — Direct messages, channels, threads, reactions, pins.
@@ -88,7 +87,6 @@ flowchart TD
     %% Base Infrastructure
     U[users]:::core
     FA[file_assets]:::core
-    ORG[organization_settings]:::core
     
     %% Auth Subsystem
     subgraph SUB_AUTH [Identity & Access Management]
@@ -196,27 +194,7 @@ The database defines 16 PostgreSQL native enum types ensuring strict type safety
 
 ## 5. Subsystem Data Dictionary & Detailed Entity Design
 
-### 5.1 Organization & Tenant Settings Domain
-
-#### 5.1.1 `organization_settings`
-Configures workspace-level branding, identity, and regional defaults.
-
-| Column | PostgreSQL Type | Prisma Type | Constraints & Defaults | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `BIGINT` | `BigInt` | `PK`, `autoincrement()` | Surrogate primary identifier. |
-| `organization_name` | `VARCHAR(255)` | `String` | `NOT NULL` | Display name of the enterprise organization. |
-| `logo_id` | `BIGINT` | `BigInt?` | `FK -> file_assets(id)`, `ON DELETE SET NULL` | Pointer to organization brand logo image. |
-| `timezone` | `VARCHAR(100)` | `String` | `NOT NULL`, `DEFAULT 'UTC'` | Standard IANA timezone identifier for the workspace. |
-| `created_at` | `TIMESTAMPTZ(6)` | `DateTime` | `NOT NULL`, `DEFAULT now()` | Record creation timestamp. |
-| `updated_at` | `TIMESTAMPTZ(6)` | `DateTime` | `NOT NULL`, `@updatedAt` | Timestamp of last modification. |
-
-**Indexes & Invariants:**
-- `organization_settings_single_row_idx`: `CREATE UNIQUE INDEX "organization_settings_single_row_idx" ON "organization_settings" ((true));`  
-  *Enforces a strict singleton pattern at the database level: only one organization record can exist.*
-
----
-
-### 5.2 Identity & Access Management (IAM) Domain
+### 5.1 Identity & Access Management (IAM) Domain
 
 ```mermaid
 erDiagram
@@ -234,8 +212,9 @@ Core user entity representing organization employees, administrators, and member
 | :--- | :--- | :--- | :--- | :--- |
 | `id` | `BIGINT` | `BigInt` | `PK`, `autoincrement()` | Unique user identifier. |
 | `full_name` | `VARCHAR(150)` | `String` | `NOT NULL` | User legal or display name. |
+| `username` | `VARCHAR(100)` | `String` | `NOT NULL`, `UNIQUE` | Internal mail handle (`<username>@orvexa.com`) and system login identifier. |
 | `profile_image_id` | `BIGINT` | `BigInt?` | `FK -> file_assets(id)`, `ON DELETE SET NULL` | Reference to uploaded avatar image asset. |
-| `email` | `VARCHAR(255)` | `String` | `NOT NULL`, `UNIQUE` | Normalized RFC 5322 primary login email. |
+| `email` | `VARCHAR(255)` | `String` | `NOT NULL`, `UNIQUE` | External communication & recovery email for password reset and notifications. |
 | `phone` | `VARCHAR(20)` | `String?` | `NULL` | E.164 formatted international telephone number. |
 | `dob` | `DATE` | `DateTime?` | `NULL` | Date of birth for compliance and directory profiling. |
 | `gender` | `VARCHAR(30)` | `String?` | `NULL` | Optional demographic identifier. |
@@ -247,7 +226,8 @@ Core user entity representing organization employees, administrators, and member
 | `updated_at` | `TIMESTAMPTZ(6)` | `DateTime` | `NOT NULL`, `@updatedAt` | Last profile modification timestamp. |
 
 **Indexes & Invariants:**
-- `users_email_key`: `UNIQUE ("email")` — Enforces unique email accounts across the workspace.
+- `users_username_key`: `UNIQUE ("username")` — Enforces unique internal mail handle / username across the workspace.
+- `users_email_key`: `UNIQUE ("email")` — Enforces unique communication email accounts across the workspace.
 
 ---
 
@@ -859,7 +839,7 @@ The database implements a deliberate foreign key deletion policy to guarantee th
 | :--- | :--- | :--- |
 | **`CASCADE`** | Dependent child records that have no valid existence without the parent entity. | - Deleting a `User` cascades to `credentials`, `user_sessions`, `user_preferences`.<br>- Deleting a `Conversation` cascades to `chat_messages`, `conversation_participants`.<br>- Deleting a `DriveFile` cascades to `drive_file_versions`, `drive_comments`.<br>- Deleting a `CalendarEvent` cascades to `calendar_participants`, `calendar_reminders`. |
 | **`RESTRICT`** | Guard rails that prevent deletion of primary parent resources if linked business records exist. | - A `User` cannot be deleted if they own `drive_folders`, authored `drive_files`, host `meetings`, or created `calendar_events`. Requires explicit reassignment or archival.<br>- A `FileAsset` cannot be deleted while referenced by active `drive_files` or `drive_file_versions`. |
-| **`SET NULL`** | Optional or historical relationship links where preserving the child record is mandatory. | - Deleting a user sets `audit_logs.user_id = NULL` (preserves audit trail integrity).<br>- Deleting a user sets `drive_files.deleted_by = NULL` and `chat_messages.deleted_by = NULL`.<br>- Deleting an asset sets `users.profile_image_id = NULL` and `organization_settings.logo_id = NULL`. |
+| **`SET NULL`** | Optional or historical relationship links where preserving the child record is mandatory. | - Deleting a user sets `audit_logs.user_id = NULL` (preserves audit trail integrity).<br>- Deleting a user sets `drive_files.deleted_by = NULL` and `chat_messages.deleted_by = NULL`.<br>- Deleting an asset sets `users.profile_image_id = NULL`. |
 
 ---
 
@@ -869,8 +849,8 @@ The database implements a deliberate foreign key deletion policy to guarantee th
 
 | Category | Table | Index Name | Indexed Columns / Definition | Primary Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **Unique / Business Rule** | `organization_settings` | `organization_settings_single_row_idx` | `((true))` | Enforces singleton organization row. |
-| **Unique / Business Rule** | `users` | `users_email_key` | `("email")` | Fast user login & authentication. |
+| **Unique / Business Rule** | `users` | `users_username_key` | `("username")` | Fast user login & internal mail addressing. |
+| **Unique / Business Rule** | `users` | `users_email_key` | `("email")` | Fast user recovery & communication lookup. |
 | **Unique / Business Rule** | `conversations` | `conversations_direct_user_low_id_direct_user_high_id_key` | `("direct_user_low_id", "direct_user_high_id")` | Canonical 1-on-1 direct conversation deduplication. |
 | **Unique / Business Rule** | `file_assets` | `file_assets_resource_type_delivery_type_public_id_key` | `("resource_type", "delivery_type", "public_id")` | Cloudinary resource key uniqueness. |
 | **Partial Unique** | `drive_permissions` | `drive_permissions_file_user_uidx` | `("file_id", "user_id") WHERE file_id IS NOT NULL` | Prevents duplicate permissions on files. |
@@ -930,8 +910,8 @@ All custom `CHECK` constraints, functional indexes, and partial indexes are main
 
 ### 10.2 Database Seeding
 Initial system bootstrapping is driven by `apps/api/prisma/seed.ts` and modular seed files (`apps/api/prisma/seeds/`):
-- Provisions initial `organization_settings` singleton.
-- Seeds primary administrative account with salted password credentials.
+- Seeds primary administrative account (`admin`) with salted password credentials.
+- Seeds enterprise member accounts with internal mail handles (`username`) and communication emails.
 - Configures default system preferences.
 
 ### 10.3 Long-Term Scaling & Partitioning Roadmap

@@ -38,10 +38,8 @@ This high-level ERD illustrates the foundational inter-subsystem connections bet
 
 ```mermaid
 erDiagram
-    users ||--o| organization_settings : "manages_branding"
     users ||--o| file_assets : "has_avatar"
     users ||--o{ file_assets : "uploads"
-    organization_settings ||--o| file_assets : "has_logo"
 
     %% Auth Subsystem
     users ||--o| credentials : "authenticates_with"
@@ -106,6 +104,7 @@ erDiagram
 
     users {
         bigint id PK
+        varchar username UK
         varchar full_name
         bigint profile_image_id FK
         varchar email UK
@@ -167,23 +166,13 @@ erDiagram
 
 ---
 
-### 3.2 Organization Settings & Media Storage (DAM) Domain
+### 3.2 Digital Asset Management (DAM) & Media Storage Domain
 
-Centralized asset registry abstracting Cloudinary cloud storage and workspace-level configuration.
+Centralized asset registry abstracting Cloudinary cloud storage and platform media assets.
 
 ```mermaid
 erDiagram
-    organization_settings }o--o| file_assets : "brand_logo"
     users ||--o{ file_assets : "uploads"
-
-    organization_settings {
-        bigint id PK
-        varchar organization_name
-        bigint logo_id FK
-        varchar timezone
-        timestamptz created_at
-        timestamptz updated_at
-    }
 
     file_assets {
         bigint id PK
@@ -703,8 +692,7 @@ The following matrix documents all 50+ foreign key constraints in the Orvexa dat
 
 | # | Source Table | Foreign Key Column | Target Table | Target Column | Cardinality | ON DELETE Action | Business Meaning / Dependency |
 | :- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | `organization_settings` | `logo_id` | `file_assets` | `id` | `N:0..1` | `SET NULL` | Organization branding logo image. |
-| **2** | `users` | `profile_image_id` | `file_assets` | `id` | `N:0..1` | `SET NULL` | User avatar image. |
+| **1** | `users` | `profile_image_id` | `file_assets` | `id` | `N:0..1` | `SET NULL` | User avatar image. |
 | **3** | `credentials` | `user_id` | `users` | `id` | `1:1` | `CASCADE` | User authentication secret credentials. |
 | **4** | `user_sessions` | `user_id` | `users` | `id` | `N:1` | `CASCADE` | User client login session tokens. |
 | **5** | `password_reset_tokens`| `user_id` | `users` | `id` | `N:1` | `CASCADE` | Ephemeral reset verification tokens. |
