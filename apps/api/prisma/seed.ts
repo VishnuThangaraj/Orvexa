@@ -1,9 +1,10 @@
 import { disconnectDatabase } from "../src/config/prisma.js";
-import { seedAdmin } from "./seeds/user.seed.js";
+import { seedAdmin, seedMembers } from "./seeds/user.seed.js";
 
 const main = async () => {
   console.log("Starting database seeding...");
   await seedAdmin();
+  await seedMembers();
   console.log("Database seeding completed.");
 };
 

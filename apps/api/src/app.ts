@@ -1,5 +1,6 @@
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import express, { Application, Request, Response } from "express";
 
 import env from "./config/env.js";
@@ -14,10 +15,16 @@ import { notFound } from "./middleware/notFound.middleware.js";
 
 const app: Application = express();
 
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Audit Logger Middleware - must run before routes to intercept res.on("finish")
+app.use(logger);
 
 // Ping
 app.get("/", (req: Request, res: Response) => {
@@ -47,7 +54,6 @@ app.get("/health/cloudinary", async (_req: Request, res: Response) => {
 });
 
 app.use("/api", routes);
-app.use(logger);
 app.use(notFound);
 app.use(errorHandler);
 

@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 
 import AuthService from "./auth.service.js";
-import { loginSchema, refreshTokenSchema } from "./auth.validation.js";
 import AppError from "../../common/errors/AppError.js";
 import { sendResponse } from "../../common/utils/response.js";
 
@@ -15,15 +14,23 @@ class AuthController {
   // user login
   userLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const parseResult = loginSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        throw new AppError(
-          parseResult.error.issues[0]?.message || "Validation Error",
-          400,
-        );
-      }
+      const { email, password, deviceName } = req.body;
 
-      const result = await this.authService.userLogin(parseResult.data);
+      const ipAddress =
+        ((req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+          req.socket.remoteAddress ||
+          req.ip ||
+          null) ?? null;
+      const userAgent = (req.headers["user-agent"] as string) || null;
+
+      const result = await this.authService.userLogin({
+        email,
+        password,
+        ipAddress,
+        userAgent,
+        deviceName: deviceName || null,
+      });
+
       return sendResponse(res, 200, "Login Successful", result);
     } catch (error) {
       next(error);
@@ -33,16 +40,84 @@ class AuthController {
   // refresh token
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const parseResult = refreshTokenSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        throw new AppError(
-          parseResult.error.issues[0]?.message || "Validation Error",
-          400,
-        );
+      const { refreshToken } = req.body;
+      const result = await this.authService.refreshToken({ refreshToken });
+      return sendResponse(res, 200, "Token Refreshed Successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // logout current session
+  logout = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { refreshToken } = req.body;
+      await this.authService.logout(refreshToken);
+      return sendResponse(res, 200, "Logged out successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // get all active sessions for authenticated user
+  getActiveSessions = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("Authentication required", 401);
       }
 
-      const result = await this.authService.refreshToken(parseResult.data);
-      return sendResponse(res, 200, "Token Refreshed Successfully", result);
+      const currentRefreshToken =
+        (req.headers["x-refresh-token"] as string) || undefined;
+
+      const sessions = await this.authService.getActiveSessions(
+        BigInt(req.user.id),
+        currentRefreshToken,
+      );
+
+      return sendResponse(
+        res,
+        200,
+        "Active sessions retrieved successfully",
+        sessions,
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // revoke specific session
+  revokeSession = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("Authentication required", 401);
+      }
+
+      const sessionId = BigInt(req.params.id as string);
+      await this.authService.revokeSession(BigInt(req.user.id), sessionId);
+
+      return sendResponse(res, 200, "Session revoked successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // revoke all sessions (logout all devices)
+  revokeAllSessions = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("Authentication required", 401);
+      }
+
+      await this.authService.revokeAllSessions(BigInt(req.user.id));
+      return sendResponse(res, 200, "All sessions revoked successfully");
     } catch (error) {
       next(error);
     }

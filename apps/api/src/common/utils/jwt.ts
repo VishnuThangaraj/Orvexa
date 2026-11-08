@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { Role } from "../types/roles.js";
 import env from "../../config/env.js";
@@ -5,18 +6,31 @@ import env from "../../config/env.js";
 export interface JwtPayload {
   id: string | bigint;
   role: Role;
+  jti?: string;
 }
 
 export const generateAccessToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN,
-  } as SignOptions);
+  return jwt.sign(
+    { id: payload.id.toString(), role: payload.role },
+    env.JWT_SECRET,
+    {
+      expiresIn: env.JWT_EXPIRES_IN,
+    } as SignOptions,
+  );
 };
 
 export const generateRefreshToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
-  } as SignOptions);
+  return jwt.sign(
+    {
+      id: payload.id.toString(),
+      role: payload.role,
+      jti: crypto.randomUUID(),
+    },
+    env.JWT_REFRESH_SECRET,
+    {
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+    } as SignOptions,
+  );
 };
 
 export const generateAuthToken = (payload: JwtPayload) => {

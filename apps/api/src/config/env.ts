@@ -36,6 +36,11 @@ const env = {
   JWT_EXPIRES_IN: required("JWT_EXPIRES_IN"),
   JWT_REFRESH_SECRET: required("JWT_REFRESH_SECRET"),
   JWT_REFRESH_EXPIRES_IN: required("JWT_REFRESH_EXPIRES_IN"),
+
+  // Security
+  DUMMY_PASSWORD_HASH:
+    process.env.DUMMY_PASSWORD_HASH ||
+    "$argon2id$v=19$m=19456,t=2,p=1$NtNKrW3kupAyV35Jwz7Eqw$/1xEcYxQL0ejfjwA4Qjn2HsoEJ7e4Y8rJSRlUYaqv6k",
 };
 
 export default env;
