@@ -30,6 +30,12 @@ const env = {
   ADMIN_NAME: process.env.ADMIN_NAME || "Vishnu Thangaraj",
   ADMIN_EMAIL: required("ADMIN_EMAIL"),
   ADMIN_PASSWORD: required("ADMIN_PASSWORD"),
+
+  // JWT
+  JWT_SECRET: required("JWT_SECRET"),
+  JWT_EXPIRES_IN: required("JWT_EXPIRES_IN"),
+  JWT_REFRESH_SECRET: required("JWT_REFRESH_SECRET"),
+  JWT_REFRESH_EXPIRES_IN: required("JWT_REFRESH_EXPIRES_IN"),
 };
 
 export default env;
