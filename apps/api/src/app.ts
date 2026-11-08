@@ -1,4 +1,5 @@
 import cors from "cors";
+import helmet from "helmet";
 import express, { Application, Request, Response } from "express";
 
 import env from "./config/env.js";
@@ -13,6 +14,7 @@ import { notFound } from "./middleware/notFound.middleware.js";
 
 const app: Application = express();
 
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

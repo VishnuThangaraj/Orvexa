@@ -1,6 +1,9 @@
 import app from "./app.js";
 import env from "./config/env.js";
-import { connectDatabase, disconnectDatabase } from "./infrastructure/database/prisma.js";
+import {
+  connectDatabase,
+  disconnectDatabase,
+} from "./infrastructure/database/prisma.js";
 
 const bootstrap = async () => {
   const PORT = env.PORT;
@@ -11,7 +14,7 @@ const bootstrap = async () => {
 
     // App Server
     const server = app.listen(PORT, () => {
-      console.log(`>>> Orvexa Server Running on PORT : ${PORT}`);
+      console.log(`Orvexa Server Running on PORT : ${PORT}`);
     });
 
     // Graceful Shutdown
