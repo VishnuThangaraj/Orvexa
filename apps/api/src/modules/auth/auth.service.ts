@@ -35,7 +35,9 @@ class AuthService {
       throw new AppError("Username or email is required", 400);
     }
 
-    const user = await this.authRepository.findByIdentifier(identifier);
+    const user = data.username
+      ? await this.authRepository.findByUsername(data.username)
+      : await this.authRepository.findByIdentifier(data.email!);
 
     if (!user) {
       await verifyPassword(env.DUMMY_PASSWORD_HASH, data.password);

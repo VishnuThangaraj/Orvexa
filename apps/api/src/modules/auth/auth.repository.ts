@@ -42,6 +42,10 @@ class AuthRepository {
   // find user by username (or internal mail alias)
   async findByUsername(username: string) {
     const cleanUsername = username.trim().toLowerCase();
+    // Disallow external domains - only raw username or @orvexa.com internal mail
+    if (cleanUsername.includes("@") && !cleanUsername.endsWith("@orvexa.com")) {
+      return null;
+    }
     const usernameCandidate = cleanUsername.replace(/@orvexa\.com$/i, "");
     return prisma.user.findFirst({
       where: {
