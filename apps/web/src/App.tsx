@@ -5,9 +5,15 @@ import Loader from "@/common/components/Loader";
 import PublicRoute from "@/common/components/PublicRoute";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import ProtectedRoute from "@/common/components/ProtectedRoute";
+import AppLayout from "@/common/components/layout/AppLayout";
 
 const AuthPage = lazy(() => import("@/modules/auth/pages/AuthPage"));
 const Landing = lazy(() => import("@/modules/landing/pages/Landing"));
+
+const Home = lazy(() => import("@/modules/home/Pages/Home"));
+const Mail = lazy(() => import("@/modules/mail/pages/Mail"));
+
+const Profile = lazy(() => import("@/modules/profile/pages/Profile"));
 
 const App = () => {
   const { hasHydrated } = useAuthStore();
@@ -29,7 +35,11 @@ const App = () => {
 
         {/* Protected routes (redirects to /authenticate if not authenticated) */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/home" element={<Loader />} />
+          <Route element={<AppLayout />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/mail" element={<Mail />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
         </Route>
 
         {/* Catch-all fallback */}
