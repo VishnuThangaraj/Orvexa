@@ -6,3 +6,7 @@ export type { SidebarProps } from "./Sidebar";
 
 export { default as AppLayout } from "./AppLayout";
 export type { AppLayoutProps } from "./AppLayout";
+
+export { default as ThemeToggle } from "../ThemeToggle";
+export type { ThemeToggleProps } from "../ThemeToggle";
+

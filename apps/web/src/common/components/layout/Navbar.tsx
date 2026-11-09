@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, LogOut, User as UserIcon } from "lucide-react";
 import { OrvexaLogo } from "@/common/components/OrvexaLogo";
+import { ThemeToggle } from "@/common/components/ThemeToggle";
 import { useAuth, useLogout } from "@/modules/auth/hooks/use-auth.hooks";
 
 export interface NavbarProps {
@@ -52,8 +53,10 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
         </div>
       </div>
 
-      {/* Right side: User profile & Logout */}
-      <div className="flex items-center gap-3">
+      {/* Right side: Theme toggle, User profile & Logout */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <ThemeToggle />
+
         <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
           <div className="w-7 h-7 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xs font-semibold uppercase shrink-0">
             {displayName.charAt(0) || <UserIcon size={14} />}
