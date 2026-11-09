@@ -1,0 +1,19 @@
+:root {
+  --header-nav-color: #5f6368;
+  --header-nav-hover: #1a73e8;
+}
+
+.dark {
+  --header-nav-color: #9aa0a6;
+  --header-nav-hover: #8ab4f8;
+}
+
+.header-nav-link {
+  color: var(--header-nav-color);
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+
+.header-nav-link:hover {
+  color: var(--header-nav-hover);
+}

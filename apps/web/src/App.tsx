@@ -2,12 +2,12 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Loader from "@/common/components/Loader";
-import ProtectedRoute from "@/common/components/ProtectedRoute";
 import PublicRoute from "@/common/components/PublicRoute";
-import { useAuthStore } from "./modules/auth/store/auth.store";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
+import ProtectedRoute from "@/common/components/ProtectedRoute";
 
-const Landing = lazy(() => import("@/modules/landing/pages/Landing"));
 const AuthPage = lazy(() => import("@/modules/auth/pages/AuthPage"));
+const Landing = lazy(() => import("@/modules/landing/pages/Landing"));
 
 const App = () => {
   const { hasHydrated } = useAuthStore();
@@ -22,7 +22,7 @@ const App = () => {
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
 
-        {/* Guest-only routes (redirects to /home if authenticated) */}
+        {/* Guest-only routes (redirects to / if authenticated) */}
         <Route element={<PublicRoute />}>
           <Route path="/authenticate" element={<AuthPage />} />
         </Route>
