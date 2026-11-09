@@ -4,6 +4,7 @@ import { authenticate } from "../../middleware/auth.middleware.js";
 import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { authRateLimiter } from "../../middleware/rateLimiter.middleware.js";
+import { attachCookieToken } from "../../common/utils/cookies.js";
 import {
   loginSchema,
   refreshTokenSchema,
@@ -19,14 +20,6 @@ const authController = new AuthController();
 
 // Rate limit all auth endpoints against IP-level spraying and abuse
 router.use(authRateLimiter);
-
-// Bridge HttpOnly cookie to body for refresh and logout if not explicitly passed in body
-const attachCookieToken = (req: any, _res: any, next: any) => {
-  if (!req.body?.refreshToken && req.cookies?.refreshToken) {
-    req.body = { ...req.body, refreshToken: req.cookies.refreshToken };
-  }
-  next();
-};
 
 // user login
 router.post("/", validate(loginSchema), authController.userLogin);

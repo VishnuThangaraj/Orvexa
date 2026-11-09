@@ -14,6 +14,7 @@ const required = (name: string): string => {
 
 const env = {
   PORT: Number(process.env.PORT) || 6970,
+  NODE_ENV: process.env.NODE_ENV || "production",
 
   PROJECT_VERSION: required("PROJECT_VERSION"),
 

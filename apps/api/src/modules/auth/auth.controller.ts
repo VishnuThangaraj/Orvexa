@@ -3,16 +3,15 @@ import type { Request, Response, NextFunction } from "express";
 import AuthService from "./auth.service.js";
 import AppError from "../../common/errors/AppError.js";
 import { sendResponse } from "../../common/utils/response.js";
+import {
+  REFRESH_COOKIE_NAME,
+  getCookieOptions,
+  setRefreshCookie,
+  clearRefreshCookie,
+  getRefreshCookie,
+} from "../../common/utils/cookies.js";
 
-const REFRESH_COOKIE_NAME = "refreshToken";
-
-export const getCookieOptions = () => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
-  path: "/api/auth",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-});
+export { REFRESH_COOKIE_NAME, getCookieOptions };
 
 class AuthController {
   private authService: AuthService;
@@ -44,7 +43,7 @@ class AuthController {
 
       // Set HttpOnly cookie for web clients
       if (result.refreshToken) {
-        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getCookieOptions());
+        setRefreshCookie(res, result.refreshToken);
       }
 
       return sendResponse(res, 200, "Login Successful", result);
@@ -57,7 +56,7 @@ class AuthController {
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const refreshToken =
-        req.body?.refreshToken || req.cookies?.[REFRESH_COOKIE_NAME];
+        req.body?.refreshToken || getRefreshCookie(req);
 
       if (!refreshToken) {
         throw new AppError("Refresh token is required", 400);
@@ -67,7 +66,7 @@ class AuthController {
 
       // Rotate HttpOnly cookie
       if (result.refreshToken) {
-        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getCookieOptions());
+        setRefreshCookie(res, result.refreshToken);
       }
 
       return sendResponse(res, 200, "Token Refreshed Successfully", result);
@@ -80,14 +79,14 @@ class AuthController {
   logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const refreshToken =
-        req.body?.refreshToken || req.cookies?.[REFRESH_COOKIE_NAME];
+        req.body?.refreshToken || getRefreshCookie(req);
 
       if (refreshToken) {
         await this.authService.logout(refreshToken);
       }
 
       // Clear HttpOnly cookie
-      res.clearCookie(REFRESH_COOKIE_NAME, getCookieOptions());
+      clearRefreshCookie(res);
 
       return sendResponse(res, 200, "Logged out successfully");
     } catch (error) {
@@ -193,7 +192,7 @@ class AuthController {
         newPassword,
       });
 
-      res.clearCookie(REFRESH_COOKIE_NAME, getCookieOptions());
+      clearRefreshCookie(res);
 
       return sendResponse(res, 200, result.message);
     } catch (error) {
@@ -214,7 +213,7 @@ class AuthController {
         { currentPassword, newPassword },
       );
 
-      res.clearCookie(REFRESH_COOKIE_NAME, getCookieOptions());
+      clearRefreshCookie(res);
 
       return sendResponse(res, 200, result.message);
     } catch (error) {
