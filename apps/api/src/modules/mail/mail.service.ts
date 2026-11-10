@@ -1,5 +1,6 @@
 import AppError from "../../common/errors/AppError.js";
 import MailRepository from "./mail.repository.js";
+import { uploadBufferToCloudinary } from "../../infrastructure/cloudinary/cloudinary.service.js";
 import type {
   AttachmentInput,
   CloudinaryResourceType,
@@ -236,6 +237,99 @@ class MailService {
     });
 
     return createdMail;
+  }
+
+  // Upload one or multiple files to Cloudinary and register them as FileAsset records
+  async uploadAttachments(userId: bigint, files: Express.Multer.File[]) {
+    if (!files || files.length === 0) {
+      throw new AppError("No files provided for upload", 400);
+    }
+
+    const sender = await this.mailRepository.findUserById(userId);
+    if (!sender || !sender.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const uploadedAssets = await Promise.all(
+      files.map(async (file) => {
+        const mimeType = file.mimetype || "application/octet-stream";
+        const resourceType = this.inferResourceType(mimeType);
+        const cloudinaryResType =
+          resourceType === "IMAGE"
+            ? "image"
+            : resourceType === "VIDEO"
+              ? "video"
+              : "raw";
+
+        const uploadResult = await uploadBufferToCloudinary(file.buffer, {
+          folder: "orvexa/mail/attachments",
+          resource_type: cloudinaryResType,
+          filename_override: file.originalname,
+        });
+
+        const deliveryType =
+          uploadResult.type?.toUpperCase() === "UPLOAD"
+            ? "UPLOAD"
+            : "AUTHENTICATED";
+
+        const asset = await this.mailRepository.createAsset({
+          publicId: uploadResult.public_id,
+          cloudinaryAssetId: uploadResult.asset_id ?? null,
+          resourceType,
+          deliveryType,
+          version: uploadResult.version ?? null,
+          format: uploadResult.format ?? null,
+          originalFilename: file.originalname || "attachment",
+          mimeType,
+          bytes: BigInt(uploadResult.bytes || file.size),
+          secureUrl: uploadResult.secure_url ?? null,
+          width: uploadResult.width ?? null,
+          height: uploadResult.height ?? null,
+          uploadedBy: userId,
+        });
+
+        return {
+          assetId: asset.id.toString(),
+          publicId: asset.publicId,
+          originalFilename: asset.originalFilename,
+          mimeType: asset.mimeType,
+          bytes: asset.bytes.toString(),
+          secureUrl: asset.secureUrl,
+          resourceType: asset.resourceType,
+          format: asset.format,
+        };
+      }),
+    );
+
+    return {
+      assetId: uploadedAssets[0]?.assetId,
+      assets: uploadedAssets,
+    };
+  }
+
+  // Delete an attachment before sending
+  async deleteAttachment(userId: bigint, assetId: bigint) {
+    const asset = await this.mailRepository.findAssetById(assetId);
+    if (!asset) {
+      throw new AppError("Attachment asset not found", 404);
+    }
+
+    if (asset.uploadedBy !== userId) {
+      throw new AppError("Unauthorized to delete this attachment", 403);
+    }
+
+    const result = await this.mailRepository.deleteUnlinkedAsset(
+      assetId,
+      userId,
+    );
+    if (result.count === 0) {
+      throw new AppError(
+        "Cannot delete an attachment already linked to a sent message",
+        400,
+      );
+    }
+
+    return true;
   }
 }
 

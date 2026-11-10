@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sendMailSchema } from "../../src/modules/mail/mail.validation.js";
+import {
+  attachmentIdParamSchema,
+  sendMailSchema,
+} from "../../src/modules/mail/mail.validation.js";
 
 test("sendMailSchema validates recipients correctly", () => {
   // Single string recipient normalized to array
@@ -109,3 +112,15 @@ test("sendMailSchema validates threading and draft options", () => {
   });
   assert.equal(invalidThread.success, false);
 });
+
+test("attachmentIdParamSchema validates numeric id parameter", () => {
+  const valid = attachmentIdParamSchema.safeParse({ id: "12345" });
+  assert.equal(valid.success, true);
+  if (valid.success) {
+    assert.equal(valid.data.id, "12345");
+  }
+
+  const invalid = attachmentIdParamSchema.safeParse({ id: "abc" });
+  assert.equal(invalid.success, false);
+});
+

@@ -85,3 +85,20 @@ export interface CreateAssetData {
   height?: number | null;
   uploadedBy?: bigint | null;
 }
+
+export interface UploadedAssetDTO {
+  assetId: string;
+  publicId: string;
+  originalFilename: string;
+  mimeType: string;
+  bytes: string;
+  secureUrl: string | null;
+  resourceType: CloudinaryResourceType;
+  format: string | null;
+}
+
+export interface UploadAttachmentResponse {
+  assetId?: string;
+  assets: UploadedAssetDTO[];
+}
+

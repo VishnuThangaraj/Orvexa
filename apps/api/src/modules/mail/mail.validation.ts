@@ -70,4 +70,8 @@ export const sendMailSchema = z.object({
     .optional(),
 });
 
+export const attachmentIdParamSchema = z.object({
+  id: z.string().regex(/^\d+$/, "Invalid attachment ID format"),
+});
+
 export type SendMailInput = z.infer<typeof sendMailSchema>;

@@ -126,6 +126,18 @@ class MailRepository {
     });
   }
 
+  // Delete an unlinked file asset (only if not attached to an existing sent message)
+  async deleteUnlinkedAsset(id: bigint, userId: bigint) {
+    return prisma.fileAsset.deleteMany({
+      where: {
+        id,
+        uploadedBy: userId,
+        mailAttachments: { none: {} },
+      },
+    });
+  }
+
+
   // Create mail message with recipients, states, attachments in a transaction
   async createMail(data: CreateMailRecordData) {
     return prisma.$transaction(async (tx) => {
