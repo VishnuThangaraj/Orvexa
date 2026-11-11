@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   attachmentIdParamSchema,
+  fetchInboxQuerySchema,
   sendMailSchema,
 } from "../../src/modules/mail/mail.validation.js";
 
@@ -122,5 +123,42 @@ test("attachmentIdParamSchema validates numeric id parameter", () => {
 
   const invalid = attachmentIdParamSchema.safeParse({ id: "abc" });
   assert.equal(invalid.success, false);
+});
+
+test("fetchInboxQuerySchema validates pagination and filters correctly", () => {
+  // Default values
+  const defaults = fetchInboxQuerySchema.safeParse({});
+  assert.equal(defaults.success, true);
+  if (defaults.success) {
+    assert.equal(defaults.data.page, 1);
+    assert.equal(defaults.data.limit, 20);
+    assert.equal(defaults.data.search, undefined);
+    assert.equal(defaults.data.isRead, undefined);
+    assert.equal(defaults.data.isStarred, undefined);
+  }
+
+  // String queries transformed to numbers/booleans
+  const populated = fetchInboxQuerySchema.safeParse({
+    page: "3",
+    limit: "50",
+    search: "urgent proposal",
+    isRead: "true",
+    isStarred: "false",
+  });
+  assert.equal(populated.success, true);
+  if (populated.success) {
+    assert.equal(populated.data.page, 3);
+    assert.equal(populated.data.limit, 50);
+    assert.equal(populated.data.search, "urgent proposal");
+    assert.equal(populated.data.isRead, true);
+    assert.equal(populated.data.isStarred, false);
+  }
+
+  // Invalid page/limit
+  const invalidPage = fetchInboxQuerySchema.safeParse({ page: "not-a-number" });
+  assert.equal(invalidPage.success, false);
+
+  const invalidLimit = fetchInboxQuerySchema.safeParse({ limit: "-5" });
+  assert.equal(invalidLimit.success, false);
 });
 

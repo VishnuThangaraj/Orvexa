@@ -58,6 +58,29 @@ test("validate middleware: validates custom source like params", (t, done) => {
   });
 });
 
+test("validate middleware: handles query with getter-only property on incoming message", (t, done) => {
+  const schema = z.object({
+    page: z.string().transform(Number),
+  });
+
+  const middleware = validate(schema, "query");
+  const proto = {};
+  Object.defineProperty(proto, "query", {
+    get() {
+      return { page: "5" };
+    },
+    configurable: true,
+  });
+  const req = Object.create(proto) as Request;
+  const res = {} as Response;
+
+  middleware(req, res, (err) => {
+    assert.equal(err, undefined);
+    assert.equal((req.query as any).page, 5);
+    done();
+  });
+});
+
 test("authorize middleware: blocks unauthenticated requests with 401", (t, done) => {
   const middleware = authorize("ADMIN");
   const req = {} as Request;

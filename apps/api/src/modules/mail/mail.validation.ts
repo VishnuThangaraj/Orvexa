@@ -74,4 +74,27 @@ export const attachmentIdParamSchema = z.object({
   id: z.string().regex(/^\d+$/, "Invalid attachment ID format"),
 });
 
+export const fetchInboxQuerySchema = z.object({
+  page: z
+    .union([z.string().regex(/^\d+$/, "Page must be a positive integer"), z.number().int().positive()])
+    .transform((val) => Number(val))
+    .optional()
+    .default(1),
+  limit: z
+    .union([z.string().regex(/^\d+$/, "Limit must be a positive integer"), z.number().int().positive()])
+    .transform((val) => Number(val))
+    .optional()
+    .default(20),
+  search: z.string().trim().optional(),
+  isRead: z
+    .union([z.boolean(), z.enum(["true", "false"])])
+    .transform((val) => (val === true || val === "true" ? true : val === false || val === "false" ? false : undefined))
+    .optional(),
+  isStarred: z
+    .union([z.boolean(), z.enum(["true", "false"])])
+    .transform((val) => (val === true || val === "true" ? true : val === false || val === "false" ? false : undefined))
+    .optional(),
+});
+
 export type SendMailInput = z.infer<typeof sendMailSchema>;
+export type FetchInboxQuery = z.infer<typeof fetchInboxQuerySchema>;

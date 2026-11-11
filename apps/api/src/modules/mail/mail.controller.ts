@@ -63,8 +63,7 @@ class MailController {
       }
 
       const files =
-        (req.files as Express.Multer.File[]) ||
-        (req.file ? [req.file] : []);
+        (req.files as Express.Multer.File[]) || (req.file ? [req.file] : []);
 
       if (!files.length) {
         throw new AppError(
@@ -106,6 +105,38 @@ class MailController {
       await this.mailService.deleteAttachment(BigInt(userId), assetId);
 
       return sendResponse(res, 200, "Attachment removed successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Fetch inbox mail endpoint handler
+  fetchInbox = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const options = {
+        page: req.query.page !== undefined ? Number(req.query.page) : undefined,
+        limit:
+          req.query.limit !== undefined ? Number(req.query.limit) : undefined,
+        search: typeof req.query.search === "string" ? req.query.search : undefined,
+        isRead:
+          typeof req.query.isRead === "boolean" ? req.query.isRead : undefined,
+        isStarred:
+          typeof req.query.isStarred === "boolean"
+            ? req.query.isStarred
+            : undefined,
+      };
+
+      const result = await this.mailService.fetchInbox(
+        BigInt(userId),
+        options,
+      );
+
+      return sendResponse(res, 200, "Inbox fetched successfully", result);
     } catch (error) {
       next(error);
     }

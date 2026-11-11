@@ -2,6 +2,7 @@ import { prisma } from "../../config/prisma.js";
 import type {
   CreateAssetData,
   CreateMailRecordData,
+  FetchInboxOptions,
 } from "./mail.types.js";
 
 class MailRepository {
@@ -17,6 +18,117 @@ class MailRepository {
         isActive: true,
       },
     });
+  }
+
+  // Fetch inbox messages for a user with userState filtering (excluding trashed/archived), sender/recipients/attachment relations, and pagination
+  async fetchInbox(userId: bigint, options: FetchInboxOptions = {}) {
+    const page = Math.max(options.page ?? 1, 1);
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const userStateFilter: {
+      userId: bigint;
+      isTrashed: boolean;
+      isArchived: boolean;
+      isRead?: boolean;
+      isStarred?: boolean;
+    } = {
+      userId,
+      isTrashed: false,
+      isArchived: false,
+    };
+
+    if (options.isRead !== undefined) {
+      userStateFilter.isRead = options.isRead;
+    }
+
+    if (options.isStarred !== undefined) {
+      userStateFilter.isStarred = options.isStarred;
+    }
+
+    const where: any = {
+      recipients: {
+        some: { userId },
+      },
+      userStates: {
+        some: userStateFilter,
+      },
+    };
+
+    if (options.search && options.search.trim().length > 0) {
+      const searchTerm = options.search.trim();
+      where.OR = [
+        { subject: { contains: searchTerm, mode: "insensitive" } },
+        { body: { contains: searchTerm, mode: "insensitive" } },
+        { sender: { fullName: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { email: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { username: { contains: searchTerm, mode: "insensitive" } } },
+      ];
+    }
+
+    const [total, messages] = await prisma.$transaction([
+      prisma.mailMessage.count({ where }),
+      prisma.mailMessage.findMany({
+        where,
+        include: {
+          sender: {
+            select: {
+              id: true,
+              fullName: true,
+              username: true,
+              email: true,
+            },
+          },
+          recipients: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  username: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          userStates: {
+            where: { userId },
+            select: {
+              isRead: true,
+              readAt: true,
+              isStarred: true,
+              isArchived: true,
+              isTrashed: true,
+            },
+          },
+          attachments: {
+            include: {
+              asset: {
+                select: {
+                  id: true,
+                  originalFilename: true,
+                  mimeType: true,
+                  bytes: true,
+                  resourceType: true,
+                  format: true,
+                  secureUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { sentAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      messages,
+    };
   }
 
   // Find users by usernames, emails, or numeric IDs
@@ -136,7 +248,6 @@ class MailRepository {
       },
     });
   }
-
 
   // Create mail message with recipients, states, attachments in a transaction
   async createMail(data: CreateMailRecordData) {

@@ -4,6 +4,9 @@ import { uploadBufferToCloudinary } from "../../infrastructure/cloudinary/cloudi
 import type {
   AttachmentInput,
   CloudinaryResourceType,
+  FetchInboxOptions,
+  FetchInboxResult,
+  FormattedInboxMessage,
   MailRecipientType,
   RawAttachmentMetadata,
   SendMailServiceParams,
@@ -53,9 +56,7 @@ class MailService {
     // 3. Resolve all recipient identifiers to actual database Users
     const allIdentifiers = Array.from(
       new Set(
-        [...to, ...cc, ...bcc]
-          .map((i) => i.trim())
-          .filter((i) => i.length > 0),
+        [...to, ...cc, ...bcc].map((i) => i.trim()).filter((i) => i.length > 0),
       ),
     );
 
@@ -330,6 +331,90 @@ class MailService {
     }
 
     return true;
+  }
+
+  // fetch user inbox mail with privacy sanitization and pagination
+  async fetchInbox(
+    userId: bigint,
+    options: FetchInboxOptions = {},
+  ): Promise<FetchInboxResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const { total, page, limit, messages } =
+      await this.mailRepository.fetchInbox(userId, options);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const formattedMessages: FormattedInboxMessage[] = messages.map((msg) => {
+      const userState = msg.userStates[0] ?? null;
+
+      // Privacy: Only show BCC recipients if current user is the sender or that specific BCC recipient
+      const visibleRecipients = msg.recipients
+        .filter((r) => {
+          if (r.recipientType !== "BCC") return true;
+          return msg.senderId === userId || r.user.id === userId;
+        })
+        .map((r) => ({
+          recipientType: r.recipientType,
+          user: {
+            id: r.user.id.toString(),
+            fullName: r.user.fullName,
+            username: r.user.username,
+            email: r.user.email,
+          },
+        }));
+
+      const cleanBody = msg.body.replace(/\s+/g, " ").trim();
+      const snippet =
+        cleanBody.length > 150 ? `${cleanBody.slice(0, 150)}...` : cleanBody;
+
+      return {
+        id: msg.id.toString(),
+        threadId: msg.threadId ? msg.threadId.toString() : null,
+        parentMessageId: msg.parentMessageId
+          ? msg.parentMessageId.toString()
+          : null,
+        subject: msg.subject,
+        body: msg.body,
+        snippet,
+        sentAt: msg.sentAt,
+        sender: {
+          id: msg.sender.id.toString(),
+          fullName: msg.sender.fullName,
+          username: msg.sender.username,
+          email: msg.sender.email,
+        },
+        recipients: visibleRecipients,
+        isRead: userState?.isRead ?? false,
+        readAt: userState?.readAt ?? null,
+        isStarred: userState?.isStarred ?? false,
+        hasAttachments: msg.attachments.length > 0,
+        attachments: msg.attachments.map((a) => ({
+          id: a.asset.id.toString(),
+          originalFilename: a.asset.originalFilename,
+          mimeType: a.asset.mimeType,
+          bytes: a.asset.bytes.toString(),
+          resourceType: a.asset.resourceType,
+          format: a.asset.format,
+          secureUrl: a.asset.secureUrl,
+        })),
+      };
+    });
+
+    return {
+      messages: formattedMessages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 }
 

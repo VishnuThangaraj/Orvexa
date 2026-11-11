@@ -5,6 +5,7 @@ import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import {
   attachmentIdParamSchema,
+  fetchInboxQuerySchema,
   sendMailSchema,
 } from "./mail.validation.js";
 import { mailAttachmentUpload } from "../../middleware/upload.middleware.js";
@@ -46,6 +47,15 @@ router.delete(
   authorize("ADMIN", "MEMBER"),
   validate(attachmentIdParamSchema, "params"),
   mailController.deleteAttachment,
+);
+
+// get inbox mail
+router.get(
+  "/inbox",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(fetchInboxQuerySchema, "query"),
+  mailController.fetchInbox,
 );
 
 export default router;
