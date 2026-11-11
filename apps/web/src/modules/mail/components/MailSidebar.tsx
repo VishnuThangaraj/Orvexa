@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { MAIL_MENU, type MailMenuItem } from "../contants/mail.constants";
 import { ComposePencilIcon } from "./MailIcons";
@@ -14,14 +14,12 @@ export interface MailSidebarProps {
 export const MailSidebar: React.FC<MailSidebarProps> = ({
   className = "",
   onCompose,
-  activeItem: controlledActive,
+  activeItem = "inbox",
   onSelectItem,
 }) => {
-  const [internalActive, setInternalActive] = useState("inbox");
-  const activeId = controlledActive ?? internalActive;
+  const activeId = activeItem;
 
   const handleSelect = (item: MailMenuItem) => {
-    setInternalActive(item.id);
     onSelectItem?.(item.id);
   };
 

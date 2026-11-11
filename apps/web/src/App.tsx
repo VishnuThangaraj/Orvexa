@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import Loader from "@/common/components/Loader";
+import Loader from "@/common/components/ui/Loader/Loader";
 import PublicRoute from "@/common/components/PublicRoute";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import ProtectedRoute from "@/common/components/ProtectedRoute";
