@@ -1,13 +1,13 @@
 import React from "react";
 import MailSidebar from "../components/MailSidebar";
-import MailInbox from "../components/MailInbox";
+import MailInbox from "../components/mail-category/MailInbox";
 import useMail from "../hooks/use-mail";
 import MailPagination from "../components/MailPagination";
-import MailStarred from "../components/MailStarred";
-import MailSnoozed from "../components/MailSnoozed";
-import MailSent from "../components/MailSent";
-import MailDrafts from "../components/MailDrafts";
-import MailTrash from "../components/MailTrash";
+import MailStarred from "../components/mail-category/MailStarred";
+import MailSnoozed from "../components/mail-category/MailSnoozed";
+import MailSent from "../components/mail-category/MailSent";
+import MailDrafts from "../components/mail-category/MailDrafts";
+import MailTrash from "../components/mail-category/MailTrash";
 
 const Mail: React.FC = () => {
   const { activeItem, handleSelectItem } = useMail();
