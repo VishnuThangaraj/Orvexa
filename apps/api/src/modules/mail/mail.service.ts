@@ -7,6 +7,7 @@ import type {
   FetchInboxOptions,
   FetchInboxResult,
   FormattedInboxMessage,
+  MailCountsResult,
   MailRecipientType,
   RawAttachmentMetadata,
   SendMailServiceParams,
@@ -333,31 +334,21 @@ class MailService {
     return true;
   }
 
-  // fetch user inbox mail with privacy sanitization and pagination
-  async fetchInbox(
+  // Helper to format MailMessage records into standard FormattedInboxMessage
+  private formatMessages(
     userId: bigint,
-    options: FetchInboxOptions = {},
-  ): Promise<FetchInboxResult> {
-    const user = await this.mailRepository.findUserById(userId);
-    if (!user || !user.isActive) {
-      throw new AppError("User not found or inactive", 404);
-    }
-
-    const { total, page, limit, messages } =
-      await this.mailRepository.fetchInbox(userId, options);
-
-    const totalPages = Math.ceil(total / limit) || 1;
-
-    const formattedMessages: FormattedInboxMessage[] = messages.map((msg) => {
-      const userState = msg.userStates[0] ?? null;
+    messages: any[],
+  ): FormattedInboxMessage[] {
+    return messages.map((msg) => {
+      const userState = msg.userStates?.[0] ?? null;
 
       // Privacy: Only show BCC recipients if current user is the sender or that specific BCC recipient
-      const visibleRecipients = msg.recipients
-        .filter((r) => {
+      const visibleRecipients = (msg.recipients || [])
+        .filter((r: any) => {
           if (r.recipientType !== "BCC") return true;
           return msg.senderId === userId || r.user.id === userId;
         })
-        .map((r) => ({
+        .map((r: any) => ({
           recipientType: r.recipientType,
           user: {
             id: r.user.id.toString(),
@@ -367,7 +358,7 @@ class MailService {
           },
         }));
 
-      const cleanBody = msg.body.replace(/\s+/g, " ").trim();
+      const cleanBody = (msg.body || "").replace(/\s+/g, " ").trim();
       const snippet =
         cleanBody.length > 150 ? `${cleanBody.slice(0, 150)}...` : cleanBody;
 
@@ -391,8 +382,8 @@ class MailService {
         isRead: userState?.isRead ?? false,
         readAt: userState?.readAt ?? null,
         isStarred: userState?.isStarred ?? false,
-        hasAttachments: msg.attachments.length > 0,
-        attachments: msg.attachments.map((a) => ({
+        hasAttachments: (msg.attachments || []).length > 0,
+        attachments: (msg.attachments || []).map((a: any) => ({
           id: a.asset.id.toString(),
           originalFilename: a.asset.originalFilename,
           mimeType: a.asset.mimeType,
@@ -403,6 +394,74 @@ class MailService {
         })),
       };
     });
+  }
+
+  // Helper to format MailDraft records into standard FormattedInboxMessage
+  private formatDrafts(drafts: any[]): FormattedInboxMessage[] {
+    return drafts.map((draft) => {
+      const cleanBody = (draft.body || "").replace(/\s+/g, " ").trim();
+      const snippet =
+        cleanBody.length > 150 ? `${cleanBody.slice(0, 150)}...` : cleanBody;
+
+      const recipients = (draft.recipients || []).map((r: any) => ({
+        recipientType: r.recipientType,
+        user: {
+          id: r.user.id.toString(),
+          fullName: r.user.fullName,
+          username: r.user.username,
+          email: r.user.email,
+        },
+      }));
+
+      return {
+        id: draft.id.toString(),
+        threadId: null,
+        parentMessageId: draft.parentMessageId
+          ? draft.parentMessageId.toString()
+          : null,
+        subject: draft.subject || "(no subject)",
+        body: draft.body || "",
+        snippet,
+        sentAt: draft.updatedAt,
+        sender: {
+          id: draft.user.id.toString(),
+          fullName: draft.user.fullName,
+          username: draft.user.username,
+          email: draft.user.email,
+        },
+        recipients,
+        isRead: true,
+        readAt: draft.updatedAt,
+        isStarred: false,
+        hasAttachments: (draft.attachments || []).length > 0,
+        attachments: (draft.attachments || []).map((a: any) => ({
+          id: a.asset.id.toString(),
+          originalFilename: a.asset.originalFilename,
+          mimeType: a.asset.mimeType,
+          bytes: a.asset.bytes.toString(),
+          resourceType: a.asset.resourceType,
+          format: a.asset.format,
+          secureUrl: a.asset.secureUrl,
+        })),
+      };
+    });
+  }
+
+  // Fetch user inbox mail
+  async fetchInbox(
+    userId: bigint,
+    options: FetchInboxOptions = {},
+  ): Promise<FetchInboxResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const { total, page, limit, messages } =
+      await this.mailRepository.fetchInbox(userId, options);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const formattedMessages = this.formatMessages(userId, messages);
 
     return {
       messages: formattedMessages,
@@ -415,6 +474,161 @@ class MailService {
         hasPrevPage: page > 1,
       },
     };
+  }
+
+  // Fetch starred mail
+  async fetchStarred(
+    userId: bigint,
+    options: FetchInboxOptions = {},
+  ): Promise<FetchInboxResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const { total, page, limit, messages } =
+      await this.mailRepository.fetchStarred(userId, options);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const formattedMessages = this.formatMessages(userId, messages);
+
+    return {
+      messages: formattedMessages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  // Fetch sent mail
+  async fetchSent(
+    userId: bigint,
+    options: FetchInboxOptions = {},
+  ): Promise<FetchInboxResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const { total, page, limit, messages } =
+      await this.mailRepository.fetchSent(userId, options);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const formattedMessages = this.formatMessages(userId, messages);
+
+    return {
+      messages: formattedMessages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  // Fetch drafts
+  async fetchDrafts(
+    userId: bigint,
+    options: FetchInboxOptions = {},
+  ): Promise<FetchInboxResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const { total, page, limit, drafts } =
+      await this.mailRepository.fetchDrafts(userId, options);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const formattedMessages = this.formatDrafts(drafts);
+
+    return {
+      messages: formattedMessages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  // Fetch snoozed mail
+  async fetchSnoozed(
+    userId: bigint,
+    options: FetchInboxOptions = {},
+  ): Promise<FetchInboxResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const { total, page, limit, messages } =
+      await this.mailRepository.fetchSnoozed(userId, options);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const formattedMessages = this.formatMessages(userId, messages);
+
+    return {
+      messages: formattedMessages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  // Fetch trash mail
+  async fetchTrash(
+    userId: bigint,
+    options: FetchInboxOptions = {},
+  ): Promise<FetchInboxResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const { total, page, limit, messages } =
+      await this.mailRepository.fetchTrash(userId, options);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const formattedMessages = this.formatMessages(userId, messages);
+
+    return {
+      messages: formattedMessages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  // Fetch category counts for sidebar badges
+  async fetchCounts(userId: bigint): Promise<MailCountsResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    return this.mailRepository.fetchCounts(userId);
   }
 }
 

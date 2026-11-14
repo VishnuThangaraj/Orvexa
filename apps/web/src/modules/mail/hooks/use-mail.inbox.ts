@@ -7,6 +7,17 @@ export const mailKeys = {
   all: ["mail"] as const,
   inbox: (options?: FetchInboxOptions) =>
     [...mailKeys.all, "inbox", options] as const,
+  starred: (options?: FetchInboxOptions) =>
+    [...mailKeys.all, "starred", options] as const,
+  sent: (options?: FetchInboxOptions) =>
+    [...mailKeys.all, "sent", options] as const,
+  drafts: (options?: FetchInboxOptions) =>
+    [...mailKeys.all, "drafts", options] as const,
+  snoozed: (options?: FetchInboxOptions) =>
+    [...mailKeys.all, "snoozed", options] as const,
+  trash: (options?: FetchInboxOptions) =>
+    [...mailKeys.all, "trash", options] as const,
+  counts: () => [...mailKeys.all, "counts"] as const,
 };
 
 export const useInbox = (options?: FetchInboxOptions) => {

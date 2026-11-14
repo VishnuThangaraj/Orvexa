@@ -166,3 +166,15 @@ export interface FetchInboxResult {
   pagination: InboxPagination;
 }
 
+export type FetchMailOptions = FetchInboxOptions;
+export type FetchMailResult = FetchInboxResult;
+
+export interface MailCountsResult {
+  inboxUnread: number;
+  drafts: number;
+  trash: number;
+  starred: number;
+  snoozed: number;
+  sent: number;
+}
+

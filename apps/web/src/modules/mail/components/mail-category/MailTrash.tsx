@@ -1,9 +1,40 @@
-import React from 'react'
+import React from "react";
+import useTrash from "../../hooks/use-mail.trash";
+import { LoaderInPage } from "@/common/components/ui/Loader/Loader";
+import MailLayout from "../MailLayout";
+import { useMailStore } from "../../store/mail.store";
 
-const MailTrash:React.FC = () => {
+const MailTrash: React.FC = () => {
+  const { page, limit, selectedIds, toggleSelect } = useMailStore();
+  const { data, isLoading, isError, error } = useTrash({ page, limit });
+
   return (
-    <div>MailTrash</div>
-  )
-}
+    <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="relative py-2 overflow-y-auto flex-1 min-h-50">
+        {isLoading && <LoaderInPage />}
 
-export default MailTrash
+        {isError && (
+          <div className="flex h-full w-full text-center align-middle justify-center items-center pb-[10%] animate-pulse">
+            Error loading trash:{" "}
+            {error instanceof Error ? error.message : "Something went wrong"}
+          </div>
+        )}
+        {!isLoading && !isError && data?.messages.length === 0 && (
+          <div className="flex h-full w-full text-center align-middle justify-center items-center pb-[10%] animate-pulse">
+            No messages in trash
+          </div>
+        )}
+        {data?.messages.map((mail) => (
+          <MailLayout
+            key={mail.id}
+            mail={mail}
+            selected={selectedIds.includes(mail.id)}
+            onToggleSelect={toggleSelect}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default MailTrash;

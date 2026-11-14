@@ -1,9 +1,40 @@
-import React from 'react'
+import React from "react";
+import useDrafts from "../../hooks/use-mail.drafts";
+import { LoaderInPage } from "@/common/components/ui/Loader/Loader";
+import MailLayout from "../MailLayout";
+import { useMailStore } from "../../store/mail.store";
 
-const MailDrafts:React.FC = () => {
+const MailDrafts: React.FC = () => {
+  const { page, limit, selectedIds, toggleSelect } = useMailStore();
+  const { data, isLoading, isError, error } = useDrafts({ page, limit });
+
   return (
-    <div>MailDrafts</div>
-  )
-}
+    <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="relative py-2 overflow-y-auto flex-1 min-h-50">
+        {isLoading && <LoaderInPage />}
 
-export default MailDrafts
+        {isError && (
+          <div className="flex h-full w-full text-center align-middle justify-center items-center pb-[10%] animate-pulse">
+            Error loading drafts:{" "}
+            {error instanceof Error ? error.message : "Something went wrong"}
+          </div>
+        )}
+        {!isLoading && !isError && data?.messages.length === 0 && (
+          <div className="flex h-full w-full text-center align-middle justify-center items-center pb-[10%] animate-pulse">
+            No drafts saved
+          </div>
+        )}
+        {data?.messages.map((mail) => (
+          <MailLayout
+            key={mail.id}
+            mail={mail}
+            selected={selectedIds.includes(mail.id)}
+            onToggleSelect={toggleSelect}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default MailDrafts;

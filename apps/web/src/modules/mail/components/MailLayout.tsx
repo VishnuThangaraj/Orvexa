@@ -2,13 +2,40 @@ import React, { useState } from "react";
 import { Star, Image, FileText, Paperclip } from "lucide-react";
 import type { FormattedInboxAttachment, FormattedInboxMessage } from "../types";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DateMonth } from "@/common/utils/timstamp-convert";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { cn } from "@/lib/utils";
 
 export interface MailLayoutProps {
   mail: FormattedInboxMessage;
   onClick?: (mail: FormattedInboxMessage) => void;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
+
+const GMAIL_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sept",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+const formatGmailDate = (timestamp: string | Date | number): string => {
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return "";
+  const day = d.getDate();
+  const month = GMAIL_MONTHS[d.getMonth()];
+  return `${day} ${month}`;
+};
+
+const KNOWN_LABELS = ["Shnoor International LLC", "Education", "KPR"];
 
 const getAttachmentBadge = (att: FormattedInboxAttachment) => {
   const ext = (
@@ -56,21 +83,54 @@ const getAttachmentBadge = (att: FormattedInboxAttachment) => {
   return <Paperclip className="size-3.5 text-slate-500 shrink-0" />;
 };
 
-const MailLayout: React.FC<MailLayoutProps> = ({ mail, onClick }) => {
-  const [selected, setSelected] = useState(false);
+const MailLayout: React.FC<MailLayoutProps> = ({
+  mail,
+  onClick,
+  selected: controlledSelected,
+  onToggleSelect,
+}) => {
+  const user = useAuthStore((state) => state.user);
+  const [internalSelected, setInternalSelected] = useState(false);
   const [starred, setStarred] = useState(mail.isStarred);
 
+  const isSelected = controlledSelected ?? internalSelected;
   const isUnread = !mail.isRead;
   const hasAttachments = Boolean(
     mail.hasAttachments && mail.attachments && mail.attachments.length > 0,
   );
 
+  // Extract label if present in subject (e.g. Shnoor International LLC)
+  let labelBadge: string | null = null;
+  let displaySubject = mail.subject || "(no subject)";
+
+  for (const label of KNOWN_LABELS) {
+    if (displaySubject.startsWith(`${label} `)) {
+      labelBadge = label;
+      displaySubject = displaySubject.slice(label.length + 1);
+      break;
+    }
+  }
+
+  const handleSelectToggle = () => {
+    if (onToggleSelect) {
+      onToggleSelect(mail.id);
+    } else {
+      setInternalSelected((prev) => !prev);
+    }
+  };
+
+  const isSenderMe = Boolean(user && mail.sender?.id === user.id.toString());
+  const displaySender =
+    isSenderMe && mail.recipients && mail.recipients.length > 0
+      ? `To: ${mail.recipients[0]?.user.fullName || mail.recipients[0]?.user.username}`
+      : mail.sender?.fullName || mail.sender?.username || "Unknown";
+
   return (
     <div
       onClick={() => onClick?.(mail)}
       className={cn(
-        "group relative flex items-start gap-3 px-3.5 py-2 text-sm border-b border-slate-200/80 dark:border-slate-800/80 cursor-pointer select-none transition-colors",
-        selected
+        "group relative flex items-start gap-3 px-4 py-2.5 text-sm border-b border-slate-200/80 dark:border-slate-800/80 cursor-pointer select-none transition-colors",
+        isSelected
           ? "bg-[#c2e7ff]/50 dark:bg-blue-950/30"
           : isUnread
             ? "bg-white dark:bg-slate-900"
@@ -83,7 +143,11 @@ const MailLayout: React.FC<MailLayoutProps> = ({ mail, onClick }) => {
         className="flex items-center gap-2.5 shrink-0 pt-0.5"
         onClick={(e) => e.stopPropagation()}
       >
-        <Checkbox size="sm" checked={selected} onCheckedChange={setSelected} />
+        <Checkbox
+          size="sm"
+          checked={isSelected}
+          onCheckedChange={handleSelectToggle}
+        />
         <button
           type="button"
           onClick={() => setStarred((prev) => !prev)}
@@ -102,7 +166,7 @@ const MailLayout: React.FC<MailLayoutProps> = ({ mail, onClick }) => {
         </button>
       </div>
 
-      {/* Sender Name */}
+      {/* Sender / Recipient Name */}
       <div
         className={cn(
           "w-44 md:w-52 shrink-0 truncate pt-0.5",
@@ -111,23 +175,29 @@ const MailLayout: React.FC<MailLayoutProps> = ({ mail, onClick }) => {
             : "font-normal text-slate-700 dark:text-slate-300",
         )}
       >
-        {mail.sender?.fullName || mail.sender?.username || "Unknown"}
+        {displaySender}
       </div>
 
-      {/* Middle Column: Subject + Snippet and Attachment Chips */}
+      {/* Middle Column: Label Badge + Subject + Snippet and Attachment Chips */}
       <div className="flex-1 min-w-0 pt-0.5">
-        <div className="truncate text-sm">
+        <div className="truncate text-sm flex items-center">
+          {labelBadge && (
+            <span className="shrink-0 px-2 py-0.5 rounded text-xs bg-[#dddddd]/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium mr-1.5 select-none">
+              {labelBadge}
+            </span>
+          )}
           <span
             className={cn(
+              "truncate",
               isUnread
                 ? "font-bold text-slate-900 dark:text-white"
                 : "font-normal text-slate-800 dark:text-slate-200",
             )}
           >
-            {mail.subject || "(no subject)"}
+            {displaySubject}
           </span>
-          <span className="text-slate-400 dark:text-slate-500 mx-1.5">-</span>
-          <span className="text-slate-500 dark:text-slate-400 font-normal">
+          <span className="text-slate-400 dark:text-slate-500 mx-1.5 shrink-0">-</span>
+          <span className="text-slate-500 dark:text-slate-400 font-normal truncate">
             {mail.snippet || mail.body}
           </span>
         </div>
@@ -166,7 +236,7 @@ const MailLayout: React.FC<MailLayoutProps> = ({ mail, onClick }) => {
             : "font-medium text-slate-500 dark:text-slate-400",
         )}
       >
-        {DateMonth(new Date(mail.sentAt))}
+        {formatGmailDate(mail.sentAt)}
       </div>
     </div>
   );

@@ -58,4 +58,57 @@ router.get(
   mailController.fetchInbox,
 );
 
+// get starred mail
+router.get(
+  "/starred",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(fetchInboxQuerySchema, "query"),
+  mailController.fetchStarred,
+);
+
+// get sent mail
+router.get(
+  "/sent",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(fetchInboxQuerySchema, "query"),
+  mailController.fetchSent,
+);
+
+// get drafts
+router.get(
+  "/drafts",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(fetchInboxQuerySchema, "query"),
+  mailController.fetchDrafts,
+);
+
+// get snoozed mail
+router.get(
+  "/snoozed",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(fetchInboxQuerySchema, "query"),
+  mailController.fetchSnoozed,
+);
+
+// get trash mail
+router.get(
+  "/trash",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(fetchInboxQuerySchema, "query"),
+  mailController.fetchTrash,
+);
+
+// get category counts for sidebar badges
+router.get(
+  "/counts",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  mailController.fetchCounts,
+);
+
 export default router;

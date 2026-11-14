@@ -141,6 +141,166 @@ class MailController {
       next(error);
     }
   };
+
+  // Fetch starred mail endpoint handler
+  fetchStarred = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const options = {
+        page: req.query.page !== undefined ? Number(req.query.page) : undefined,
+        limit:
+          req.query.limit !== undefined ? Number(req.query.limit) : undefined,
+        search:
+          typeof req.query.search === "string" ? req.query.search : undefined,
+        isRead:
+          typeof req.query.isRead === "boolean" ? req.query.isRead : undefined,
+      };
+
+      const result = await this.mailService.fetchStarred(
+        BigInt(userId),
+        options,
+      );
+
+      return sendResponse(res, 200, "Starred fetched successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Fetch sent mail endpoint handler
+  fetchSent = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const options = {
+        page: req.query.page !== undefined ? Number(req.query.page) : undefined,
+        limit:
+          req.query.limit !== undefined ? Number(req.query.limit) : undefined,
+        search:
+          typeof req.query.search === "string" ? req.query.search : undefined,
+        isStarred:
+          typeof req.query.isStarred === "boolean"
+            ? req.query.isStarred
+            : undefined,
+      };
+
+      const result = await this.mailService.fetchSent(BigInt(userId), options);
+
+      return sendResponse(res, 200, "Sent fetched successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Fetch drafts endpoint handler
+  fetchDrafts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const options = {
+        page: req.query.page !== undefined ? Number(req.query.page) : undefined,
+        limit:
+          req.query.limit !== undefined ? Number(req.query.limit) : undefined,
+        search:
+          typeof req.query.search === "string" ? req.query.search : undefined,
+      };
+
+      const result = await this.mailService.fetchDrafts(
+        BigInt(userId),
+        options,
+      );
+
+      return sendResponse(res, 200, "Drafts fetched successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Fetch snoozed mail endpoint handler
+  fetchSnoozed = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const options = {
+        page: req.query.page !== undefined ? Number(req.query.page) : undefined,
+        limit:
+          req.query.limit !== undefined ? Number(req.query.limit) : undefined,
+        search:
+          typeof req.query.search === "string" ? req.query.search : undefined,
+        isStarred:
+          typeof req.query.isStarred === "boolean"
+            ? req.query.isStarred
+            : undefined,
+      };
+
+      const result = await this.mailService.fetchSnoozed(
+        BigInt(userId),
+        options,
+      );
+
+      return sendResponse(res, 200, "Snoozed fetched successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Fetch trash mail endpoint handler
+  fetchTrash = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const options = {
+        page: req.query.page !== undefined ? Number(req.query.page) : undefined,
+        limit:
+          req.query.limit !== undefined ? Number(req.query.limit) : undefined,
+        search:
+          typeof req.query.search === "string" ? req.query.search : undefined,
+      };
+
+      const result = await this.mailService.fetchTrash(BigInt(userId), options);
+
+      return sendResponse(res, 200, "Trash fetched successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Fetch category counts endpoint handler
+  fetchCounts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const result = await this.mailService.fetchCounts(BigInt(userId));
+
+      return sendResponse(
+        res,
+        200,
+        "Mail counts fetched successfully",
+        result,
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default MailController;

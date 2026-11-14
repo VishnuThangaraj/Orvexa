@@ -131,6 +131,432 @@ class MailRepository {
     };
   }
 
+  // Fetch starred messages
+  async fetchStarred(userId: bigint, options: FetchInboxOptions = {}) {
+    const page = Math.max(options.page ?? 1, 1);
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      userStates: {
+        some: {
+          userId,
+          isStarred: true,
+          isTrashed: false,
+        },
+      },
+    };
+
+    if (options.isRead !== undefined) {
+      where.userStates.some.isRead = options.isRead;
+    }
+
+    if (options.search && options.search.trim().length > 0) {
+      const searchTerm = options.search.trim();
+      where.OR = [
+        { subject: { contains: searchTerm, mode: "insensitive" } },
+        { body: { contains: searchTerm, mode: "insensitive" } },
+        { sender: { fullName: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { email: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { username: { contains: searchTerm, mode: "insensitive" } } },
+      ];
+    }
+
+    const [total, messages] = await prisma.$transaction([
+      prisma.mailMessage.count({ where }),
+      prisma.mailMessage.findMany({
+        where,
+        include: {
+          sender: {
+            select: { id: true, fullName: true, username: true, email: true },
+          },
+          recipients: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, username: true, email: true },
+              },
+            },
+          },
+          userStates: {
+            where: { userId },
+            select: {
+              isRead: true,
+              readAt: true,
+              isStarred: true,
+              isArchived: true,
+              isTrashed: true,
+            },
+          },
+          attachments: {
+            include: {
+              asset: {
+                select: {
+                  id: true,
+                  originalFilename: true,
+                  mimeType: true,
+                  bytes: true,
+                  resourceType: true,
+                  format: true,
+                  secureUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { sentAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return { total, page, limit, messages };
+  }
+
+  // Fetch sent messages
+  async fetchSent(userId: bigint, options: FetchInboxOptions = {}) {
+    const page = Math.max(options.page ?? 1, 1);
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      senderId: userId,
+      userStates: {
+        some: {
+          userId,
+          isTrashed: false,
+        },
+      },
+    };
+
+    if (options.isStarred !== undefined) {
+      where.userStates.some.isStarred = options.isStarred;
+    }
+
+    if (options.search && options.search.trim().length > 0) {
+      const searchTerm = options.search.trim();
+      where.OR = [
+        { subject: { contains: searchTerm, mode: "insensitive" } },
+        { body: { contains: searchTerm, mode: "insensitive" } },
+      ];
+    }
+
+    const [total, messages] = await prisma.$transaction([
+      prisma.mailMessage.count({ where }),
+      prisma.mailMessage.findMany({
+        where,
+        include: {
+          sender: {
+            select: { id: true, fullName: true, username: true, email: true },
+          },
+          recipients: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, username: true, email: true },
+              },
+            },
+          },
+          userStates: {
+            where: { userId },
+            select: {
+              isRead: true,
+              readAt: true,
+              isStarred: true,
+              isArchived: true,
+              isTrashed: true,
+            },
+          },
+          attachments: {
+            include: {
+              asset: {
+                select: {
+                  id: true,
+                  originalFilename: true,
+                  mimeType: true,
+                  bytes: true,
+                  resourceType: true,
+                  format: true,
+                  secureUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { sentAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return { total, page, limit, messages };
+  }
+
+  // Fetch drafts
+  async fetchDrafts(userId: bigint, options: FetchInboxOptions = {}) {
+    const page = Math.max(options.page ?? 1, 1);
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = { userId };
+    if (options.search && options.search.trim().length > 0) {
+      const searchTerm = options.search.trim();
+      where.OR = [
+        { subject: { contains: searchTerm, mode: "insensitive" } },
+        { body: { contains: searchTerm, mode: "insensitive" } },
+      ];
+    }
+
+    const [total, drafts] = await prisma.$transaction([
+      prisma.mailDraft.count({ where }),
+      prisma.mailDraft.findMany({
+        where,
+        include: {
+          user: {
+            select: { id: true, fullName: true, username: true, email: true },
+          },
+          recipients: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, username: true, email: true },
+              },
+            },
+          },
+          attachments: {
+            include: {
+              asset: {
+                select: {
+                  id: true,
+                  originalFilename: true,
+                  mimeType: true,
+                  bytes: true,
+                  resourceType: true,
+                  format: true,
+                  secureUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return { total, page, limit, drafts };
+  }
+
+  // Fetch snoozed (archived) messages
+  async fetchSnoozed(userId: bigint, options: FetchInboxOptions = {}) {
+    const page = Math.max(options.page ?? 1, 1);
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      userStates: {
+        some: {
+          userId,
+          isArchived: true,
+          isTrashed: false,
+        },
+      },
+    };
+
+    if (options.isStarred !== undefined) {
+      where.userStates.some.isStarred = options.isStarred;
+    }
+
+    if (options.search && options.search.trim().length > 0) {
+      const searchTerm = options.search.trim();
+      where.OR = [
+        { subject: { contains: searchTerm, mode: "insensitive" } },
+        { body: { contains: searchTerm, mode: "insensitive" } },
+        { sender: { fullName: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { email: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { username: { contains: searchTerm, mode: "insensitive" } } },
+      ];
+    }
+
+    const [total, messages] = await prisma.$transaction([
+      prisma.mailMessage.count({ where }),
+      prisma.mailMessage.findMany({
+        where,
+        include: {
+          sender: {
+            select: { id: true, fullName: true, username: true, email: true },
+          },
+          recipients: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, username: true, email: true },
+              },
+            },
+          },
+          userStates: {
+            where: { userId },
+            select: {
+              isRead: true,
+              readAt: true,
+              isStarred: true,
+              isArchived: true,
+              isTrashed: true,
+            },
+          },
+          attachments: {
+            include: {
+              asset: {
+                select: {
+                  id: true,
+                  originalFilename: true,
+                  mimeType: true,
+                  bytes: true,
+                  resourceType: true,
+                  format: true,
+                  secureUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { sentAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return { total, page, limit, messages };
+  }
+
+  // Fetch trash messages
+  async fetchTrash(userId: bigint, options: FetchInboxOptions = {}) {
+    const page = Math.max(options.page ?? 1, 1);
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      userStates: {
+        some: {
+          userId,
+          isTrashed: true,
+        },
+      },
+    };
+
+    if (options.search && options.search.trim().length > 0) {
+      const searchTerm = options.search.trim();
+      where.OR = [
+        { subject: { contains: searchTerm, mode: "insensitive" } },
+        { body: { contains: searchTerm, mode: "insensitive" } },
+        { sender: { fullName: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { email: { contains: searchTerm, mode: "insensitive" } } },
+        { sender: { username: { contains: searchTerm, mode: "insensitive" } } },
+      ];
+    }
+
+    const [total, messages] = await prisma.$transaction([
+      prisma.mailMessage.count({ where }),
+      prisma.mailMessage.findMany({
+        where,
+        include: {
+          sender: {
+            select: { id: true, fullName: true, username: true, email: true },
+          },
+          recipients: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, username: true, email: true },
+              },
+            },
+          },
+          userStates: {
+            where: { userId },
+            select: {
+              isRead: true,
+              readAt: true,
+              isStarred: true,
+              isArchived: true,
+              isTrashed: true,
+            },
+          },
+          attachments: {
+            include: {
+              asset: {
+                select: {
+                  id: true,
+                  originalFilename: true,
+                  mimeType: true,
+                  bytes: true,
+                  resourceType: true,
+                  format: true,
+                  secureUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { sentAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return { total, page, limit, messages };
+  }
+
+  // Fetch category counts for sidebar badges
+  async fetchCounts(userId: bigint) {
+    const [inboxUnread, drafts, trash, starred, snoozed, sent] =
+      await prisma.$transaction([
+        prisma.mailMessage.count({
+          where: {
+            recipients: { some: { userId } },
+            userStates: {
+              some: {
+                userId,
+                isRead: false,
+                isTrashed: false,
+                isArchived: false,
+              },
+            },
+          },
+        }),
+        prisma.mailDraft.count({
+          where: { userId },
+        }),
+        prisma.mailMessage.count({
+          where: {
+            userStates: { some: { userId, isTrashed: true } },
+          },
+        }),
+        prisma.mailMessage.count({
+          where: {
+            userStates: { some: { userId, isStarred: true, isTrashed: false } },
+          },
+        }),
+        prisma.mailMessage.count({
+          where: {
+            userStates: {
+              some: { userId, isArchived: true, isTrashed: false },
+            },
+          },
+        }),
+        prisma.mailMessage.count({
+          where: {
+            senderId: userId,
+            userStates: { some: { userId, isTrashed: false } },
+          },
+        }),
+      ]);
+
+    return {
+      inboxUnread,
+      drafts,
+      trash,
+      starred,
+      snoozed,
+      sent,
+    };
+  }
+
   // Find users by usernames, emails, or numeric IDs
   async findUsersByIdentifiers(identifiers: string[]) {
     if (!identifiers.length) return [];
