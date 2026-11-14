@@ -15,6 +15,16 @@ export const buttonVariants = cva(
           "font-medium text-[#1a73e8] hover:text-[#174ea6] bg-transparent hover:bg-[#1a73e8]/5 active:bg-[#1a73e8]/10 border border-[#dadce0] hover:border-[#1a73e8]/40 dark:text-[#8ab4f8] dark:hover:text-[#aecbfa] dark:border-[#5f6368] dark:hover:border-[#8ab4f8]/50 dark:hover:bg-[#8ab4f8]/10 dark:active:bg-[#8ab4f8]/20 rounded-full transition-colors",
         "blue-secondary":
           "font-medium text-[#1a73e8] hover:text-[#174ea6] bg-transparent hover:bg-[#1a73e8]/5 active:bg-[#1a73e8]/10 border border-[#dadce0] hover:border-[#1a73e8]/40 dark:text-[#8ab4f8] dark:hover:text-[#aecbfa] dark:border-[#5f6368] dark:hover:border-[#8ab4f8]/50 dark:hover:bg-[#8ab4f8]/10 dark:active:bg-[#8ab4f8]/20 rounded-full transition-colors",
+        c2e7ff:
+          "font-medium text-[#001d35] dark:text-[#c2e7ff] bg-[#c2e7ff] hover:bg-[#b3defa] active:bg-[#a8dbfc] dark:bg-[#004a77] dark:hover:bg-[#005a91] dark:active:bg-[#00395c] shadow-xs hover:shadow-md transition-all duration-200 rounded-2xl",
+        "#c2e7ff":
+          "font-medium text-[#001d35] dark:text-[#c2e7ff] bg-[#c2e7ff] hover:bg-[#b3defa] active:bg-[#a8dbfc] dark:bg-[#004a77] dark:hover:bg-[#005a91] dark:active:bg-[#00395c] shadow-xs hover:shadow-md transition-all duration-200 rounded-2xl",
+        compose:
+          "font-medium text-[#001d35] dark:text-[#c2e7ff] bg-[#c2e7ff] hover:bg-[#b3defa] active:bg-[#a8dbfc] dark:bg-[#004a77] dark:hover:bg-[#005a91] dark:active:bg-[#00395c] shadow-xs hover:shadow-md transition-all duration-200 rounded-2xl",
+        "compose-blue":
+          "font-medium text-[#001d35] dark:text-[#c2e7ff] bg-[#c2e7ff] hover:bg-[#b3defa] active:bg-[#a8dbfc] dark:bg-[#004a77] dark:hover:bg-[#005a91] dark:active:bg-[#00395c] shadow-xs hover:shadow-md transition-all duration-200 rounded-2xl",
+        "tonal-blue":
+          "font-medium text-[#001d35] dark:text-[#c2e7ff] bg-[#c2e7ff] hover:bg-[#b3defa] active:bg-[#a8dbfc] dark:bg-[#004a77] dark:hover:bg-[#005a91] dark:active:bg-[#00395c] shadow-xs hover:shadow-md transition-all duration-200 rounded-2xl",
         "primary-light":
           "font-bold text-indigo-700 dark:text-indigo-300 bg-linear-to-r from-indigo-50/90 via-violet-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:via-violet-100/90 hover:to-purple-100/90 dark:from-indigo-950/50 dark:via-violet-950/50 dark:to-purple-950/50 dark:hover:from-indigo-900/60 dark:hover:via-violet-900/60 dark:hover:to-purple-900/60 border border-indigo-200/80 dark:border-indigo-500/30 backdrop-blur-md shadow-xs shadow-indigo-500/10",
         "primary-outlined":
@@ -58,6 +68,7 @@ export const buttonVariants = cva(
         sm: "px-3.5 py-2 text-sm leading-none rounded-lg gap-2",
         md: "px-6 py-2.5 text-sm leading-none rounded-xl gap-2",
         lg: "px-8 py-3.5 text-base leading-none rounded-2xl gap-2.5",
+        compose: "h-14 px-6 text-sm font-medium rounded-2xl gap-3.5",
       },
     },
     defaultVariants: {
@@ -72,6 +83,7 @@ export const spinnerSizeMap = {
   sm: "w-3.5 h-3.5",
   md: "w-4 h-4",
   lg: "w-5 h-5",
+  compose: "w-4 h-4",
 };
 
 export type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;

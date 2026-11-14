@@ -21,6 +21,7 @@ const env = {
   CLIENT_ORIGIN: required("CLIENT_ORIGIN"),
 
   DATABASE_URL: required("DATABASE_URL"),
+  CLOUD_DATABASE_URL: required("CLOUD_DATABASE_URL"),
 
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: required("CLOUDINARY_CLOUD_NAME"),

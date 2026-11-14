@@ -13,7 +13,7 @@ export const AppLayout: React.FC<AppLayoutProps> = () => {
       <Navbar />
       <div className="flex flex-1 w-full overflow-hidden">
         <Sidebar />
-        <main className="flex-1 h-full overflow-y-auto p-6">
+        <main className="flex-1 h-full overflow-y-auto">
           <Outlet />
         </main>
       </div>

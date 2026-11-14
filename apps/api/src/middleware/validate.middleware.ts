@@ -17,7 +17,16 @@ export function validate(
       return next(new AppError(message, 400));
     }
 
-    req[source] = result.data;
+    try {
+      Object.defineProperty(req, source, {
+        value: result.data,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    } catch {
+      req[source] = result.data;
+    }
 
     next();
   };

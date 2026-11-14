@@ -43,21 +43,30 @@ const bottomNavItems: NavRailItem[] = [
 export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState<string | null>(null);
-
-  const currentTab =
-    selectedTab ?? (location.pathname === "/home" ? "home" : "home");
+  const [selectedNonRouteTab, setSelectedNonRouteTab] = useState<string | null>(null);
 
   const handleItemClick = (item: NavRailItem) => {
-    setSelectedTab(item.id);
     if (item.to) {
+      setSelectedNonRouteTab(null);
       navigate(item.to);
+    } else {
+      setSelectedNonRouteTab(item.id);
     }
+  };
+
+  const isItemActive = (item: NavRailItem) => {
+    if (item.to) {
+      return (
+        location.pathname === item.to ||
+        (item.to !== "/" && location.pathname.startsWith(`${item.to}/`))
+      );
+    }
+    return selectedNonRouteTab === item.id;
   };
 
   const renderItem = (item: NavRailItem) => {
     const Icon = item.icon;
-    const isActive = currentTab === item.id;
+    const isActive = isItemActive(item);
 
     return (
       <button
