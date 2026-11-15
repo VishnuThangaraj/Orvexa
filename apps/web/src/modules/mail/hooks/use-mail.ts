@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MailMenuItem } from "../contants/mail.constants";
+import type { MailMenuItem } from "../constants/mail.constants";
 
 export const useMail = (defaultActive: string = "inbox") => {
   const [activeItem, setActiveItem] = useState<string>(defaultActive);
