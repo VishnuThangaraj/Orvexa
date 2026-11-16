@@ -118,6 +118,14 @@ export const mailAttachmentUpload = createUploadMiddleware({
 });
 
 /**
+ * Chat attachment upload middleware (25MB standard, up to 10 files)
+ */
+export const chatAttachmentUpload = createUploadMiddleware({
+  maxFileSize: 25 * 1024 * 1024,
+  maxFiles: 10,
+});
+
+/**
  * Image-only upload middleware (e.g. for profile avatars, up to 5MB, single image)
  */
 export const imageUploadMiddleware = createUploadMiddleware({

@@ -168,7 +168,7 @@ const MailPagination: React.FC<MailPaginationProps> = ({
     >
       {/* Subtle indicator bar on refresh */}
       {showSpinning && (
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-100 dark:bg-blue-950 overflow-hidden z-10">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-100 dark:bg-blue-950 overflow-hidden z-10">
           <div className="h-full bg-[#0b57d0] w-full animate-pulse" />
         </div>
       )}

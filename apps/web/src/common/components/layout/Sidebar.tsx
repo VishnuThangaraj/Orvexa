@@ -31,7 +31,7 @@ const mainNavItems: NavRailItem[] = [
   { id: "home", label: "Home", to: "/home", icon: Home },
   { id: "mail", label: "Mail", to: "/mail", icon: Mail },
   { id: "drive", label: "Drive", icon: HardDrive },
-  { id: "chat", label: "Chat", icon: MessageSquare, badge: 1 },
+  { id: "chat", label: "Chat", to: "/chat", icon: MessageSquare },
   { id: "meet", label: "Meet", icon: Video },
   { id: "calendar", label: "Calendar", icon: Calendar },
 ];

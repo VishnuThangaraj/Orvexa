@@ -1,9 +1,14 @@
+import http from "node:http";
 import app from "./app.js";
 import env from "./config/env.js";
 import {
   connectDatabase,
   disconnectDatabase,
 } from "./infrastructure/database/prisma.js";
+import {
+  initializeSocketServer,
+  closeSocketServer,
+} from "./sockets/socket.server.js";
 
 const bootstrap = async () => {
   const PORT = env.PORT;
@@ -12,8 +17,12 @@ const bootstrap = async () => {
     // Connect to Database
     await connectDatabase();
 
-    // App Server
-    const server = app.listen(PORT, () => {
+    // Create HTTP Server & Initialize WebSocket Server
+    const httpServer = http.createServer(app);
+    initializeSocketServer(httpServer);
+
+    // Start Server
+    httpServer.listen(PORT, () => {
       console.log(`Orvexa Server Running on PORT : ${PORT}`);
     });
 
@@ -25,13 +34,14 @@ const bootstrap = async () => {
 
       console.log(`Signal Received ${signal}, Shutting down gracefully...`);
 
-      server.close(async () => {
+      httpServer.close(async () => {
         try {
+          await closeSocketServer();
           await disconnectDatabase();
-          console.log("[SERVER] Database connection closed.");
+          console.log("[SERVER] Socket.IO and Database connections closed.");
           process.exit(0);
         } catch (err) {
-          console.error("[SERVER] Error closing database connection:", err);
+          console.error("[SERVER] Error during shutdown:", err);
           process.exit(1);
         }
       });

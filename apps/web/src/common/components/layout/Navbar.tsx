@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, LogOut, User as UserIcon } from "lucide-react";
+import { Search, LogOut, User as UserIcon, ChevronDown, Check } from "lucide-react";
 import { OrvexaLogo } from "@/common/components/OrvexaLogo";
 import { ThemeToggle } from "@/common/components/ThemeToggle";
 import { useAuth, useLogout } from "@/modules/auth/hooks/use-auth.hooks";
+import { useSocketStore } from "@/modules/chat/store/socket.store";
+import { useSocket } from "@/modules/chat/hooks/use-socket";
+import { cn } from "@/lib/utils";
 
 export interface NavbarProps {
   className?: string;
@@ -13,6 +16,31 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const logoutMutation = useLogout();
+  const { myPresenceStatus, setMyPresenceStatus } = useSocketStore();
+  const { emit } = useSocket();
+
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isStatusDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isStatusDropdownOpen]);
+
+  const handleSelectStatus = (status: "ACTIVE" | "AWAY" | "DND") => {
+    setMyPresenceStatus(status);
+    emit("presence:update", { status });
+    setIsStatusDropdownOpen(false);
+  };
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
@@ -53,8 +81,83 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
         </div>
       </div>
 
-      {/* Right side: Theme toggle, User profile & Logout */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
+      {/* Right side: Presence status, Theme toggle, User profile & Logout */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Google Workspace Presence Status Toggle */}
+        <div className="relative" ref={statusDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+            aria-label={`Status: ${myPresenceStatus.toLowerCase()}`}
+            title={`Status: ${myPresenceStatus.toLowerCase()}`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+          >
+            <span
+              className={cn(
+                "w-2.5 h-2.5 rounded-full shrink-0",
+                myPresenceStatus === "ACTIVE" && "bg-[#137333]",
+                myPresenceStatus === "AWAY" && "bg-[#ea8600]",
+                myPresenceStatus === "DND" && "bg-[#d93025]",
+              )}
+            />
+            <span className="hidden sm:inline">
+              {myPresenceStatus === "ACTIVE"
+                ? "Active"
+                : myPresenceStatus === "AWAY"
+                  ? "Away"
+                  : "Do not disturb"}
+            </span>
+            <ChevronDown size={14} className="text-slate-400" />
+          </button>
+
+          {isStatusDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 text-xs">
+              <div className="px-3.5 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Status
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSelectStatus("ACTIVE")}
+                className="w-full px-3.5 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#137333] shrink-0" />
+                  <span className="font-medium text-slate-800 dark:text-slate-200">Active</span>
+                </div>
+                {myPresenceStatus === "ACTIVE" && (
+                  <Check size={14} className="text-[#0b57d0] dark:text-[#a8c7fa]" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectStatus("AWAY")}
+                className="w-full px-3.5 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#ea8600] shrink-0" />
+                  <span className="font-medium text-slate-800 dark:text-slate-200">Away</span>
+                </div>
+                {myPresenceStatus === "AWAY" && (
+                  <Check size={14} className="text-[#0b57d0] dark:text-[#a8c7fa]" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectStatus("DND")}
+                className="w-full px-3.5 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#d93025] shrink-0" />
+                  <span className="font-medium text-slate-800 dark:text-slate-200">Do not disturb</span>
+                </div>
+                {myPresenceStatus === "DND" && (
+                  <Check size={14} className="text-[#0b57d0] dark:text-[#a8c7fa]" />
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
         <ThemeToggle />
 
         <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">

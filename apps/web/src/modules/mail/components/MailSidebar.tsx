@@ -1,5 +1,5 @@
 import React from "react";
-import { MAIL_MENU, type MailMenuItem } from "../contants/mail.constants";
+import { MAIL_MENU, type MailMenuItem } from "../constants/mail.constants";
 import { ComposePencilIcon } from "./MailIcons";
 import { useMailCounts } from "../hooks/use-mail.counts";
 import { cn } from "@/lib/utils";
