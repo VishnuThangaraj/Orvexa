@@ -90,6 +90,23 @@ export const ConversationListPane: React.FC = () => {
     return true;
   });
 
+  // Sort conversations by latest activity (lastMessageAt / createdAt descending)
+  // Pinned conversations stay at top while sorting by latest within their tier
+  const sortedConversations = [...filteredConversations].sort((a, b) => {
+    const userA = a.participants.find((p) => String(p.userId) === String(currentUser?.id));
+    const userB = b.participants.find((p) => String(p.userId) === String(currentUser?.id));
+    const isPinnedA = Boolean(userA?.isPinned);
+    const isPinnedB = Boolean(userB?.isPinned);
+
+    if (isPinnedA !== isPinnedB) {
+      return isPinnedA ? -1 : 1;
+    }
+
+    const timeA = new Date(a.lastMessageAt || a.createdAt).getTime();
+    const timeB = new Date(b.lastMessageAt || b.createdAt).getTime();
+    return timeB - timeA;
+  });
+
   const formatTimestamp = (dateString?: string | null) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -324,7 +341,7 @@ export const ConversationListPane: React.FC = () => {
       )}
 
       {/* Main Content: Global Search Results OR Standard Conversation List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
+      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 no-scrollbar">
         {isSearching ? (
           isSearchLoading ? (
             <div className="p-8 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
@@ -458,12 +475,12 @@ export const ConversationListPane: React.FC = () => {
           <div className="p-8 text-center text-xs text-slate-400">
             Loading conversations...
           </div>
-        ) : filteredConversations.length === 0 ? (
+        ) : sortedConversations.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-400">
             No conversations found
           </div>
         ) : (
-          filteredConversations.map((conv) => {
+          sortedConversations.map((conv) => {
             const { title, isGroup, initials, avatarUrl, isOnline } =
               getDisplayDetails(conv);
             const isSelected = activeConversationId === conv.id;

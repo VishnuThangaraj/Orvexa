@@ -119,7 +119,7 @@ export const ThreadReplyPanel: React.FC<ThreadReplyPanelProps> = ({
       </div>
 
       {/* Thread Content Viewport */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
         {/* Root Message Card */}
         <div className="p-3.5 rounded-2xl bg-[#f0f4f9] dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80">
           <div className="flex items-center gap-2 mb-2">

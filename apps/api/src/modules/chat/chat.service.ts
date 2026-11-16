@@ -544,10 +544,17 @@ export class ChatService {
       }
     }
 
-    // Broadcast to conversation room via WebSockets
+    // Broadcast to conversation room & each participant's room via WebSockets
     try {
       const io = getIO();
       io.to(`conversation:${conversationId}`).emit("message:received", message);
+      if (conversation?.participants) {
+        for (const p of conversation.participants) {
+          if (p.leftAt === null) {
+            io.to(`user:${p.userId}`).emit("message:received", message);
+          }
+        }
+      }
     } catch {
       // In case WebSocket server is not running in test context
     }

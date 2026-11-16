@@ -162,7 +162,7 @@ export const ChatNavigationSidebar: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 text-xs font-medium">
+      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 text-xs font-medium no-scrollbar">
         {/* SECTION 1: SHORTCUTS */}
         <div>
           <button

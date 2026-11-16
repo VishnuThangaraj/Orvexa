@@ -125,22 +125,29 @@ export const useChatSync = () => {
         },
       );
 
-      // Update conversation list preview
-      queryClient.setQueryData<{
+      // Update conversation list preview & immediately move chat to top across all conversation views
+      queryClient.setQueriesData<{
         conversations: Conversation[];
         totalCount: number;
-      }>([...CHAT_QUERY_KEYS.conversations, undefined], (old) => {
+      }>({ queryKey: CHAT_QUERY_KEYS.conversations }, (old) => {
         if (!old) return old;
-        const updatedConversations = old.conversations.map((conv) => {
-          if (conv.id === conversationId) {
-            return {
-              ...conv,
-              lastMessageAt: message.createdAt,
-              messages: [message],
-            };
-          }
-          return conv;
-        });
+        const exists = old.conversations.some((c) => String(c.id) === conversationId);
+        if (!exists) {
+          queryClient.invalidateQueries({
+            queryKey: CHAT_QUERY_KEYS.conversations,
+          });
+          return old;
+        }
+
+        const targetConv = old.conversations.find((c) => String(c.id) === conversationId)!;
+        const updatedTarget: Conversation = {
+          ...targetConv,
+          lastMessageAt: message.createdAt,
+          messages: [message],
+        };
+
+        const others = old.conversations.filter((c) => String(c.id) !== conversationId);
+        const updatedConversations = [updatedTarget, ...others];
 
         // Sort by latest message first
         updatedConversations.sort((a, b) => {

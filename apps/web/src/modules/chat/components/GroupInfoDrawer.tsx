@@ -131,7 +131,7 @@ export const GroupInfoDrawer: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs">
+      <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs no-scrollbar">
         {/* Space Avatar & Title / Edit Form */}
         {isEditing ? (
           <div className="p-3 bg-[#f0f4f9] dark:bg-slate-800 rounded-2xl space-y-3">

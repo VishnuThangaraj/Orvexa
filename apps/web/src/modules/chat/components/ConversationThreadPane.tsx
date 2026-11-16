@@ -298,7 +298,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
           aria-live="polite"
           aria-atomic="false"
           aria-label="Conversation messages"
-          className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 space-y-1"
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 space-y-1 no-scrollbar"
         >
           {isLoadingMessages ? (
             <div className="text-center text-xs text-slate-400 py-8">

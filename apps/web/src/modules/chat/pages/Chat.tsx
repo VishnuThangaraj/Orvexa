@@ -92,7 +92,7 @@ export const Chat: React.FC = () => {
   ]);
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#f6f8fc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 relative">
+    <div className="flex h-full w-full overflow-hidden bg-[#f6f8fc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 relative chat-no-scrollbar no-scrollbar">
       {/* 3-Pane Responsive Layout matching Screenshots 1, 2, 3 */}
       {!isFullscreen && (
         <>

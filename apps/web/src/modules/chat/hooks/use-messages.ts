@@ -3,6 +3,7 @@ import { chatApi } from "../api/chat.api";
 import { CHAT_QUERY_KEYS } from "./use-conversations";
 import type {
   ChatMessage,
+  Conversation,
   FetchMessagesOptions,
   SendMessagePayload,
 } from "../types/chat.types";
@@ -34,6 +35,37 @@ export const useSendMessage = (conversationId: string) => {
           return [...old, newMessage];
         },
       );
+
+      // Optimistically update conversation list preview and immediately move chat to top
+      queryClient.setQueriesData<{
+        conversations: Conversation[];
+        totalCount: number;
+      }>({ queryKey: CHAT_QUERY_KEYS.conversations }, (old) => {
+        if (!old) return old;
+        const targetConv = old.conversations.find(
+          (c) => String(c.id) === String(conversationId),
+        );
+        if (!targetConv) return old;
+
+        const updatedTarget: Conversation = {
+          ...targetConv,
+          lastMessageAt: newMessage.createdAt,
+          messages: [newMessage],
+        };
+
+        const others = old.conversations.filter(
+          (c) => String(c.id) !== String(conversationId),
+        );
+        const updatedConversations = [updatedTarget, ...others];
+
+        updatedConversations.sort((a, b) => {
+          const timeA = new Date(a.lastMessageAt || a.createdAt).getTime();
+          const timeB = new Date(b.lastMessageAt || b.createdAt).getTime();
+          return timeB - timeA;
+        });
+
+        return { ...old, conversations: updatedConversations };
+      });
 
       // Invalidate conversation list so lastMessageAt and preview update
       queryClient.invalidateQueries({

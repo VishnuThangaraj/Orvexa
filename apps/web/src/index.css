@@ -14,4 +14,24 @@ body {
   font-family: "Google Sans Flex", "DM Sans", system-ui, sans-serif;
 }
 
+/* Scrollbar utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Chat container: remove scrollbars across chat page */
+.chat-no-scrollbar,
+.chat-no-scrollbar * {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.chat-no-scrollbar::-webkit-scrollbar,
+.chat-no-scrollbar *::-webkit-scrollbar {
+  display: none;
+}
+
 
