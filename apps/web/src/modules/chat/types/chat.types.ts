@@ -48,10 +48,21 @@ export interface ChatAttachment {
   asset: ChatAttachmentAsset;
 }
 
+export interface ChatMention {
+  id: string;
+  messageId: string;
+  conversationId: string;
+  userId?: string | null;
+  isAll: boolean;
+  createdAt: string;
+  user?: ChatUser | null;
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
   senderId: string;
+  clientMessageId?: string | null;
   parentMessageId?: string | null;
   content: string;
   messageType: ChatMessageType;
@@ -64,6 +75,7 @@ export interface ChatMessage {
   sender: ChatUser;
   attachments?: ChatAttachment[];
   reactions?: unknown[];
+  mentions?: ChatMention[];
   parentMessage?: {
     id: string;
     content: string;
@@ -105,6 +117,7 @@ export interface FetchConversationsOptions {
   type?: ConversationType;
   isArchived?: boolean;
   isPinned?: boolean;
+  hasMentions?: boolean;
   search?: string;
   limit?: number;
   offset?: number;
@@ -134,6 +147,20 @@ export interface UpdateConversationPayload {
   description?: string;
   visibility?: "PUBLIC" | "PRIVATE";
   imageId?: string | null;
+  isArchived?: boolean;
+}
+
+export interface DiscoveredSpace {
+  id: string;
+  name: string;
+  description?: string | null;
+  type: string;
+  visibility: string;
+  image?: { id: string; secureUrl: string } | null;
+  memberCount: number;
+  isMember: boolean;
+  createdAt: string;
+  lastMessageAt?: string | null;
 }
 
 export interface UpdateParticipantSettingsPayload {
@@ -144,9 +171,12 @@ export interface UpdateParticipantSettingsPayload {
 
 export interface SendMessagePayload {
   content: string;
+  clientMessageId?: string;
   messageType?: ChatMessageType;
   parentMessageId?: string | null;
   attachmentIds?: string[];
+  mentionedUserIds?: string[];
+  isMentionAll?: boolean;
 }
 
 export interface FetchMessagesOptions {

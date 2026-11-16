@@ -15,6 +15,14 @@ export const registerConnectionHandlers = (
     // Track presence
     presenceService.addUserSocket(user.id, socket.id);
 
+    // Listen to client-driven presence updates (e.g. idle AWAY, active, DND)
+    socket.on("presence:update", (data, callback) => {
+      if (data?.status) {
+        presenceService.setUserStatus(user.id, data.status);
+        callback?.({ success: true });
+      }
+    });
+
     console.log(
       `[SOCKET] User ${user.id} (${user.role}) connected on socket ${socket.id} and joined ${personalRoom}`,
     );

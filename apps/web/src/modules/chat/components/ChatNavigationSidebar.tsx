@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Home,
@@ -7,6 +7,7 @@ import {
   Archive,
   ChevronDown,
   ChevronRight,
+  Compass,
 } from "lucide-react";
 import { useChatStore } from "../store/chat.store";
 import { useSocketStore } from "../store/socket.store";
@@ -22,6 +23,7 @@ export const ChatNavigationSidebar: React.FC = () => {
     activeShortcut,
     setActiveShortcut,
     setIsNewChatModalOpen,
+    setIsBrowseSpacesOpen,
   } = useChatStore();
 
   const currentUser = useAuthStore((state) => state.user);
@@ -31,6 +33,7 @@ export const ChatNavigationSidebar: React.FC = () => {
   const [isDmsOpen, setIsDmsOpen] = useState(true);
   const [isSpacesOpen, setIsSpacesOpen] = useState(true);
   const [showAllDms, setShowAllDms] = useState(false);
+  const [showAllSpaces, setShowAllSpaces] = useState(false);
 
   const { data } = useConversations();
   const conversations = data?.conversations || [];
@@ -50,9 +53,92 @@ export const ChatNavigationSidebar: React.FC = () => {
     )?.user;
   };
 
+  // Check if conversation has unread messages for current user
+  const isConversationUnread = (conv: Conversation) => {
+    const userParticipant = conv.participants.find(
+      (p) => String(p.userId) === String(currentUser?.id),
+    );
+    const lastMsg = conv.messages?.[0];
+    if (!lastMsg) return false;
+    if (String(lastMsg.senderId) === String(currentUser?.id)) return false;
+    if (!userParticipant?.lastReadAt) return true;
+    return new Date(lastMsg.createdAt) > new Date(userParticipant.lastReadAt);
+  };
+
+  const unreadDirectCount = directConversations.filter(isConversationUnread).length;
+  const unreadSpacesCount = spaceConversations.filter(isConversationUnread).length;
+  const unreadMentionsCount = spaceConversations.filter((space) => {
+    const myParticipant = space.participants.find(
+      (p) => String(p.userId) === String(currentUser?.id),
+    );
+    return space.messages?.some(
+      (m) =>
+        m.mentions?.some(
+          (men) =>
+            men.isAll || String(men.userId) === String(currentUser?.id),
+        ) &&
+        (!myParticipant?.lastReadAt ||
+          new Date(m.createdAt) > new Date(myParticipant.lastReadAt)),
+    );
+  }).length;
+  const totalUnreadCount = unreadDirectCount + unreadSpacesCount;
+
+  // Task 2.1: Update document title with unread counter
+  useEffect(() => {
+    if (totalUnreadCount > 0) {
+      document.title = `(${totalUnreadCount}) Orvexa Chat`;
+    } else {
+      document.title = "Orvexa Chat";
+    }
+  }, [totalUnreadCount]);
+
+  // Sort direct conversations by most recent activity
+  const sortedDms = [...directConversations].sort((a, b) => {
+    const timeA = new Date(a.lastMessageAt || a.createdAt).getTime();
+    const timeB = new Date(b.lastMessageAt || b.createdAt).getTime();
+    return timeB - timeA;
+  });
+
+  // Mandatory Fix 1: Cap at 5 DMs, pin unread DMs into visible set, include active DM if outside top 5
+  const top5Dms = sortedDms.slice(0, 5);
+  const unreadBeyondTop5 = sortedDms.slice(5).filter(isConversationUnread);
+  const activeBeyondTop5 = activeConversationId
+    ? sortedDms
+        .slice(5)
+        .filter(
+          (c) =>
+            c.id === activeConversationId &&
+            !unreadBeyondTop5.some((u) => u.id === c.id),
+        )
+    : [];
+
   const visibleDms = showAllDms
-    ? directConversations
-    : directConversations.slice(0, 8);
+    ? sortedDms
+    : [...top5Dms, ...unreadBeyondTop5, ...activeBeyondTop5];
+
+  // Sort space conversations by most recent activity
+  const sortedSpaces = [...spaceConversations].sort((a, b) => {
+    const timeA = new Date(a.lastMessageAt || a.createdAt).getTime();
+    const timeB = new Date(b.lastMessageAt || b.createdAt).getTime();
+    return timeB - timeA;
+  });
+
+  // Cap at 5 Spaces, pin unread Spaces into visible set, include active Space if outside top 5
+  const top5Spaces = sortedSpaces.slice(0, 5);
+  const unreadSpacesBeyondTop5 = sortedSpaces.slice(5).filter(isConversationUnread);
+  const activeSpaceBeyondTop5 = activeConversationId
+    ? sortedSpaces
+        .slice(5)
+        .filter(
+          (c) =>
+            c.id === activeConversationId &&
+            !unreadSpacesBeyondTop5.some((u) => u.id === c.id),
+        )
+    : [];
+
+  const visibleSpaces = showAllSpaces
+    ? sortedSpaces
+    : [...top5Spaces, ...unreadSpacesBeyondTop5, ...activeSpaceBeyondTop5];
 
   const handleSelectDm = (conv: Conversation) => {
     setActiveConversationId(conv.id);
@@ -109,7 +195,12 @@ export const ChatNavigationSidebar: React.FC = () => {
                 )}
               >
                 <Home size={17} className="shrink-0" />
-                <span>Home</span>
+                <span className="flex-1 text-left">Home</span>
+                {totalUnreadCount > 0 && (
+                  <span className="bg-[#0b57d0] text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full">
+                    {totalUnreadCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -123,7 +214,12 @@ export const ChatNavigationSidebar: React.FC = () => {
                 )}
               >
                 <AtSign size={17} className="shrink-0" />
-                <span>Mentions</span>
+                <span className="flex-1 text-left">Mentions</span>
+                {unreadMentionsCount > 0 && (
+                  <span className="bg-[#0b57d0] text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full">
+                    {unreadMentionsCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -171,15 +267,22 @@ export const ChatNavigationSidebar: React.FC = () => {
                 <ChevronRight size={14} />
               )}
               <span>DIRECT MESSAGES</span>
-              <span className="text-slate-400 font-normal">
-                {directConversations.length}
-              </span>
+              {unreadDirectCount > 0 ? (
+                <span className="bg-[#0b57d0] text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                  {unreadDirectCount}
+                </span>
+              ) : (
+                <span className="text-slate-400 font-normal">
+                  {directConversations.length}
+                </span>
+              )}
             </button>
             <button
               type="button"
               onClick={() => setIsNewChatModalOpen(true)}
               title="New direct message"
-              className="hover:text-[#0b57d0] dark:hover:text-[#c2e7ff]"
+              aria-label="New direct message"
+              className="hover:text-[#0b57d0] dark:hover:text-[#c2e7ff] cursor-pointer"
             >
               <Plus size={14} />
             </button>
@@ -193,6 +296,7 @@ export const ChatNavigationSidebar: React.FC = () => {
                   ? Boolean(onlineUsers[String(other.id)])
                   : false;
                 const isSelected = activeConversationId === conv.id;
+                const isUnread = isConversationUnread(conv);
 
                 return (
                   <button
@@ -203,7 +307,9 @@ export const ChatNavigationSidebar: React.FC = () => {
                       "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-sm transition-colors text-left",
                       isSelected
                         ? "bg-[#d3e3fd] text-[#001d35] dark:bg-[#004a77] dark:text-[#c2e7ff] font-bold"
-                        : "text-[#202124] dark:text-slate-300 font-normal hover:bg-slate-200/60 dark:hover:bg-slate-800/60",
+                        : isUnread
+                          ? "text-slate-950 dark:text-white font-bold hover:bg-slate-200/60 dark:hover:bg-slate-800/60"
+                          : "text-[#202124] dark:text-slate-300 font-normal hover:bg-slate-200/60 dark:hover:bg-slate-800/60",
                     )}
                   >
                     {/* Avatar with online dot */}
@@ -227,19 +333,22 @@ export const ChatNavigationSidebar: React.FC = () => {
                     <span className="truncate flex-1">
                       {other?.fullName || "Direct Message"}
                     </span>
+
+                    {/* Unread dot */}
+                    {isUnread && (
+                      <span className="w-2 h-2 rounded-full bg-[#0b57d0] shrink-0" />
+                    )}
                   </button>
                 );
               })}
 
-              {directConversations.length > 8 && (
+              {sortedDms.length > 5 && (
                 <button
                   type="button"
                   onClick={() => setShowAllDms(!showAllDms)}
-                  className="w-full text-left px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                  className="w-full text-left px-3 py-1.5 text-xs font-semibold text-[#0b57d0] dark:text-[#c2e7ff] hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  {showAllDms
-                    ? "Show less"
-                    : `Show all (${directConversations.length})`}
+                  <span>{showAllDms ? "Show less" : `More (${sortedDms.length - 5})`}</span>
                 </button>
               )}
             </div>
@@ -260,23 +369,41 @@ export const ChatNavigationSidebar: React.FC = () => {
                 <ChevronRight size={14} />
               )}
               <span>SPACES</span>
-              <span className="text-slate-400 font-normal">
-                {spaceConversations.length}
-              </span>
+              {unreadSpacesCount > 0 ? (
+                <span className="bg-[#0b57d0] text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                  {unreadSpacesCount}
+                </span>
+              ) : (
+                <span className="text-slate-400 font-normal">
+                  {spaceConversations.length}
+                </span>
+              )}
             </button>
-            <button
-              type="button"
-              onClick={() => setIsNewChatModalOpen(true)}
-              title="Create space"
-              className="hover:text-[#0b57d0] dark:hover:text-[#c2e7ff]"
-            >
-              <Plus size={14} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsBrowseSpacesOpen(true)}
+                title="Browse public spaces"
+                aria-label="Browse public spaces"
+                className="hover:text-[#0b57d0] dark:hover:text-[#c2e7ff] p-0.5 cursor-pointer"
+              >
+                <Compass size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsNewChatModalOpen(true)}
+                title="Create space"
+                aria-label="Create space"
+                className="hover:text-[#0b57d0] dark:hover:text-[#c2e7ff] p-0.5 cursor-pointer"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
           </div>
 
           {isSpacesOpen && (
             <div className="mt-1 space-y-0.5">
-              {spaceConversations.map((space) => {
+              {visibleSpaces.map((space) => {
                 const isSelected = activeConversationId === space.id;
                 const initials = space.name
                   ? space.name
@@ -287,6 +414,20 @@ export const ChatNavigationSidebar: React.FC = () => {
                       .toUpperCase()
                   : "SP";
 
+                const myParticipant = space.participants.find(
+                  (p) => String(p.userId) === String(currentUser?.id),
+                );
+                const hasUnread = isConversationUnread(space);
+                const hasMention = space.messages?.some(
+                  (m) =>
+                    m.mentions?.some(
+                      (men) =>
+                        men.isAll || String(men.userId) === String(currentUser?.id),
+                    ) &&
+                    (!myParticipant?.lastReadAt ||
+                      new Date(m.createdAt) > new Date(myParticipant.lastReadAt)),
+                );
+
                 return (
                   <button
                     key={space.id}
@@ -296,18 +437,38 @@ export const ChatNavigationSidebar: React.FC = () => {
                       "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-sm transition-colors text-left",
                       isSelected
                         ? "bg-[#d3e3fd] text-[#001d35] dark:bg-[#004a77] dark:text-[#c2e7ff] font-bold"
+                        : hasUnread || hasMention
+                        ? "text-slate-950 dark:text-white font-bold hover:bg-slate-200/60 dark:hover:bg-slate-800/60"
                         : "text-[#202124] dark:text-slate-300 font-normal hover:bg-slate-200/60 dark:hover:bg-slate-800/60",
                     )}
                   >
                     <div className="w-7 h-7 rounded-lg bg-[#c2e7ff] dark:bg-[#004a77] text-[#001d35] dark:text-[#c2e7ff] flex items-center justify-center font-bold text-xs shrink-0">
                       {initials}
                     </div>
-                    <span className="truncate flex-1 font-medium">
+                    <span className="truncate flex-1">
                       {space.name}
                     </span>
+
+                    {hasMention ? (
+                      <span className="text-[10px] bg-[#0b57d0] text-white font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                        @
+                      </span>
+                    ) : hasUnread ? (
+                      <span className="w-2 h-2 rounded-full bg-[#0b57d0] shrink-0" />
+                    ) : null}
                   </button>
                 );
               })}
+
+              {sortedSpaces.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllSpaces(!showAllSpaces)}
+                  className="w-full text-left px-3 py-1.5 text-xs font-semibold text-[#0b57d0] dark:text-[#c2e7ff] hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>{showAllSpaces ? "Show less" : `More (${sortedSpaces.length - 5})`}</span>
+                </button>
+              )}
             </div>
           )}
         </div>

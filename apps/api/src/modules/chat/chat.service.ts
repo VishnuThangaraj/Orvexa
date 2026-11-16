@@ -13,6 +13,7 @@ import type {
   FetchMessagesQueryDto,
   CloudinaryResourceType,
   UploadAttachmentsResponse,
+  GlobalSearchQueryDto,
 } from "./chat.types.js";
 
 export class ChatService {
@@ -307,6 +308,49 @@ export class ChatService {
     return this.chatRepository.updateConversation(conversationId, data);
   }
 
+  async discoverPublicSpaces(
+    userId: bigint,
+    search?: string,
+    limit?: number,
+    offset?: number,
+  ) {
+    return this.chatRepository.discoverPublicSpaces(
+      userId,
+      search,
+      limit,
+      offset,
+    );
+  }
+
+  async joinPublicSpace(conversationId: bigint, userId: bigint) {
+    const conversation =
+      await this.chatRepository.getConversationById(conversationId);
+    if (!conversation) {
+      throw new AppError("Space not found", 404);
+    }
+
+    if (conversation.type === "DIRECT") {
+      throw new AppError("Cannot join a direct conversation", 400);
+    }
+
+    if (conversation.visibility !== "PUBLIC") {
+      throw new AppError(
+        "Cannot join a private space without an invitation",
+        403,
+      );
+    }
+
+    const activeParticipant = conversation.participants.find(
+      (p) => p.userId === userId && p.leftAt === null,
+    );
+    if (activeParticipant) {
+      return conversation;
+    }
+
+    await this.chatRepository.addParticipants(conversationId, [userId]);
+    return this.chatRepository.getConversationById(conversationId);
+  }
+
   // Messaging Engine Services
   async sendMessage(senderId: bigint, dto: SendMessageDto) {
     const conversationId = BigInt(dto.conversationId);
@@ -320,15 +364,90 @@ export class ChatService {
     const isPublicChannel =
       conversation.type === "CHANNEL" && conversation.visibility === "PUBLIC";
 
-    const isParticipant = conversation.participants.some(
+    const senderParticipant = conversation.participants.find(
       (p) => p.userId === senderId,
     );
 
-    if (!isPublicChannel && !isParticipant) {
+    if (!isPublicChannel && !senderParticipant) {
       throw new AppError(
         "You must be a participant to send messages in this conversation",
         403,
       );
+    }
+
+    // MANDATORY FIX 3: Enforce Space-only mentions
+    const isDirect = conversation.type === "DIRECT";
+    if (isDirect) {
+      if (
+        (dto.mentionedUserIds && dto.mentionedUserIds.length > 0) ||
+        dto.isMentionAll
+      ) {
+        throw new AppError("Mentions are not allowed in direct messages", 400);
+      }
+      dto.mentionedUserIds = [];
+      dto.isMentionAll = false;
+    } else {
+      // Space conversation (GROUP or CHANNEL)
+      const isManager =
+        senderParticipant?.memberRole === "OWNER" ||
+        senderParticipant?.memberRole === "ADMIN";
+
+      // Detect @all or @everyone in text if not explicitly flagged
+      if (!dto.isMentionAll && /(?:^|\s)@(all|everyone)\b/i.test(dto.content)) {
+        dto.isMentionAll = true;
+      }
+
+      if (dto.isMentionAll && !isManager) {
+        throw new AppError(
+          "Only space managers can mention @all or @everyone",
+          403,
+        );
+      }
+
+      const activeParticipants = conversation.participants.filter(
+        (p) => p.leftAt === null,
+      );
+      const activeParticipantMap = new Map(
+        activeParticipants.map((p) => [String(p.userId), p]),
+      );
+
+      if (dto.mentionedUserIds && dto.mentionedUserIds.length > 0) {
+        for (const uid of dto.mentionedUserIds) {
+          if (!activeParticipantMap.has(String(uid))) {
+            throw new AppError(
+              "Cannot mention a user who is not a member of this space",
+              400,
+            );
+          }
+        }
+      } else {
+        // Automatically extract @username mentions matching active space members
+        const usernameMatches = dto.content.match(/(?:^|\s)@([a-zA-Z0-9_.-]+)\b/g);
+        if (usernameMatches) {
+          const mentionedIds: bigint[] = [];
+          for (const match of usernameMatches) {
+            const raw = match.trim().replace(/^@/, "").toLowerCase();
+            if (raw === "all" || raw === "everyone") continue;
+            const found = activeParticipants.find(
+              (p) =>
+                p.user.username.toLowerCase() === raw ||
+                p.user.fullName.toLowerCase().replace(/\s+/g, "") === raw,
+            );
+            if (found && !mentionedIds.includes(found.userId)) {
+              mentionedIds.push(found.userId);
+            }
+          }
+          if (mentionedIds.length > 0) {
+            dto.mentionedUserIds = mentionedIds;
+          }
+        }
+      }
+
+      if (dto.mentionedUserIds && dto.mentionedUserIds.length > 0) {
+        dto.mentionedUserIds = Array.from(
+          new Set(dto.mentionedUserIds.map((id) => String(id))),
+        ).map((id) => BigInt(id));
+      }
     }
 
     if (dto.parentMessageId) {
@@ -371,6 +490,59 @@ export class ChatService {
       ...dto,
       messageType,
     });
+
+    // Task 6.1: If duplicate clientMessageId was detected, return existing message idempotently
+    if ((message as any).isDuplicate) {
+      return message;
+    }
+
+    // Create notifications for mentioned users
+    if (
+      !isDirect &&
+      (dto.isMentionAll ||
+        (dto.mentionedUserIds && dto.mentionedUserIds.length > 0))
+    ) {
+      try {
+        const activeParticipants = conversation.participants.filter(
+          (p) => p.leftAt === null,
+        );
+        const senderUser = conversation.participants.find(
+          (p) => p.userId === senderId,
+        )?.user;
+        const senderName = senderUser?.fullName || "A user";
+        const spaceName = conversation.name || "Space";
+
+        let userIdsToNotify: bigint[] = [];
+        if (dto.isMentionAll) {
+          userIdsToNotify = activeParticipants
+            .map((p) => p.userId)
+            .filter((id) => id !== senderId);
+        } else if (dto.mentionedUserIds) {
+          userIdsToNotify = (dto.mentionedUserIds as bigint[]).filter(
+            (id) => id !== senderId,
+          );
+        }
+
+        if (userIdsToNotify.length > 0) {
+          await prisma.notification.createMany({
+            data: userIdsToNotify.map((userId) => ({
+              userId,
+              actorId: senderId,
+              title: dto.isMentionAll
+                ? `${senderName} mentioned @all in ${spaceName}`
+                : `${senderName} mentioned you in ${spaceName}`,
+              message: dto.content.slice(0, 200),
+              type: "CHAT" as any,
+              referenceId: message.id,
+              referenceType: "CHAT_MENTION",
+              actionUrl: `/chat?c=${conversationId}&m=${message.id}`,
+            })),
+          });
+        }
+      } catch (err) {
+        console.error("Failed to generate mention notifications:", err);
+      }
+    }
 
     // Broadcast to conversation room via WebSockets
     try {
@@ -417,6 +589,10 @@ export class ChatService {
     messageId: bigint,
     userId: bigint,
     content: string,
+    mentionOptions?: {
+      mentionedUserIds?: (bigint | string)[];
+      isMentionAll?: boolean;
+    },
   ) {
     const message = await this.chatRepository.getMessageById(messageId);
 
@@ -432,7 +608,87 @@ export class ChatService {
       throw new AppError("You can only edit your own messages", 403);
     }
 
-    const updated = await this.chatRepository.editMessage(messageId, content);
+    const conversation =
+      await this.chatRepository.getConversationById(conversationId);
+    if (!conversation) {
+      throw new AppError("Conversation not found", 404);
+    }
+
+    const isDirect = conversation.type === "DIRECT";
+    let isMentionAll = Boolean(mentionOptions?.isMentionAll);
+    let mentionedUserIds = (mentionOptions?.mentionedUserIds || []).map((id) =>
+      BigInt(id),
+    );
+
+    if (isDirect) {
+      if (mentionedUserIds.length > 0 || isMentionAll) {
+        throw new AppError("Mentions are not allowed in direct messages", 400);
+      }
+      isMentionAll = false;
+      mentionedUserIds = [];
+    } else {
+      const senderParticipant = conversation.participants.find(
+        (p) => p.userId === userId,
+      );
+      const isManager =
+        senderParticipant?.memberRole === "OWNER" ||
+        senderParticipant?.memberRole === "ADMIN";
+
+      if (!isMentionAll && /(?:^|\s)@(all|everyone)\b/i.test(content)) {
+        isMentionAll = true;
+      }
+
+      if (isMentionAll && !isManager) {
+        throw new AppError(
+          "Only space managers can mention @all or @everyone",
+          403,
+        );
+      }
+
+      const activeParticipants = conversation.participants.filter(
+        (p) => p.leftAt === null,
+      );
+      const activeParticipantMap = new Map(
+        activeParticipants.map((p) => [String(p.userId), p]),
+      );
+
+      for (const uid of mentionedUserIds) {
+        if (!activeParticipantMap.has(String(uid))) {
+          throw new AppError(
+            "Cannot mention a user who is not a member of this space",
+            400,
+          );
+        }
+      }
+
+      if (mentionedUserIds.length === 0) {
+        const usernameMatches = content.match(/(?:^|\s)@([a-zA-Z0-9_.-]+)\b/g);
+        if (usernameMatches) {
+          for (const match of usernameMatches) {
+            const raw = match.trim().replace(/^@/, "").toLowerCase();
+            if (raw === "all" || raw === "everyone") continue;
+            const found = activeParticipants.find(
+              (p) =>
+                p.user.username.toLowerCase() === raw ||
+                p.user.fullName.toLowerCase().replace(/\s+/g, "") === raw,
+            );
+            if (found && !mentionedUserIds.includes(found.userId)) {
+              mentionedUserIds.push(found.userId);
+            }
+          }
+        }
+      }
+
+      mentionedUserIds = Array.from(
+        new Set(mentionedUserIds.map((id) => String(id))),
+      ).map((id) => BigInt(id));
+    }
+
+    const updated = await this.chatRepository.editMessage(
+      messageId,
+      content,
+      isDirect ? undefined : { mentionedUserIds, isMentionAll },
+    );
 
     // Broadcast update via WebSockets
     try {
@@ -736,6 +992,10 @@ export class ChatService {
 
   async searchUsers(query?: string, excludeUserId?: bigint) {
     return this.chatRepository.searchUsers(query, excludeUserId);
+  }
+
+  async searchGlobal(userId: bigint, dto: GlobalSearchQueryDto) {
+    return this.chatRepository.searchGlobal(userId, dto);
   }
 }
 

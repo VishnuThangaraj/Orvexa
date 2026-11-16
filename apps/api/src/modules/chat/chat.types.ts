@@ -68,6 +68,7 @@ export interface UpdateConversationDto {
   description?: string;
   visibility?: "PUBLIC" | "PRIVATE";
   imageId?: bigint | string | null;
+  isArchived?: boolean;
 }
 
 export interface AddParticipantsDto {
@@ -88,6 +89,7 @@ export interface FetchConversationsQueryDto {
   type?: ConversationType;
   isArchived?: boolean;
   isPinned?: boolean;
+  hasMentions?: boolean;
   search?: string;
   limit?: number;
   offset?: number;
@@ -96,17 +98,34 @@ export interface FetchConversationsQueryDto {
 export interface SendMessageDto {
   conversationId: bigint | string;
   content: string;
+  clientMessageId?: string;
   messageType?: ChatMessageType;
   parentMessageId?: bigint | string | null;
   attachmentIds?: (bigint | string)[];
+  mentionedUserIds?: (bigint | string)[];
+  isMentionAll?: boolean;
 }
 
 export interface EditMessageDto {
   content: string;
+  mentionedUserIds?: (bigint | string)[];
+  isMentionAll?: boolean;
 }
 
 export interface FetchMessagesQueryDto {
   cursor?: bigint | string;
   limit?: number;
   parentMessageId?: bigint | string | null;
+}
+
+export interface GlobalSearchQueryDto {
+  q: string;
+  type?: "ALL" | "MESSAGES" | "PEOPLE" | "SPACES";
+  limit?: number;
+}
+
+export interface GlobalSearchResult {
+  messages: any[];
+  people: any[];
+  spaces: any[];
 }

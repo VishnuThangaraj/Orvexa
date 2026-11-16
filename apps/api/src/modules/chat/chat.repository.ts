@@ -8,6 +8,8 @@ import type {
   SendMessageDto,
   FetchMessagesQueryDto,
   CreateAssetData,
+  GlobalSearchQueryDto,
+  GlobalSearchResult,
 } from "./chat.types.js";
 
 const userSelect = {
@@ -42,6 +44,17 @@ const messageInclude = {
     },
   },
   reactions: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          username: true,
+        },
+      },
+    },
+  },
+  mentions: {
     include: {
       user: {
         select: {
@@ -216,6 +229,14 @@ export class ChatRepository {
       whereClause.type = options.type;
     }
 
+    if (options.hasMentions) {
+      whereClause.mentions = {
+        some: {
+          OR: [{ userId }, { isAll: true }],
+        },
+      };
+    }
+
     if (options.search) {
       whereClause.OR = [
         { name: { contains: options.search, mode: "insensitive" } },
@@ -376,6 +397,9 @@ export class ChatRepository {
         ...(data.imageId !== undefined && {
           imageId: data.imageId ? BigInt(data.imageId) : null,
         }),
+        ...(data.isArchived !== undefined && {
+          archivedAt: data.isArchived ? new Date() : null,
+        }),
       },
       include: {
         image: true,
@@ -389,6 +413,69 @@ export class ChatRepository {
     });
   }
 
+  async discoverPublicSpaces(
+    userId: bigint,
+    search?: string,
+    limit = 30,
+    offset = 0,
+  ) {
+    const whereClause: any = {
+      visibility: "PUBLIC",
+      archivedAt: null,
+      type: { in: ["CHANNEL", "GROUP"] },
+    };
+
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const [spaces, totalCount] = await Promise.all([
+      prisma.conversation.findMany({
+        where: whereClause,
+        take: limit,
+        skip: offset,
+        orderBy: [{ lastMessageAt: "desc" }, { createdAt: "desc" }],
+        include: {
+          image: true,
+          participants: {
+            where: { leftAt: null },
+            select: {
+              userId: true,
+              memberRole: true,
+            },
+          },
+          _count: {
+            select: {
+              messages: true,
+            },
+          },
+        },
+      }),
+      prisma.conversation.count({ where: whereClause }),
+    ]);
+
+    const formatted = spaces.map((space) => {
+      const isMember = space.participants.some((p) => p.userId === userId);
+      return {
+        id: space.id,
+        name: space.name,
+        description: space.description,
+        type: space.type,
+        visibility: space.visibility,
+        image: space.image,
+        memberCount: space.participants.length,
+        isMember,
+        createdAt: space.createdAt,
+        lastMessageAt: space.lastMessageAt,
+      };
+    });
+
+    return { spaces: formatted, totalCount, limit, offset };
+  }
+
   // Messaging Engine Repository Methods
   async createMessage(senderId: bigint, dto: SendMessageDto) {
     const conversationId = BigInt(dto.conversationId);
@@ -396,18 +483,48 @@ export class ChatRepository {
       ? BigInt(dto.parentMessageId)
       : null;
     const attachmentIds = (dto.attachmentIds || []).map((id) => BigInt(id));
+    const mentionedUserIds = (dto.mentionedUserIds || []).map((id) => BigInt(id));
+    const isMentionAll = Boolean(dto.isMentionAll);
+
+    // Task 6.1: Idempotency check with clientMessageId
+    if (dto.clientMessageId) {
+      const existing = await prisma.chatMessage.findFirst({
+        where: {
+          conversationId,
+          senderId,
+          clientMessageId: dto.clientMessageId,
+        },
+        include: messageInclude,
+      });
+      if (existing) {
+        return Object.assign(existing, { isDuplicate: true });
+      }
+    }
 
     return prisma.$transaction(async (tx) => {
       const message = await tx.chatMessage.create({
         data: {
           conversationId,
           senderId,
+          clientMessageId: dto.clientMessageId || null,
           content: dto.content,
           messageType: dto.messageType ?? "TEXT",
           parentMessageId,
           ...(attachmentIds.length > 0 && {
             attachments: {
               create: attachmentIds.map((assetId) => ({ assetId })),
+            },
+          }),
+          ...((mentionedUserIds.length > 0 || isMentionAll) && {
+            mentions: {
+              create: [
+                ...(isMentionAll ? [{ conversationId, isAll: true }] : []),
+                ...mentionedUserIds.map((userId) => ({
+                  conversationId,
+                  userId,
+                  isAll: false,
+                })),
+              ],
             },
           }),
         },
@@ -455,15 +572,53 @@ export class ChatRepository {
     return messages.reverse();
   }
 
-  async editMessage(messageId: bigint, content: string) {
-    return prisma.chatMessage.update({
-      where: { id: messageId },
-      data: {
-        content,
-        isEdited: true,
-        editedAt: new Date(),
-      },
-      include: messageInclude,
+  async editMessage(
+    messageId: bigint,
+    content: string,
+    mentions?: { mentionedUserIds?: bigint[]; isMentionAll?: boolean },
+  ) {
+    return prisma.$transaction(async (tx) => {
+      if (mentions) {
+        await tx.chatMention.deleteMany({
+          where: { messageId },
+        });
+
+        const isMentionAll = Boolean(mentions.isMentionAll);
+        const mentionedUserIds = (mentions.mentionedUserIds || []).map((id) =>
+          BigInt(id),
+        );
+
+        const existing = await tx.chatMessage.findUnique({
+          where: { id: messageId },
+          select: { conversationId: true },
+        });
+
+        if (existing && (mentionedUserIds.length > 0 || isMentionAll)) {
+          await tx.chatMention.createMany({
+            data: [
+              ...(isMentionAll
+                ? [{ messageId, conversationId: existing.conversationId, isAll: true }]
+                : []),
+              ...mentionedUserIds.map((userId) => ({
+                messageId,
+                conversationId: existing.conversationId,
+                userId,
+                isAll: false,
+              })),
+            ],
+          });
+        }
+      }
+
+      return tx.chatMessage.update({
+        where: { id: messageId },
+        data: {
+          content,
+          isEdited: true,
+          editedAt: new Date(),
+        },
+        include: messageInclude,
+      });
     });
   }
 
@@ -640,6 +795,123 @@ export class ChatRepository {
       select: userSelect,
       orderBy: { fullName: "asc" },
     });
+  }
+
+  async searchGlobal(
+    userId: bigint,
+    dto: GlobalSearchQueryDto,
+  ): Promise<GlobalSearchResult> {
+    const q = dto.q.trim();
+    const type = dto.type || "ALL";
+    const limit = dto.limit || 20;
+
+    const shouldSearchMessages = type === "ALL" || type === "MESSAGES";
+    const shouldSearchPeople = type === "ALL" || type === "PEOPLE";
+    const shouldSearchSpaces = type === "ALL" || type === "SPACES";
+
+    const [messages, people, spaces] = await Promise.all([
+      shouldSearchMessages
+        ? prisma.chatMessage.findMany({
+            where: {
+              deletedAt: null,
+              content: { contains: q, mode: "insensitive" },
+              conversation: {
+                archivedAt: null,
+                OR: [
+                  { visibility: "PUBLIC" },
+                  { participants: { some: { userId, leftAt: null } } },
+                ],
+              },
+            },
+            take: limit,
+            orderBy: { createdAt: "desc" },
+            include: {
+              sender: { select: userSelect },
+              conversation: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  visibility: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+
+      shouldSearchPeople
+        ? prisma.user.findMany({
+            where: {
+              isActive: true,
+              id: { not: userId },
+              OR: [
+                { fullName: { contains: q, mode: "insensitive" } },
+                { username: { contains: q, mode: "insensitive" } },
+                { email: { contains: q, mode: "insensitive" } },
+              ],
+            },
+            take: limit,
+            select: userSelect,
+            orderBy: { fullName: "asc" },
+          })
+        : Promise.resolve([]),
+
+      shouldSearchSpaces
+        ? prisma.conversation.findMany({
+            where: {
+              type: { in: ["GROUP", "CHANNEL"] },
+              archivedAt: null,
+              OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                { description: { contains: q, mode: "insensitive" } },
+              ],
+              AND: [
+                {
+                  OR: [
+                    { visibility: "PUBLIC" },
+                    { participants: { some: { userId, leftAt: null } } },
+                  ],
+                },
+              ],
+            },
+            take: limit,
+            include: {
+              image: true,
+              _count: {
+                select: {
+                  participants: {
+                    where: { leftAt: null },
+                  },
+                },
+              },
+              participants: {
+                where: { userId, leftAt: null },
+                select: { memberRole: true },
+              },
+            },
+            orderBy: { lastMessageAt: "desc" },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const formattedSpaces = spaces.map((space) => ({
+      id: space.id,
+      name: space.name,
+      description: space.description,
+      type: space.type,
+      visibility: space.visibility,
+      imageUrl: space.image?.secureUrl || null,
+      memberCount: space._count.participants,
+      isMember: space.participants.length > 0,
+      myRole: space.participants[0]?.memberRole || null,
+      lastMessageAt: space.lastMessageAt,
+    }));
+
+    return {
+      messages,
+      people,
+      spaces: formattedSpaces,
+    };
   }
 }
 

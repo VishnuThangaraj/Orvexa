@@ -5,6 +5,7 @@ import type {
   CreateDirectConversationPayload,
   CreateGroupOrChannelPayload,
   UpdateParticipantSettingsPayload,
+  UpdateConversationPayload,
 } from "../types/chat.types";
 
 export const CHAT_QUERY_KEYS = {
@@ -14,6 +15,7 @@ export const CHAT_QUERY_KEYS = {
   pins: (id: string) => ["chat", "pins", id] as const,
   presence: ["chat", "presence"] as const,
   users: (query?: string) => ["chat", "users", query] as const,
+  discoverSpaces: (search?: string) => ["chat", "spaces", "discover", search] as const,
 };
 
 export const useConversations = (options?: FetchConversationsOptions) => {
@@ -90,5 +92,80 @@ export const useOnlinePresence = () => {
     queryKey: CHAT_QUERY_KEYS.presence,
     queryFn: () => chatApi.getOnlinePresence(),
     refetchInterval: 1000 * 60, // Periodic fallback poll every 60s
+  });
+};
+
+export const useUpdateConversation = (conversationId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdateConversationPayload) =>
+      chatApi.updateConversation(conversationId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversations,
+      });
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversation(conversationId),
+      });
+    },
+  });
+};
+
+export const useRemoveParticipant = (conversationId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) =>
+      chatApi.removeParticipant(conversationId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversations,
+      });
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversation(conversationId),
+      });
+    },
+  });
+};
+
+export const useUpdateParticipantRole = (conversationId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      userId,
+      memberRole,
+    }: {
+      userId: string;
+      memberRole: "ADMIN" | "MEMBER";
+    }) => chatApi.updateParticipantRole(conversationId, userId, memberRole),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversation(conversationId),
+      });
+    },
+  });
+};
+
+export const useDiscoverPublicSpaces = (search?: string) => {
+  return useQuery({
+    queryKey: CHAT_QUERY_KEYS.discoverSpaces(search),
+    queryFn: () => chatApi.discoverPublicSpaces(search),
+    staleTime: 1000 * 30,
+  });
+};
+
+export const useJoinPublicSpace = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      chatApi.joinPublicSpace(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversations,
+      });
+    },
   });
 };

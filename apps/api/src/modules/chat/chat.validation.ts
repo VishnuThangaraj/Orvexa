@@ -42,6 +42,13 @@ export const updateConversationSchema = z.object({
   description: z.string().trim().max(1000).nullable().optional(),
   visibility: z.enum(["PUBLIC", "PRIVATE"]).optional(),
   imageId: numericIdSchema.nullable().optional(),
+  isArchived: z.boolean().optional(),
+});
+
+export const discoverSpacesQuerySchema = z.object({
+  search: z.string().trim().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 
 export const addParticipantsSchema = z.object({
@@ -81,6 +88,10 @@ export const fetchConversationsQuerySchema = z.object({
     .union([z.boolean(), z.enum(["true", "false"])])
     .transform((val) => val === true || val === "true")
     .optional(),
+  hasMentions: z
+    .union([z.boolean(), z.enum(["true", "false"])])
+    .transform((val) => val === true || val === "true")
+    .optional(),
   search: z.string().trim().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(30),
   offset: z.coerce.number().int().min(0).default(0),
@@ -92,12 +103,15 @@ export const sendMessageSchema = z.object({
     .trim()
     .min(1, "Message content cannot be empty")
     .max(10000, "Message content cannot exceed 10000 characters"),
+  clientMessageId: z.string().trim().max(64).optional(),
   messageType: z
     .enum(["TEXT", "IMAGE", "FILE", "AUDIO", "SYSTEM"])
     .optional()
     .default("TEXT"),
   parentMessageId: numericIdSchema.nullable().optional(),
   attachmentIds: z.array(numericIdSchema).optional().default([]),
+  mentionedUserIds: z.array(numericIdSchema).optional().default([]),
+  isMentionAll: z.boolean().optional().default(false),
 });
 
 export const editMessageSchema = z.object({
@@ -106,6 +120,8 @@ export const editMessageSchema = z.object({
     .trim()
     .min(1, "Message content cannot be empty")
     .max(10000, "Message content cannot exceed 10000 characters"),
+  mentionedUserIds: z.array(numericIdSchema).optional(),
+  isMentionAll: z.boolean().optional(),
 });
 
 export const messageIdParamSchema = z.object({
@@ -133,4 +149,10 @@ export const markReadSchema = z.object({
 
 export const attachmentIdParamSchema = z.object({
   id: numericIdSchema,
+});
+
+export const globalSearchQuerySchema = z.object({
+  q: z.string().trim().min(1, "Search query cannot be empty"),
+  type: z.enum(["ALL", "MESSAGES", "PEOPLE", "SPACES"]).default("ALL").optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20).optional(),
 });

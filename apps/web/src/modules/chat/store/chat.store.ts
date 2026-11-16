@@ -9,8 +9,11 @@ interface ChatState {
   searchQuery: string;
   unreadOnly: boolean;
   isNewChatModalOpen: boolean;
+  isBrowseSpacesOpen: boolean;
   isGroupInfoOpen: boolean;
   replyingToMessage: ChatMessage | null;
+  activeThreadRootMessage: ChatMessage | null;
+  highlightedMessageId: string | null;
   typingUsers: Record<string, string[]>; // conversationId -> array of user display names
 
   // Actions
@@ -19,8 +22,11 @@ interface ChatState {
   setSearchQuery: (query: string) => void;
   setUnreadOnly: (unreadOnly: boolean) => void;
   setIsNewChatModalOpen: (open: boolean) => void;
+  setIsBrowseSpacesOpen: (open: boolean) => void;
   setIsGroupInfoOpen: (open: boolean) => void;
   setReplyingToMessage: (message: ChatMessage | null) => void;
+  setActiveThreadRootMessage: (message: ChatMessage | null) => void;
+  setHighlightedMessageId: (id: string | null) => void;
   setUserTyping: (
     conversationId: string,
     userId: string,
@@ -35,22 +41,31 @@ export const useChatStore = create<ChatState>((set) => ({
   searchQuery: "",
   unreadOnly: false,
   isNewChatModalOpen: false,
+  isBrowseSpacesOpen: false,
   isGroupInfoOpen: false,
   replyingToMessage: null,
+  activeThreadRootMessage: null,
+  highlightedMessageId: null,
   typingUsers: {},
 
   setActiveConversationId: (id) =>
     set({
       activeConversationId: id,
       replyingToMessage: null,
+      activeThreadRootMessage: null,
     }),
 
   setActiveShortcut: (shortcut) => set({ activeShortcut: shortcut }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setUnreadOnly: (unreadOnly) => set({ unreadOnly }),
   setIsNewChatModalOpen: (isNewChatModalOpen) => set({ isNewChatModalOpen }),
+  setIsBrowseSpacesOpen: (isBrowseSpacesOpen) => set({ isBrowseSpacesOpen }),
   setIsGroupInfoOpen: (isGroupInfoOpen) => set({ isGroupInfoOpen }),
   setReplyingToMessage: (message) => set({ replyingToMessage: message }),
+  setActiveThreadRootMessage: (activeThreadRootMessage) =>
+    set({ activeThreadRootMessage }),
+  setHighlightedMessageId: (highlightedMessageId) =>
+    set({ highlightedMessageId }),
 
   setUserTyping: (conversationId, _userId, userName, isTyping) =>
     set((state) => {

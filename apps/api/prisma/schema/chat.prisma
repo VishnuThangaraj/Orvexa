@@ -20,6 +20,7 @@ model Conversation {
   participants   ConversationParticipant[]
   messages       ChatMessage[]
   pinnedMessages ChatPinnedMessage[]
+  mentions       ChatMention[]
   meetings       Meeting[]
 
   @@unique([directUserLowId, directUserHighId])
@@ -54,6 +55,7 @@ model ChatMessage {
   conversationId  BigInt          @map("conversation_id")
   senderId        BigInt          @map("sender_id")
   parentMessageId BigInt?         @map("parent_message_id")
+  clientMessageId String?         @map("client_message_id") @db.VarChar(64)
   content         String          @db.Text
   messageType     ChatMessageType @default(TEXT) @map("message_type")
   isEdited        Boolean         @default(false) @map("is_edited")
@@ -72,8 +74,10 @@ model ChatMessage {
   reactions             ChatReaction[]
   pinnedInConversations ChatPinnedMessage[]
   participantsLastRead  ConversationParticipant[] @relation("ParticipantLastRead")
+  mentions              ChatMention[]
 
   @@index([conversationId, createdAt])
+  @@index([conversationId, clientMessageId])
   @@index([parentMessageId])
   @@map("chat_messages")
 }
@@ -119,4 +123,21 @@ model ChatPinnedMessage {
 
   @@unique([conversationId, messageId])
   @@map("chat_pinned_messages")
+}
+
+model ChatMention {
+  id             BigInt   @id @default(autoincrement())
+  messageId      BigInt   @map("message_id")
+  conversationId BigInt   @map("conversation_id")
+  userId         BigInt?  @map("user_id")
+  isAll          Boolean  @default(false) @map("is_all")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  message      ChatMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User?        @relation("MentionedUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, conversationId])
+  @@index([messageId])
+  @@map("chat_mentions")
 }

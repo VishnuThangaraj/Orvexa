@@ -21,6 +21,8 @@ import {
   reactionSchema,
   markReadSchema,
   attachmentIdParamSchema,
+  discoverSpacesQuerySchema,
+  globalSearchQuerySchema,
 } from "./chat.validation.js";
 
 const router: Router = Router();
@@ -33,6 +35,20 @@ router.get("/presence", chatController.getOnlinePresence);
 
 // Search users in workspace
 router.get("/users", chatController.searchUsers);
+
+// Task 4.2: Global chat search across messages, people, and spaces
+router.get(
+  "/search",
+  validate(globalSearchQuerySchema, "query"),
+  chatController.searchGlobal,
+);
+
+// Discover public spaces
+router.get(
+  "/spaces/discover",
+  validate(discoverSpacesQuerySchema, "query"),
+  chatController.discoverPublicSpaces,
+);
 
 // List user conversations
 router.get(
@@ -68,6 +84,13 @@ router.patch(
   validate(conversationIdParamSchema, "params"),
   validate(updateConversationSchema),
   chatController.updateConversation,
+);
+
+// Join public space
+router.post(
+  "/conversations/:id/join",
+  validate(conversationIdParamSchema, "params"),
+  chatController.joinPublicSpace,
 );
 
 // Update user settings in conversation (mute, pin, archive)

@@ -26,6 +26,7 @@ export interface ClientToServerEvents {
       messageType?: string;
       parentMessageId?: string;
       attachmentIds?: string[];
+      clientMessageId?: string;
     },
     callback?: (res: { success: boolean; data?: any; error?: string }) => void,
   ) => void;
@@ -34,6 +35,10 @@ export interface ClientToServerEvents {
   "message:read": (
     data: { conversationId: string; messageId: string },
     callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  "presence:update": (
+    data: { status: "ACTIVE" | "AWAY" | "DND" },
+    callback?: (res: { success: boolean }) => void,
   ) => void;
 }
 
@@ -69,6 +74,7 @@ export interface ServerToClientEvents {
   "presence:state": (data: {
     userId: string;
     isOnline: boolean;
+    status?: "ACTIVE" | "AWAY" | "DND";
     lastSeen?: string;
   }) => void;
   error: (err: { message: string; code?: string | number }) => void;

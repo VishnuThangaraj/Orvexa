@@ -94,6 +94,36 @@ export const chatApi = {
     );
   },
 
+  updateParticipantRole: async (
+    conversationId: string,
+    userId: string,
+    memberRole: "ADMIN" | "MEMBER",
+  ): Promise<void> => {
+    await api.patch(
+      `/chat/conversations/${conversationId}/participants/${userId}/role`,
+      { memberRole },
+    );
+  },
+
+  discoverPublicSpaces: async (
+    search?: string,
+  ): Promise<{ spaces: any[]; totalCount: number }> => {
+    const res = await api.get<ApiResponse<{ spaces: any[]; totalCount: number }>>(
+      "/chat/spaces/discover",
+      { params: { search } },
+    );
+    return res.data.data!;
+  },
+
+  joinPublicSpace: async (
+    conversationId: string,
+  ): Promise<Conversation> => {
+    const res = await api.post<ApiResponse<Conversation>>(
+      `/chat/conversations/${conversationId}/join`,
+    );
+    return res.data.data!;
+  },
+
   // Messages API
   sendMessage: async (
     conversationId: string,
@@ -192,9 +222,26 @@ export const chatApi = {
     return res.data.data!;
   },
 
+  searchGlobal: async (
+    q: string,
+    type?: "ALL" | "MESSAGES" | "PEOPLE" | "SPACES",
+    limit?: number,
+  ): Promise<{ messages: any[]; people: any[]; spaces: any[] }> => {
+    const res = await api.get<
+      ApiResponse<{ messages: any[]; people: any[]; spaces: any[] }>
+    >("/chat/search", {
+      params: { q, type, limit },
+    });
+    return res.data.data!;
+  },
+
   // Attachments API
   uploadAttachments: async (
     formData: FormData,
+    options?: {
+      onProgress?: (percent: number) => void;
+      signal?: AbortSignal;
+    },
   ): Promise<UploadChatAttachmentsResult> => {
     const res = await api.post<ApiResponse<UploadChatAttachmentsResult>>(
       "/chat/attachments",
@@ -202,6 +249,15 @@ export const chatApi = {
       {
         headers: {
           "Content-Type": "multipart/form-data",
+        },
+        signal: options?.signal,
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total && options?.onProgress) {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+            options.onProgress(percent);
+          }
         },
       },
     );

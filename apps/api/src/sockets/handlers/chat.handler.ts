@@ -9,6 +9,27 @@ const getChatService = (): ChatService => {
   return chatServiceInstance;
 };
 
+// In-memory sliding window rate limiter: max 15 messages per 3000ms per user
+const userMessageTimestamps = new Map<string, number[]>();
+
+const isMessageRateLimited = (userId: string): boolean => {
+  const now = Date.now();
+  const windowMs = 3000;
+  const maxMessages = 15;
+
+  const timestamps = (userMessageTimestamps.get(userId) || []).filter(
+    (ts) => now - ts < windowMs,
+  );
+
+  if (timestamps.length >= maxMessages) {
+    return true;
+  }
+
+  timestamps.push(now);
+  userMessageTimestamps.set(userId, timestamps);
+  return false;
+};
+
 export const registerChatHandlers = (
   _io: TypedServer,
   socket: AuthenticatedSocket,
@@ -73,10 +94,20 @@ export const registerChatHandlers = (
         return;
       }
 
+      // Check socket message rate limit
+      if (isMessageRateLimited(user.id)) {
+        callback?.({
+          success: false,
+          error: "Rate limit exceeded. Please wait a moment before sending more messages.",
+        });
+        return;
+      }
+
       const senderId = BigInt(user.id);
       const message = await getChatService().sendMessage(senderId, {
         conversationId: data.conversationId,
         content: data.content,
+        clientMessageId: data.clientMessageId,
         messageType: data.messageType as any,
         parentMessageId: data.parentMessageId,
         attachmentIds: data.attachmentIds,

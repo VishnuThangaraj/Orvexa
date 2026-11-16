@@ -38,6 +38,7 @@ model User {
   deletedChatMessages        ChatMessage[]             @relation("ChatMessageDeletedBy")
   chatReactions              ChatReaction[]
   chatPinnedMessages         ChatPinnedMessage[]       @relation("PinnedBy")
+  receivedChatMentions       ChatMention[]             @relation("MentionedUser")
 
   // Drive relations
   ownedDriveFolders       DriveFolder[]      @relation("DriveFolderOwner")

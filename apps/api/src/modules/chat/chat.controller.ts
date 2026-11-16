@@ -230,6 +230,58 @@ export class ChatController {
     }
   };
 
+  discoverPublicSpaces = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const search = req.query.search as string | undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const offset = req.query.offset ? Number(req.query.offset) : undefined;
+
+      const result = await this.chatService.discoverPublicSpaces(
+        BigInt(userId),
+        search,
+        limit,
+        offset,
+      );
+
+      return sendResponse(
+        res,
+        200,
+        "Public spaces discovered successfully",
+        result,
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  joinPublicSpace = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const conversationId = BigInt(getParam(req.params.id));
+      const joined = await this.chatService.joinPublicSpace(
+        conversationId,
+        BigInt(userId),
+      );
+
+      return sendResponse(res, 200, "Joined space successfully", joined);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   updateParticipantSettings = async (
     req: Request,
     res: Response,
@@ -318,6 +370,10 @@ export class ChatController {
         messageId,
         BigInt(userId),
         req.body.content,
+        {
+          mentionedUserIds: req.body.mentionedUserIds,
+          isMentionAll: req.body.isMentionAll,
+        },
       );
 
       return sendResponse(res, 200, "Message edited successfully", updated);
@@ -472,11 +528,12 @@ export class ChatController {
   ) => {
     try {
       const onlineUserIds = presenceService.getOnlineUserIds();
+      const presenceMap = presenceService.getPresenceMap();
       return sendResponse(
         res,
         200,
         "Online presence retrieved successfully",
-        { onlineUserIds },
+        { onlineUserIds, presenceMap },
       );
     } catch (error) {
       next(error);
@@ -563,6 +620,36 @@ export class ChatController {
         200,
         "Users retrieved successfully",
         users,
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  searchGlobal = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const q = req.query.q as string;
+      const type = req.query.type as any;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+
+      const result = await this.chatService.searchGlobal(BigInt(userId), {
+        q,
+        type,
+        limit,
+      });
+
+      return sendResponse(
+        res,
+        200,
+        "Search results retrieved successfully",
+        result,
       );
     } catch (error) {
       next(error);

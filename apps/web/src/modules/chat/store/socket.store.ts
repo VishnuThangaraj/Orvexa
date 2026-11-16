@@ -6,13 +6,17 @@ interface SocketState {
   connectionError: string | null;
   activeRooms: string[];
   onlineUsers: Record<string, boolean>;
+  presenceStatuses: Record<string, "ACTIVE" | "AWAY" | "DND">;
+  myPresenceStatus: "ACTIVE" | "AWAY" | "DND";
 
   setConnected: (isConnected: boolean) => void;
   setConnecting: (isConnecting: boolean) => void;
   setError: (connectionError: string | null) => void;
   setUserOnline: (userId: string, isOnline: boolean) => void;
+  setUserPresenceStatus: (userId: string, status: "ACTIVE" | "AWAY" | "DND") => void;
+  setMyPresenceStatus: (status: "ACTIVE" | "AWAY" | "DND") => void;
   setOnlineUsers: (userIds: string[]) => void;
-  addOnlineUser: (userId: string) => void;
+  addOnlineUser: (userId: string, status?: "ACTIVE" | "AWAY" | "DND") => void;
   removeOnlineUser: (userId: string) => void;
   addActiveRoom: (room: string) => void;
   removeActiveRoom: (room: string) => void;
@@ -25,6 +29,8 @@ export const useSocketStore = create<SocketState>((set) => ({
   connectionError: null,
   activeRooms: [],
   onlineUsers: {},
+  presenceStatuses: {},
+  myPresenceStatus: "ACTIVE",
 
   setConnected: (isConnected) =>
     set({ isConnected, isConnecting: false, connectionError: isConnected ? null : undefined }),
@@ -39,6 +45,13 @@ export const useSocketStore = create<SocketState>((set) => ({
       onlineUsers: { ...state.onlineUsers, [userId]: isOnline },
     })),
 
+  setUserPresenceStatus: (userId, status) =>
+    set((state) => ({
+      presenceStatuses: { ...state.presenceStatuses, [userId]: status },
+    })),
+
+  setMyPresenceStatus: (myPresenceStatus) => set({ myPresenceStatus }),
+
   setOnlineUsers: (userIds) =>
     set({
       onlineUsers: userIds.reduce<Record<string, boolean>>((acc, id) => {
@@ -47,14 +60,16 @@ export const useSocketStore = create<SocketState>((set) => ({
       }, {}),
     }),
 
-  addOnlineUser: (userId) =>
+  addOnlineUser: (userId, status = "ACTIVE") =>
     set((state) => ({
       onlineUsers: { ...state.onlineUsers, [userId]: true },
+      presenceStatuses: { ...state.presenceStatuses, [userId]: status },
     })),
 
   removeOnlineUser: (userId) =>
     set((state) => ({
       onlineUsers: { ...state.onlineUsers, [userId]: false },
+      presenceStatuses: { ...state.presenceStatuses, [userId]: undefined as any },
     })),
 
   addActiveRoom: (room) =>
