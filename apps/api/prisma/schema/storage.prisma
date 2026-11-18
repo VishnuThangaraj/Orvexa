@@ -17,13 +17,13 @@ model FileAsset {
   cloudDeletedAt    DateTime?              @map("cloud_deleted_at") @db.Timestamptz(6)
   createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  uploader             User?                  @relation("AssetUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
-  userProfileImages    User[]                 @relation("ProfileImage")
-  conversationImages   Conversation[]         @relation("ConversationImage")
+  uploader             User?                 @relation("AssetUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  userProfileImages    User[]                @relation("ProfileImage")
+  conversationImages   Conversation[]        @relation("ConversationImage")
   mailAttachments      MailAttachment[]
   mailDraftAttachments MailDraftAttachment[]
   chatAttachments      ChatAttachment[]
-  driveFiles           DriveFile[]            @relation("CurrentDriveFileAsset")
+  driveFiles           DriveFile[]           @relation("CurrentDriveFileAsset")
   driveFileVersions    DriveFileVersion[]
   meetingRecordings    MeetingRecording[]
 

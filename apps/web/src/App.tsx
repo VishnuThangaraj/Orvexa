@@ -13,6 +13,7 @@ const Landing = lazy(() => import("@/modules/landing/pages/Landing"));
 const Home = lazy(() => import("@/modules/home/Pages/Home"));
 const Mail = lazy(() => import("@/modules/mail/pages/Mail"));
 const Chat = lazy(() => import("@/modules/chat/pages/Chat"));
+const Calendar = lazy(() => import("@/modules/calendar/pages/Calendar"));
 
 const Profile = lazy(() => import("@/modules/profile/pages/Profile"));
 
@@ -40,6 +41,7 @@ const App = () => {
             <Route path="/home" element={<Home />} />
             <Route path="/mail" element={<Mail />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/calendar" element={<Calendar />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
         </Route>
