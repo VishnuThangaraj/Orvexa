@@ -14,24 +14,36 @@ body {
   font-family: "Google Sans Flex", "DM Sans", system-ui, sans-serif;
 }
 
-/* Scrollbar utilities */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Scrollbar utilities - completely remove scrollbars across all browsers */
+html,
+body,
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-/* Chat container: remove scrollbars across chat page */
-.chat-no-scrollbar,
-.chat-no-scrollbar * {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
+
+.no-scrollbar::-webkit-scrollbar,
 .chat-no-scrollbar::-webkit-scrollbar,
 .chat-no-scrollbar *::-webkit-scrollbar {
-  display: none;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.no-scrollbar,
+.chat-no-scrollbar,
+.chat-no-scrollbar * {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 
