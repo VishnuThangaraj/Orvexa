@@ -55,6 +55,7 @@ enum DriveAccessLevel {
 enum CalendarEventType {
   PERSONAL
   SHARED
+  HOLIDAY
 }
 
 enum EventVisibility {

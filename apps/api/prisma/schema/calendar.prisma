@@ -1,28 +1,33 @@
 model CalendarEvent {
-  id             BigInt            @id @default(autoincrement())
-  title          String            @db.VarChar(255)
-  description    String?           @db.Text
-  createdBy      BigInt            @map("created_by")
-  startTime      DateTime          @map("start_time") @db.Timestamptz(6)
-  endTime        DateTime          @map("end_time") @db.Timestamptz(6)
-  isAllDay       Boolean           @default(false) @map("is_all_day")
-  timezone       String?           @db.VarChar(100)
-  location       String?           @db.VarChar(255)
-  eventType      CalendarEventType @default(PERSONAL) @map("event_type")
-  visibility     EventVisibility   @default(PRIVATE)
-  recurrenceRule String?           @map("recurrence_rule") @db.Text
-  meetingId      BigInt?           @map("meeting_id")
-  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  cancelledAt    DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+  id                   BigInt            @id @default(autoincrement())
+  title                String            @db.VarChar(255)
+  description          String?           @db.Text
+  createdBy            BigInt?           @map("created_by")
+  calendarId           BigInt?           @map("calendar_id")
+  color                String?           @db.VarChar(50)
+  startTime            DateTime          @map("start_time") @db.Timestamptz(6)
+  endTime              DateTime          @map("end_time") @db.Timestamptz(6)
+  isAllDay             Boolean           @default(false) @map("is_all_day")
+  timezone             String?           @db.VarChar(100)
+  location             String?           @db.VarChar(255)
+  eventType            CalendarEventType @default(PERSONAL) @map("event_type")
+  visibility           EventVisibility   @default(PRIVATE)
+  recurrenceRule       String?           @map("recurrence_rule") @db.Text
+  recurrenceExceptions String?           @map("recurrence_exceptions") @db.Text
+  meetingId            BigInt?           @map("meeting_id")
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  cancelledAt          DateTime?         @map("cancelled_at") @db.Timestamptz(6)
 
-  creator      User                  @relation("CalendarEventCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  creator      User?                 @relation("CalendarEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  calendar     UserCalendar?         @relation(fields: [calendarId], references: [id], onDelete: SetNull)
   meeting      Meeting?              @relation(fields: [meetingId], references: [id], onDelete: SetNull)
   participants CalendarParticipant[]
   reminders    CalendarReminder[]
 
   @@index([createdBy, startTime])
   @@index([startTime, endTime])
+  @@index([calendarId])
   @@map("calendar_events")
 }
 
@@ -71,4 +76,59 @@ model CalendarShare {
 
   @@unique([ownerId, sharedWithUserId])
   @@map("calendar_shares")
+}
+
+model UserCalendar {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt?  @map("user_id")
+  name       String   @db.VarChar(255)
+  color      String   @default("#039be5") @db.VarChar(50)
+  isVisible  Boolean  @default(true) @map("is_visible")
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  isSystem   Boolean  @default(false) @map("is_system")
+  isPublic   Boolean  @default(false) @map("is_public")
+  systemType String?  @map("system_type") @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user   User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events CalendarEvent[]
+
+  @@index([userId])
+  @@index([isPublic])
+  @@map("user_calendars")
+}
+
+model CalendarTask {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt    @map("user_id")
+  title       String    @db.VarChar(255)
+  details     String?   @db.Text
+  dueDate     DateTime? @map("due_date") @db.Timestamptz(6)
+  isCompleted Boolean   @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dueDate])
+  @@map("calendar_tasks")
+}
+
+model CalendarSetting {
+  id                 BigInt   @id @default(autoincrement())
+  userId             BigInt   @unique @map("user_id")
+  defaultView        String   @default("week") @map("default_view") @db.VarChar(20)
+  showWeekends       Boolean  @default(true) @map("show_weekends")
+  showDeclinedEvents Boolean  @default(true) @map("show_declined_events")
+  showCompletedTasks Boolean  @default(true) @map("show_completed_tasks")
+  timezone           String   @default("Asia/Kolkata") @db.VarChar(100)
+  hiddenCalendarIds  String?  @map("hidden_calendar_ids") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_settings")
 }
