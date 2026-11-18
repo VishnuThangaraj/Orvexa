@@ -289,7 +289,12 @@ export const ConversationListPane: React.FC = () => {
 
       {/* Task 4.3: Home Filter Pills (Shown when NOT searching) */}
       {!isSearching && (
-        <div role="tablist" aria-label="Conversation filters" className="px-3 pb-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        <div
+          role="tablist"
+          aria-label="Conversation filters"
+          className="px-3 pb-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           {(["ALL", "UNREAD", "STARRED", "MENTIONS"] as const).map((tab) => (
             <button
               key={tab}
@@ -318,7 +323,10 @@ export const ConversationListPane: React.FC = () => {
 
       {/* Task 4.2: Search Result Type Filter Chips (Shown when searching) */}
       {isSearching && (
-        <div className="px-3 pb-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-100 dark:border-slate-800">
+        <div
+          className="px-3 pb-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-100 dark:border-slate-800"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           {(["ALL", "MESSAGES", "PEOPLE", "SPACES"] as const).map((tab) => (
             <button
               key={tab}
@@ -341,7 +349,10 @@ export const ConversationListPane: React.FC = () => {
       )}
 
       {/* Main Content: Global Search Results OR Standard Conversation List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 no-scrollbar">
+      <div
+        className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 no-scrollbar"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
         {isSearching ? (
           isSearchLoading ? (
             <div className="p-8 text-center text-xs text-slate-400 flex flex-col items-center gap-2">

@@ -99,7 +99,7 @@ export const Chat: React.FC = () => {
           {/* Pane 1: Left Navigation Sidebar */}
           <div
             className={cn(
-              "h-full shrink-0",
+              "h-full shrink-0 overflow-hidden",
               activeConversationId ? "hidden lg:flex" : "hidden md:flex",
             )}
           >
@@ -109,7 +109,7 @@ export const Chat: React.FC = () => {
           {/* Pane 2: Middle Conversation List Feed */}
           <div
             className={cn(
-              "h-full shrink-0 md:w-80 lg:w-84",
+              "h-full shrink-0 md:w-80 lg:w-84 overflow-hidden",
               activeConversationId ? "hidden md:flex" : "flex w-full",
             )}
           >
