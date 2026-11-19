@@ -1,0 +1,215 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { useMeetStore } from "../store/meet.store";
+import { useMeetingRoom } from "../hooks/useMeetingRoom";
+import { useMeetSocket } from "../hooks/useMeetSocket";
+import { MeetingRoomCanvas, type MeetLayoutMode } from "./MeetingRoomCanvas";
+import { MeetingControlBar } from "./MeetingControlBar";
+import { LeaveCallModal } from "./LeaveCallModal";
+import { DeviceSettingsModal } from "./DeviceSettingsModal";
+import { PeoplePanel } from "./panels/PeoplePanel";
+import { HostControlsPanel } from "./panels/HostControlsPanel";
+import { MeetingDetailsPanel } from "./panels/MeetingDetailsPanel";
+import { InCallChatPanel } from "./panels/InCallChatPanel";
+import type { Meeting } from "../types/meet.types";
+
+interface ActiveMeetingRoomProps {
+  meeting: Meeting;
+  meetingCode: string;
+}
+
+export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
+  meeting,
+  meetingCode,
+}) => {
+  const navigate = useNavigate();
+  const currentUser = useAuthStore((state) => state.user);
+  const liveKitData = useMeetStore((state) => state.liveKitData);
+  const activeSidePanel = useMeetStore((state) => state.activeSidePanel);
+  const setActiveSidePanel = useMeetStore((state) => state.setActiveSidePanel);
+  const endMeetingForEveryone = useMeetStore((state) => state.endMeetingForEveryone);
+
+  const [layoutMode, setLayoutMode] = useState<MeetLayoutMode>("tiled");
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const isHost =
+    currentUser?.id === meeting.hostId || liveKitData?.role === "HOST";
+
+  const handleDisconnected = useCallback(() => {
+    navigate(`/meet/${meetingCode}/left`);
+  }, [navigate, meetingCode]);
+
+  // Connect to Socket.IO for knock/admit signaling & chat
+  const { admit, deny, admitAll, sendChat } = useMeetSocket({
+    meetingCode,
+    onMeetingEnded: handleDisconnected,
+  });
+
+  // Connect to LiveKit room for real-time audio/video
+  const {
+    localParticipant,
+    remoteParticipants,
+    activeSpeakers,
+    pinnedParticipantId,
+    reactions,
+    raisedHands,
+    isHandRaised,
+    toggleMic,
+    toggleCamera,
+    toggleScreenShare,
+    setPinnedParticipant,
+    sendReaction,
+    toggleHandRaise,
+    leaveMeeting,
+  } = useMeetingRoom({
+    url: liveKitData?.url,
+    token: liveKitData?.token,
+    onDisconnected: handleDisconnected,
+  });
+
+  // Global Keyboard Shortcuts (Ctrl/Cmd + D for mic, Ctrl/Cmd + E for camera)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D")) {
+        e.preventDefault();
+        toggleMic();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "e" || e.key === "E")) {
+        e.preventDefault();
+        toggleCamera();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleMic, toggleCamera]);
+
+  // Leave / End handlers
+  const handleLeaveClick = () => {
+    if (isHost) {
+      setIsLeaveModalOpen(true);
+    } else {
+      leaveMeeting();
+      navigate(`/meet/${meetingCode}/left`);
+    }
+  };
+
+  const handleLeaveOnly = () => {
+    setIsLeaveModalOpen(false);
+    leaveMeeting();
+    navigate(`/meet/${meetingCode}/left`);
+  };
+
+  const handleEndForEveryone = async () => {
+    setIsLeaveModalOpen(false);
+    try {
+      await endMeetingForEveryone(meetingCode);
+    } catch (e) {
+      console.warn("Failed to end meeting on server:", e);
+    }
+    leaveMeeting();
+    navigate(`/meet/${meetingCode}/left`);
+  };
+
+  const totalParticipantsCount =
+    (localParticipant ? 1 : 1) + remoteParticipants.length;
+
+  return (
+    <div className="min-h-screen w-full bg-[#202124] text-white flex flex-col font-sans select-none overflow-hidden">
+      {/* Main Display: Canvas + Side Panel */}
+      <div className="flex-1 w-full flex overflow-hidden relative">
+        <MeetingRoomCanvas
+          layoutMode={layoutMode}
+          localParticipant={localParticipant}
+          remoteParticipants={remoteParticipants}
+          activeSpeakers={activeSpeakers}
+          pinnedParticipantId={pinnedParticipantId}
+          onTogglePin={(id) =>
+            setPinnedParticipant(pinnedParticipantId === id ? null : id)
+          }
+          raisedHands={raisedHands}
+          reactions={reactions}
+          fallbackUser={currentUser}
+        />
+
+        {/* Side Panels */}
+        {activeSidePanel === "people" && (
+          <PeoplePanel
+            isHost={isHost}
+            localParticipant={localParticipant}
+            remoteParticipants={remoteParticipants}
+            onAdmit={admit}
+            onDeny={deny}
+            onAdmitAll={admitAll}
+            onClose={() => setActiveSidePanel(null)}
+          />
+        )}
+
+        {activeSidePanel === "host" && isHost && (
+          <HostControlsPanel
+            meetingCode={meetingCode}
+            onClose={() => setActiveSidePanel(null)}
+          />
+        )}
+
+        {activeSidePanel === "details" && (
+          <MeetingDetailsPanel
+            meetingCode={meetingCode}
+            onClose={() => setActiveSidePanel(null)}
+          />
+        )}
+
+        {activeSidePanel === "chat" && (
+          <InCallChatPanel
+            meetingCode={meetingCode}
+            isHost={isHost}
+            onSendMessage={sendChat}
+            onClose={() => setActiveSidePanel(null)}
+          />
+        )}
+      </div>
+
+      {/* Bottom Control Bar */}
+      <MeetingControlBar
+        meetingCode={meetingCode}
+        isHost={isHost}
+        participantCount={totalParticipantsCount}
+        layoutMode={layoutMode}
+        onChangeLayout={setLayoutMode}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        isHandRaised={isHandRaised}
+        onToggleHandRaise={toggleHandRaise}
+        onSendReaction={sendReaction}
+        onToggleMic={toggleMic}
+        onToggleCamera={toggleCamera}
+        onToggleScreenShare={toggleScreenShare}
+        onLeaveCall={handleLeaveClick}
+      />
+
+      {/* Leave Call Confirmation Dialog */}
+      <LeaveCallModal
+        isOpen={isLeaveModalOpen}
+        isHost={isHost}
+        onClose={() => setIsLeaveModalOpen(false)}
+        onLeaveOnly={handleLeaveOnly}
+        onEndForEveryone={handleEndForEveryone}
+      />
+
+      {/* Device Settings Dialog */}
+      <DeviceSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+    </div>
+  );
+};
+
+export default ActiveMeetingRoom;

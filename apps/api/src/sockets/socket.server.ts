@@ -4,6 +4,7 @@ import corsOptions from "../config/cors.js";
 import { socketAuthMiddleware } from "./socket.middleware.js";
 import { registerConnectionHandlers } from "./handlers/connection.handler.js";
 import { registerChatHandlers } from "./handlers/chat.handler.js";
+import { registerMeetHandlers } from "./handlers/meet.handler.js";
 import { setIO, getIO } from "./socket.instance.js";
 import type {
   ClientToServerEvents,
@@ -38,6 +39,7 @@ export const initializeSocketServer = (httpServer: HttpServer): TypedServer => {
   io.on("connection", (socket: AuthenticatedSocket) => {
     registerConnectionHandlers(io, socket);
     registerChatHandlers(io, socket);
+    registerMeetHandlers(io, socket);
   });
 
   console.log("[SOCKET] WebSocket server initialized and listening for connections.");

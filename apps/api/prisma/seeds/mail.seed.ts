@@ -11,8 +11,8 @@ type SeedUser = {
 
 const INBOX_TEMPLATES = [
   {
-    subject: "Your Google Play Order Receipt from Sep 24, 2026",
-    body: "Google Play\n\nThank you. You've made a purchase from Google Play on Sep 24, 2026. Order number: GPA.3341-9821-4491-09182.\n\nItem: Cloud Storage Expansion (100GB)\nAmount: $1.99\nPayment Method: Visa •••• 4242\n\nIf you have any questions, visit our support center.",
+    subject: "Your Orvexa Play Order Receipt from Sep 24, 2026",
+    body: "Orvexa Play\n\nThank you. You've made a purchase from Orvexa Play on Sep 24, 2026. Order number: GPA.3341-9821-4491-09182.\n\nItem: Cloud Storage Expansion (100GB)\nAmount: $1.99\nPayment Method: Visa •••• 4242\n\nIf you have any questions, visit our support center.",
     hasAttachments: false,
   },
   {
@@ -42,12 +42,12 @@ const INBOX_TEMPLATES = [
   },
   {
     subject: "Image & Video Date Fixer - Release v2.4 Notes",
-    body: "Hey,\n\nOn start of the app it should restore the premium version itself if installed on the same Google account. We also improved EXIF metadata extraction for HEIC and WebP formats.\n\nCheck out the full release changelog attached.",
+    body: "Hey,\n\nOn start of the app it should restore the premium version itself if installed on the same Orvexa account. We also improved EXIF metadata extraction for HEIC and WebP formats.\n\nCheck out the full release changelog attached.",
     hasAttachments: false,
   },
   {
-    subject: "Annual reminder about Google Pay's Terms of Service, Consumer Policy and Privacy Policy",
-    body: "Hello Vishnu,\n\nWe wish you a great 2026! As part of our commitment to transparency, we are sending you this annual reminder regarding Google Pay's Terms of Service and Privacy Policy.\n\nNo action is required if you agree with the terms.",
+    subject: "Annual reminder about Orvexa Pay's Terms of Service, Consumer Policy and Privacy Policy",
+    body: "Hello Vishnu,\n\nWe wish you a great 2026! As part of our commitment to transparency, we are sending you this annual reminder regarding Orvexa Pay's Terms of Service and Privacy Policy.\n\nNo action is required if you agree with the terms.",
     hasAttachments: false,
   },
   {
@@ -201,7 +201,7 @@ const INBOX_TEMPLATES = [
     hasAttachments: true,
   },
   {
-    subject: "Your Google Cloud Platform monthly statement is ready",
+    subject: "Your Orvexa Cloud Platform monthly statement is ready",
     body: "Hello Vishnu,\n\nYour invoice for project orvexa-prod-9182 is now available. Total amount: $48.20. Your credit card ending in 4242 will be charged automatically on the due date.",
     hasAttachments: true,
   },

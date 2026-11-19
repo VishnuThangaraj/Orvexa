@@ -37,6 +37,7 @@ export const createEventSchema = z.object({
   eventType: eventTypeEnum.optional().default("PERSONAL"),
   visibility: eventVisibilityEnum.optional().default("PRIVATE"),
   recurrenceRule: z.string().trim().nullable().optional(),
+  meetingId: z.union([z.string(), z.number()]).nullable().optional(),
   guestUserIds: z.array(z.union([z.string(), z.number()])).optional(),
   reminders: z
     .array(
@@ -60,6 +61,7 @@ export const updateEventSchema = z.object({
   eventType: eventTypeEnum.optional(),
   visibility: eventVisibilityEnum.optional(),
   recurrenceRule: z.string().trim().nullable().optional(),
+  meetingId: z.union([z.string(), z.number()]).nullable().optional(),
   recurrenceMode: z.enum(["SINGLE", "FOLLOWING", "ALL"]).optional().default("ALL"),
   targetInstanceDate: z.string().optional(),
   guestUserIds: z.array(z.union([z.string(), z.number()])).optional(),

@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 const LETTERS = "abcdefghijklmnopqrstuvwxyz";
 
 /**
- * Generates a Google Meet style meeting code: 3 letters - 4 letters - 3 letters.
+ * Generates an Orvexa Meet style meeting code: 3 letters - 4 letters - 3 letters.
  * e.g., "abc-defg-hij"
  */
 export function generateMeetingCode(): string {

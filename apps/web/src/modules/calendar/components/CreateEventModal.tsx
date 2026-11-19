@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   X,
   Clock,
@@ -7,8 +7,12 @@ import {
   Calendar as CalendarIcon,
   Bell,
   Repeat,
+  Video,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useCalendarStore } from "../store/calendar.store";
+import { meetApi } from "@/modules/meet/api/meet.api";
 
 const COLOR_PALETTE = [
   { name: "Peacock", value: "#039be5" },
@@ -24,8 +28,13 @@ const COLOR_PALETTE = [
 ];
 
 export const CreateEventModal: React.FC = () => {
+  const isCreateModalOpen = useCalendarStore((state) => state.isCreateModalOpen);
+  if (!isCreateModalOpen) return null;
+  return <CreateEventModalContent />;
+};
+
+const CreateEventModalContent: React.FC = () => {
   const {
-    isCreateModalOpen,
     closeCreateModal,
     createModalInitialData,
     calendars,
@@ -33,77 +42,99 @@ export const CreateEventModal: React.FC = () => {
     selectedDate,
   } = useCalendarStore();
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
-  const [isAllDay, setIsAllDay] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endDate, setEndDate] = useState("");
-  const [endTime, setEndTime] = useState("10:00");
-  const [recurrenceRule, setRecurrenceRule] = useState("");
-  const [selectedCalendarId, setSelectedCalendarId] = useState("");
-  const [color, setColor] = useState("#039be5");
+  const initialD = selectedDate || new Date();
+  const initialDateStr = initialD.toISOString().slice(0, 10);
+
+  const [title, setTitle] = useState(createModalInitialData?.title || "");
+  const [description, setDescription] = useState(
+    createModalInitialData?.description || "",
+  );
+  const [location, setLocation] = useState(
+    createModalInitialData?.location || "",
+  );
+  const [isAllDay, setIsAllDay] = useState(
+    Boolean(createModalInitialData?.isAllDay),
+  );
+  const [startDate, setStartDate] = useState(() => {
+    if (createModalInitialData?.startTime) {
+      return new Date(createModalInitialData.startTime)
+        .toISOString()
+        .slice(0, 10);
+    }
+    return initialDateStr;
+  });
+  const [startTime, setStartTime] = useState(() => {
+    if (createModalInitialData?.startTime) {
+      return new Date(createModalInitialData.startTime)
+        .toTimeString()
+        .slice(0, 5);
+    }
+    return "09:00";
+  });
+  const [endDate, setEndDate] = useState(() => {
+    if (createModalInitialData?.endTime) {
+      return new Date(createModalInitialData.endTime)
+        .toISOString()
+        .slice(0, 10);
+    }
+    return initialDateStr;
+  });
+  const [endTime, setEndTime] = useState(() => {
+    if (createModalInitialData?.endTime) {
+      return new Date(createModalInitialData.endTime)
+        .toTimeString()
+        .slice(0, 5);
+    }
+    return "10:00";
+  });
+  const [recurrenceRule, setRecurrenceRule] = useState(
+    createModalInitialData?.recurrenceRule || "",
+  );
+  const [selectedCalendarId, setSelectedCalendarId] = useState(() => {
+    if (createModalInitialData?.calendarId) {
+      return createModalInitialData.calendarId;
+    }
+    const primary = calendars.find((c) => c.isPrimary) || calendars[0];
+    return primary?.id || "";
+  });
+  const [color, setColor] = useState(
+    createModalInitialData?.color || "#039be5",
+  );
   const [reminders, setReminders] = useState<number[]>([15]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Sync state whenever modal opens or initial data changes
-  useEffect(() => {
-    if (!isCreateModalOpen) return;
-
-    if (createModalInitialData) {
-      setTitle(createModalInitialData.title || "");
-      setDescription(createModalInitialData.description || "");
-      setLocation(createModalInitialData.location || "");
-      setIsAllDay(Boolean(createModalInitialData.isAllDay));
-      setRecurrenceRule(createModalInitialData.recurrenceRule || "");
-      setColor(createModalInitialData.color || "#039be5");
-      if (createModalInitialData.calendarId) {
-        setSelectedCalendarId(createModalInitialData.calendarId);
-      }
-
-      if (createModalInitialData.startTime) {
-        const s = new Date(createModalInitialData.startTime);
-        setStartDate(s.toISOString().slice(0, 10));
-        setStartTime(s.toTimeString().slice(0, 5));
-      } else {
-        const d = selectedDate || new Date();
-        setStartDate(d.toISOString().slice(0, 10));
-        setStartTime("09:00");
-      }
-
-      if (createModalInitialData.endTime) {
-        const e = new Date(createModalInitialData.endTime);
-        setEndDate(e.toISOString().slice(0, 10));
-        setEndTime(e.toTimeString().slice(0, 5));
-      } else {
-        const d = selectedDate || new Date();
-        setEndDate(d.toISOString().slice(0, 10));
-        setEndTime("10:00");
-      }
-    } else {
-      const d = selectedDate || new Date();
-      const dateStr = d.toISOString().slice(0, 10);
-      setTitle("");
-      setDescription("");
-      setLocation("");
-      setIsAllDay(false);
-      setStartDate(dateStr);
-      setStartTime("09:00");
-      setEndDate(dateStr);
-      setEndTime("10:00");
-      setRecurrenceRule("");
-      setColor("#039be5");
-      setReminders([15]);
+  const [meetingId, setMeetingId] = useState<string | null>(
+    createModalInitialData?.meetingId || null,
+  );
+  const [meetingCode, setMeetCode] = useState<string | null>(() => {
+    const loc = createModalInitialData?.location || "";
+    if (loc.includes("/meet/")) {
+      return loc.split("/meet/")[1].split("?")[0].trim();
     }
+    return null;
+  });
+  const [isCreatingMeet, setIsCreatingMeet] = useState(false);
+  const [meetCopied, setMeetCopied] = useState(false);
 
-    if (calendars.length > 0 && !selectedCalendarId) {
-      const primary = calendars.find((c) => c.isPrimary) || calendars[0];
-      setSelectedCalendarId(primary.id);
+  const handleAddMeet = async () => {
+    setIsCreatingMeet(true);
+    try {
+      const meeting = await meetApi.createMeeting({
+        title: title.trim() || "Orvexa Meet Video Call",
+        requireApproval: true,
+      });
+      setMeetingId(meeting.id);
+      setMeetCode(meeting.meetingCode);
+    } catch (err) {
+      console.error("Failed to create Orvexa Meet call:", err);
+    } finally {
+      setIsCreatingMeet(false);
     }
-  }, [isCreateModalOpen, createModalInitialData, selectedDate, calendars, selectedCalendarId]);
+  };
 
-  if (!isCreateModalOpen) return null;
+  const handleRemoveMeet = () => {
+    setMeetingId(null);
+    setMeetCode(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,16 +150,21 @@ export const CreateEventModal: React.FC = () => {
         ? new Date(`${endDate}T23:59:59.999Z`)
         : new Date(`${endDate}T${endTime}:00`);
 
+      const finalLocation = meetingCode
+        ? location.trim() || `${window.location.origin}/meet/${meetingCode}`
+        : location.trim() || undefined;
+
       await createEvent({
         title: title.trim(),
         description: description.trim() || undefined,
-        location: location.trim() || undefined,
+        location: finalLocation,
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
         isAllDay,
         calendarId: selectedCalendarId || undefined,
         color,
         recurrenceRule: recurrenceRule || null,
+        meetingId: meetingId || undefined,
         reminders: reminders.map((m) => ({ minutesBefore: m })),
       });
 
@@ -251,6 +287,73 @@ export const CreateEventModal: React.FC = () => {
               <option value="FREQ=YEARLY;INTERVAL=1">Annually</option>
             </select>
           </div>
+
+          {/* Orvexa Meet Video Conferencing */}
+          {!meetingCode ? (
+            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+              <Video size={18} className="text-slate-400 shrink-0" />
+              <button
+                type="button"
+                onClick={handleAddMeet}
+                disabled={isCreatingMeet}
+                className="px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer border border-blue-200 dark:border-blue-800 disabled:opacity-60"
+              >
+                <Video size={15} />
+                <span>
+                  {isCreatingMeet
+                    ? "Adding Orvexa Meet..."
+                    : "Add Orvexa Meet video conferencing"}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+              <Video size={18} className="text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="flex-1 flex items-center justify-between px-3.5 py-2.5 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/60">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                    <Video size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-blue-950 dark:text-blue-100 flex items-center gap-2">
+                      <span>Join with Orvexa Meet</span>
+                    </div>
+                    <p className="text-[11px] font-mono text-blue-700 dark:text-blue-300 truncate">
+                      {window.location.origin}/meet/{meetingCode}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}/meet/${meetingCode}`,
+                      );
+                      setMeetCopied(true);
+                      setTimeout(() => setMeetCopied(false), 2000);
+                    }}
+                    title="Copy meeting link"
+                    className="p-1.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 transition-colors cursor-pointer"
+                  >
+                    {meetCopied ? (
+                      <Check size={14} className="text-emerald-600" />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveMeet}
+                    title="Remove Orvexa Meet"
+                    className="p-1.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-900/60 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Location Input */}
           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">

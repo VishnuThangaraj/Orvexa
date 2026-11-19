@@ -9,6 +9,9 @@ import {
   Calendar as CalendarIcon,
   Users,
   Repeat,
+  Video,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useCalendarStore } from "../store/calendar.store";
 import type { InvitationStatus } from "../types/calendar.types";
@@ -24,8 +27,20 @@ export const EventDetailsPopover: React.FC = () => {
   } = useCalendarStore();
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [meetCopied, setMeetCopied] = useState(false);
 
   if (!selectedEvent) return null;
+
+  const meetCode =
+    selectedEvent.meeting?.meetingCode ||
+    (selectedEvent.location && selectedEvent.location.includes("/meet/")
+      ? selectedEvent.location.split("/meet/")[1].split("?")[0].trim()
+      : null);
+  const meetUrl = meetCode
+    ? `${window.location.origin}/meet/${meetCode}`
+    : selectedEvent.location && selectedEvent.location.includes("/meet/")
+    ? selectedEvent.location
+    : null;
 
   const isHoliday =
     selectedEvent.eventType === "HOLIDAY" ||
@@ -73,6 +88,7 @@ export const EventDetailsPopover: React.FC = () => {
       eventType: eventToEdit.eventType,
       visibility: eventToEdit.visibility,
       recurrenceRule: eventToEdit.recurrenceRule,
+      meetingId: eventToEdit.meetingId,
     });
   };
 
@@ -165,6 +181,42 @@ export const EventDetailsPopover: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Orvexa Meet Video Conference Card */}
+            {meetUrl && (
+              <div className="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-xl p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <a
+                    href={meetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-2xs"
+                  >
+                    <Video size={15} />
+                    <span>Join with Orvexa Meet</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(meetUrl);
+                      setMeetCopied(true);
+                      setTimeout(() => setMeetCopied(false), 2000);
+                    }}
+                    className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 transition-colors cursor-pointer"
+                    title="Copy joining info"
+                  >
+                    {meetCopied ? (
+                      <Check size={16} className="text-emerald-600" />
+                    ) : (
+                      <Copy size={16} />
+                    )}
+                  </button>
+                </div>
+                <p className="text-[11px] font-mono text-blue-700 dark:text-blue-300 text-center truncate">
+                  {meetUrl}
+                </p>
+              </div>
+            )}
 
             {/* Location */}
             {selectedEvent.location && (

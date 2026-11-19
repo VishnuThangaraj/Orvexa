@@ -49,7 +49,7 @@ export const InboxFilledIcon: React.FC<MailIconProps> = ({
 );
 
 /**
- * Official Google Gmail Envelope Logo
+ * Official Orvexa Gmail Envelope Logo
  */
 export const GmailLogo: React.FC<MailIconProps> = ({
   size = 28,
@@ -88,9 +88,9 @@ export const GmailLogo: React.FC<MailIconProps> = ({
 );
 
 /**
- * Google Calendar Companion Icon (31)
+ * Orvexa Calendar Companion Icon (31)
  */
-export const GoogleCalendarIcon: React.FC<MailIconProps> = ({
+export const OrvexaCalendarIcon: React.FC<MailIconProps> = ({
   size = 20,
   className = "",
   ...props
@@ -134,9 +134,9 @@ export const GoogleCalendarIcon: React.FC<MailIconProps> = ({
 );
 
 /**
- * Google Keep Companion Icon (Lightbulb)
+ * Orvexa Keep Companion Icon (Lightbulb)
  */
-export const GoogleKeepIcon: React.FC<MailIconProps> = ({
+export const OrvexaKeepIcon: React.FC<MailIconProps> = ({
   size = 20,
   className = "",
   ...props
@@ -160,9 +160,9 @@ export const GoogleKeepIcon: React.FC<MailIconProps> = ({
 );
 
 /**
- * Google Tasks Companion Icon (Checkmark)
+ * Orvexa Tasks Companion Icon (Checkmark)
  */
-export const GoogleTasksIcon: React.FC<MailIconProps> = ({
+export const OrvexaTasksIcon: React.FC<MailIconProps> = ({
   size = 20,
   className = "",
   ...props
@@ -187,9 +187,9 @@ export const GoogleTasksIcon: React.FC<MailIconProps> = ({
 );
 
 /**
- * Google Contacts Companion Icon (Avatar)
+ * Orvexa Contacts Companion Icon (Avatar)
  */
-export const GoogleContactsIcon: React.FC<MailIconProps> = ({
+export const OrvexaContactsIcon: React.FC<MailIconProps> = ({
   size = 20,
   className = "",
   ...props
@@ -211,7 +211,7 @@ export const GoogleContactsIcon: React.FC<MailIconProps> = ({
 );
 
 /**
- * Google Search Bar Tune / Sliders Filter Icon
+ * Orvexa Search Bar Tune / Sliders Filter Icon
  */
 export const SlidersTuneIcon: React.FC<MailIconProps> = ({
   size = 18,

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useCalendarStore } from "../store/calendar.store";
 import CalendarHeader from "../components/CalendarHeader";
 import CalendarSidebar from "../components/CalendarSidebar";
@@ -30,6 +31,25 @@ export const Calendar: React.FC = () => {
     activeTopTab,
     isLoading,
   } = useCalendarStore();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle URL query parameters for cross-module integration (e.g. Schedule from Orvexa Meet)
+  useEffect(() => {
+    const isCreate = searchParams.get("create") === "true";
+    const meetCode = searchParams.get("code");
+    const meetId = searchParams.get("meetId");
+    const title = searchParams.get("title");
+
+    if (isCreate) {
+      openCreateModal({
+        title: title || undefined,
+        meetingId: meetId || undefined,
+        location: meetCode ? `${window.location.origin}/meet/${meetCode}` : undefined,
+      });
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, openCreateModal, setSearchParams]);
 
   useEffect(() => {
     fetchCalendars();
@@ -141,10 +161,10 @@ export const Calendar: React.FC = () => {
   return (
     <div
       role="application"
-      aria-label="Google Calendar Application"
+      aria-label="Orvexa Calendar Application"
       className="flex flex-col h-full w-full bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden select-none"
     >
-      {/* 1. Google Calendar Top Bar Header */}
+      {/* 1. Orvexa Calendar Top Bar Header */}
       <CalendarHeader />
 
       {/* 2. Main Body: Left Sidebar + Central Grid Viewport + Right Side Panel + Side Rail */}
@@ -188,7 +208,7 @@ export const Calendar: React.FC = () => {
         {/* Right Tasks/Keep Slide-over Panel */}
         <TasksSidePanel />
 
-        {/* Far Right Google Workspace Rail */}
+        {/* Far Right Orvexa Workspace Rail */}
         <CalendarSideRail />
       </div>
 

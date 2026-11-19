@@ -40,6 +40,36 @@ export interface ClientToServerEvents {
     data: { status: "ACTIVE" | "AWAY" | "DND" },
     callback?: (res: { success: boolean }) => void,
   ) => void;
+  // Meet Events
+  "meet:join_room": (
+    data: { meetingCode: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  "meet:leave_room": (
+    data: { meetingCode: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  "meet:knock": (
+    data: { meetingCode: string; displayName?: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  "meet:cancel_knock": (data: { meetingCode: string }) => void;
+  "meet:admit": (
+    data: { meetingCode: string; userId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  "meet:deny": (
+    data: { meetingCode: string; userId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  "meet:admit_all": (
+    data: { meetingCode: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  "meet:send_chat": (
+    data: { meetingCode: string; content: string },
+    callback?: (res: { success: boolean; data?: any; error?: string }) => void,
+  ) => void;
 }
 
 export interface ServerToClientEvents {
@@ -77,6 +107,25 @@ export interface ServerToClientEvents {
     status?: "ACTIVE" | "AWAY" | "DND";
     lastSeen?: string;
   }) => void;
+  // Meet Events
+  "meet:knock_received": (data: {
+    meetingCode: string;
+    userId: string;
+    displayName: string;
+    avatarUrl?: string;
+  }) => void;
+  "meet:knock_cancelled": (data: {
+    meetingCode: string;
+    userId: string;
+  }) => void;
+  "meet:admitted": (data: { meetingCode: string }) => void;
+  "meet:denied": (data: { meetingCode: string }) => void;
+  "meet:chat_message": (message: any) => void;
+  "meet:settings_updated": (data: {
+    meetingCode: string;
+    settings: any;
+  }) => void;
+  "meet:ended": (data: { meetingCode: string }) => void;
   error: (err: { message: string; code?: string | number }) => void;
 }
 

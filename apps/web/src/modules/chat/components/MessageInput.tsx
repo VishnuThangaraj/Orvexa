@@ -572,7 +572,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
       )}
 
-      {/* Task 3.1: Formatting Toolbar matching Google Chat */}
+      {/* Task 3.1: Formatting Toolbar matching Orvexa Chat */}
       {showFormattingBar && (
         <div className="mb-2 px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs flex items-center gap-1 text-slate-600 dark:text-slate-300">
           <button
@@ -643,7 +643,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
       )}
 
-      {/* Input container matching uploaded Google Chat screenshot */}
+      {/* Input container matching uploaded Orvexa Chat screenshot */}
       <div className="flex items-center gap-3">
         {/* "+" Attachment Button */}
         <button
@@ -698,7 +698,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           </button>
         </div>
 
-        {/* Send Button matching Google Chat style */}
+        {/* Send Button matching Orvexa Chat style */}
         <button
           type="button"
           onClick={handleSend}

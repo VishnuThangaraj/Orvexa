@@ -168,6 +168,14 @@ export class CalendarService {
       visibility: event.visibility,
       recurrenceRule: event.recurrenceRule ?? null,
       meetingId: event.meetingId ? String(event.meetingId) : null,
+      meeting: event.meeting
+        ? {
+            id: String(event.meeting.id),
+            meetingCode: event.meeting.meetingCode,
+            title: event.meeting.title,
+            status: event.meeting.status,
+          }
+        : null,
       createdAt:
         event.createdAt instanceof Date
           ? event.createdAt.toISOString()
@@ -472,6 +480,13 @@ export class CalendarService {
       ? dto.guestUserIds.map((id) => BigInt(id))
       : undefined;
 
+    const meetingId =
+      dto.meetingId !== undefined
+        ? dto.meetingId
+          ? BigInt(dto.meetingId)
+          : null
+        : undefined;
+
     const event = await this.calendarRepository.createEvent(userId, {
       title: dto.title,
       description: dto.description,
@@ -485,6 +500,7 @@ export class CalendarService {
       eventType: dto.eventType,
       visibility: dto.visibility,
       recurrenceRule: dto.recurrenceRule,
+      meetingId: dto.meetingId ? BigInt(dto.meetingId) : undefined,
       guestUserIds,
       reminders: dto.reminders,
     });
@@ -530,6 +546,13 @@ export class CalendarService {
       ? dto.guestUserIds.map((id) => BigInt(id))
       : undefined;
 
+    const meetingId =
+      dto.meetingId !== undefined
+        ? dto.meetingId
+          ? BigInt(dto.meetingId)
+          : null
+        : undefined;
+
     // Handle recurrence editing modes
     if (existing.recurrenceRule && dto.recurrenceMode === "SINGLE" && dto.targetInstanceDate) {
       // 1. Add exception date to master event
@@ -562,6 +585,7 @@ export class CalendarService {
         eventType: dto.eventType ?? existing.eventType,
         visibility: dto.visibility ?? existing.visibility,
         recurrenceRule: null, // Standalone single event
+        meetingId: meetingId !== undefined ? meetingId : existing.meetingId,
         guestUserIds: guestUserIds ?? existing.participants.map((p) => p.userId),
         reminders: dto.reminders,
       });
@@ -585,6 +609,7 @@ export class CalendarService {
         eventType: dto.eventType,
         visibility: dto.visibility,
         recurrenceRule: dto.recurrenceRule,
+        meetingId,
         guestUserIds,
         reminders: dto.reminders,
       },

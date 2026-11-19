@@ -462,7 +462,8 @@ export class MeetService {
   // LiveKit Webhook Handler
   async handleWebhook(body: string | Buffer, authHeader?: string) {
     try {
-      const event = await this.webhookReceiver.receive(body, authHeader);
+      const bodyStr = typeof body === "string" ? body : body.toString("utf-8");
+      const event = await this.webhookReceiver.receive(bodyStr, authHeader);
       console.log(`[LIVEKIT WEBHOOK] Received event: ${event.event} for room: ${event.room?.name}`);
 
       if (!event.room?.name) return { received: true };

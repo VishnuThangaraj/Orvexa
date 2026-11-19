@@ -220,7 +220,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         )}
 
-        {/* Message Bubble matching uploaded Google Chat theme */}
+        {/* Message Bubble matching uploaded Orvexa Chat theme */}
         <div
           className={cn(
             "px-4 py-2.5 rounded-2xl text-sm shadow-2xs relative transition-all",
@@ -410,7 +410,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
       </div>
 
-      {/* Floating Action Menu on Hover (Google Chat style) */}
+      {/* Floating Action Menu on Hover (Orvexa Chat style) */}
       <div
         className={cn(
           "absolute -top-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-md px-1.5 py-0.5 gap-0.5 z-20",
