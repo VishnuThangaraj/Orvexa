@@ -3,45 +3,61 @@ model DriveFolder {
   name           String    @db.VarChar(255)
   ownerId        BigInt    @map("owner_id")
   parentFolderId BigInt?   @map("parent_folder_id")
+  color          String?   @db.VarChar(50)
+  description    String?   @db.Text
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
   deletedBy      BigInt?   @map("deleted_by")
 
-  owner         User              @relation("DriveFolderOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  parentFolder  DriveFolder?      @relation("FolderHierarchy", fields: [parentFolderId], references: [id], onDelete: Restrict)
-  subfolders    DriveFolder[]     @relation("FolderHierarchy")
-  deletedByUser User?             @relation("DriveFolderDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
-  files         DriveFile[]
-  permissions   DrivePermission[]
-  favorites     DriveFavorite[]
-  recentItems   DriveRecentItem[]
+  owner           User                 @relation("DriveFolderOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  parentFolder    DriveFolder?         @relation("FolderHierarchy", fields: [parentFolderId], references: [id], onDelete: Restrict)
+  subfolders      DriveFolder[]        @relation("FolderHierarchy")
+  deletedByUser   User?                @relation("DriveFolderDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  files           DriveFile[]
+  permissions     DrivePermission[]
+  favorites       DriveFavorite[]
+  recentItems     DriveRecentItem[]
+  shareLinks      DriveShareLink[]
+  accessRequests  DriveAccessRequest[]
+  activities      DriveActivity[]
+  shortcuts       DriveShortcut[]      @relation("DriveShortcutParent")
+  targetShortcuts DriveShortcut[]      @relation("DriveShortcutTargetFolder")
 
   @@index([ownerId, parentFolderId])
   @@map("drive_folders")
 }
 
 model DriveFile {
-  id             BigInt    @id @default(autoincrement())
-  name           String    @db.VarChar(255)
-  ownerId        BigInt    @map("owner_id")
-  folderId       BigInt?   @map("folder_id")
-  assetId        BigInt    @map("asset_id")
-  currentVersion Int       @default(1) @map("current_version")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
-  deletedBy      BigInt?   @map("deleted_by")
+  id                   BigInt    @id @default(autoincrement())
+  name                 String    @db.VarChar(255)
+  ownerId              BigInt    @map("owner_id")
+  folderId             BigInt?   @map("folder_id")
+  assetId              BigInt    @map("asset_id")
+  currentVersion       Int       @default(1) @map("current_version")
+  description          String?   @db.Text
+  searchableContent    String?   @map("searchable_content") @db.Text
+  preventDownload      Boolean   @default(false) @map("prevent_download")
+  preventEditorSharing Boolean   @default(false) @map("prevent_editor_sharing")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy            BigInt?   @map("deleted_by")
 
-  owner         User               @relation("DriveFileOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  folder        DriveFolder?       @relation(fields: [folderId], references: [id], onDelete: Restrict)
-  currentAsset  FileAsset          @relation("CurrentDriveFileAsset", fields: [assetId], references: [id], onDelete: Restrict)
-  deletedByUser User?              @relation("DriveFileDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
-  versions      DriveFileVersion[]
-  permissions   DrivePermission[]
-  favorites     DriveFavorite[]
-  recentItems   DriveRecentItem[]
-  comments      DriveComment[]
+  owner               User                      @relation("DriveFileOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  folder              DriveFolder?              @relation(fields: [folderId], references: [id], onDelete: Restrict)
+  currentAsset        FileAsset                 @relation("CurrentDriveFileAsset", fields: [assetId], references: [id], onDelete: Restrict)
+  deletedByUser       User?                     @relation("DriveFileDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  versions            DriveFileVersion[]
+  permissions         DrivePermission[]
+  favorites           DriveFavorite[]
+  recentItems         DriveRecentItem[]
+  comments            DriveComment[]
+  shareLinks          DriveShareLink[]
+  accessRequests      DriveAccessRequest[]
+  activities          DriveActivity[]
+  targetShortcuts     DriveShortcut[]           @relation("DriveShortcutTargetFile")
+  calendarAttachments CalendarEventAttachment[]
 
   @@index([ownerId, folderId])
   @@index([assetId])
@@ -129,4 +145,112 @@ model DriveComment {
 
   @@index([fileId, createdAt])
   @@map("drive_comments")
+}
+
+model DriveShareLink {
+  id             BigInt           @id @default(autoincrement())
+  fileId         BigInt?          @map("file_id")
+  folderId       BigInt?          @map("folder_id")
+  token          String           @unique @db.VarChar(64)
+  role           DriveAccessLevel @default(VIEWER)
+  allowAnonymous Boolean          @default(false) @map("allow_anonymous")
+  expiresAt      DateTime?        @map("expires_at") @db.Timestamptz(6)
+  createdBy      BigInt           @map("created_by")
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  file           DriveFile?       @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  folder         DriveFolder?     @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  creator        User             @relation("ShareLinkCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([token])
+  @@index([fileId])
+  @@index([folderId])
+  @@map("drive_share_links")
+}
+
+model DriveAccessRequest {
+  id            BigInt           @id @default(autoincrement())
+  fileId        BigInt?          @map("file_id")
+  folderId      BigInt?          @map("folder_id")
+  requestedBy   BigInt           @map("requested_by")
+  requestedRole DriveAccessLevel @default(VIEWER) @map("requested_role")
+  message       String?          @db.Text
+  status        String           @default("PENDING") @db.VarChar(20)
+  reviewedBy    BigInt?          @map("reviewed_by")
+  reviewedAt    DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  file          DriveFile?       @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  folder        DriveFolder?     @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  requester     User             @relation("AccessRequestedBy", fields: [requestedBy], references: [id], onDelete: Cascade)
+  reviewer      User?            @relation("AccessReviewedBy", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([fileId, status])
+  @@index([folderId, status])
+  @@index([requestedBy])
+  @@map("drive_access_requests")
+}
+
+model DriveActivity {
+  id         BigInt    @id @default(autoincrement())
+  fileId     BigInt?   @map("file_id")
+  folderId   BigInt?   @map("folder_id")
+  userId     BigInt    @map("user_id")
+  action     String    @db.VarChar(50)
+  details    Json?     @db.JsonB
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  file       DriveFile?   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  folder     DriveFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user       User         @relation("DriveActivityUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([fileId, createdAt])
+  @@index([folderId, createdAt])
+  @@index([userId, createdAt])
+  @@map("drive_activities")
+}
+
+model DriveShortcut {
+  id             BigInt       @id @default(autoincrement())
+  userId         BigInt       @map("user_id")
+  targetFileId   BigInt?      @map("target_file_id")
+  targetFolderId BigInt?      @map("target_folder_id")
+  parentFolderId BigInt?      @map("parent_folder_id")
+  name           String       @db.VarChar(255)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user           User         @relation("DriveShortcutUser", fields: [userId], references: [id], onDelete: Cascade)
+  targetFile     DriveFile?   @relation("DriveShortcutTargetFile", fields: [targetFileId], references: [id], onDelete: Cascade)
+  targetFolder   DriveFolder? @relation("DriveShortcutTargetFolder", fields: [targetFolderId], references: [id], onDelete: Cascade)
+  parentFolder   DriveFolder? @relation("DriveShortcutParent", fields: [parentFolderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, parentFolderId])
+  @@map("drive_shortcuts")
+}
+
+model DriveUploadSession {
+  id              String   @id @db.Uuid
+  userId          BigInt   @map("user_id")
+  folderId        BigInt?  @map("folder_id")
+  targetFileId    BigInt?  @map("target_file_id")
+  filename        String   @db.VarChar(255)
+  mimeType        String   @map("mime_type") @db.VarChar(150)
+  totalBytes      BigInt   @map("total_bytes")
+  uploadedBytes   BigInt   @default(0) @map("uploaded_bytes")
+  chunkSize       Int      @map("chunk_size")
+  totalChunks     Int      @map("total_chunks")
+  completedChunks Int[]    @default([]) @map("completed_chunks")
+  storageKey      String   @map("storage_key") @db.VarChar(500)
+  status          String   @default("IN_PROGRESS") @db.VarChar(20)
+  expiresAt       DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user            User     @relation("UploadSessionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@map("drive_upload_sessions")
 }

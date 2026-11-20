@@ -48,6 +48,7 @@ enum ChatMessageType {
 
 enum DriveAccessLevel {
   VIEWER
+  COMMENTER
   EDITOR
   MANAGER
 }

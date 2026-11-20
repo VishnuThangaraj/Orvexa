@@ -15,17 +15,21 @@ model FileAsset {
   durationSeconds   Float?                 @map("duration_seconds")
   uploadedBy        BigInt?                @map("uploaded_by")
   cloudDeletedAt    DateTime?              @map("cloud_deleted_at") @db.Timestamptz(6)
+  storageBackend    String                 @default("CLOUDINARY") @map("storage_backend") @db.VarChar(20)
+  storagePath       String?                @map("storage_path") @db.VarChar(500)
+  sha256            String?                @db.VarChar(64)
   createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  uploader             User?                 @relation("AssetUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
-  userProfileImages    User[]                @relation("ProfileImage")
-  conversationImages   Conversation[]        @relation("ConversationImage")
+  uploader             User?                     @relation("AssetUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  userProfileImages    User[]                    @relation("ProfileImage")
+  conversationImages   Conversation[]            @relation("ConversationImage")
   mailAttachments      MailAttachment[]
   mailDraftAttachments MailDraftAttachment[]
   chatAttachments      ChatAttachment[]
-  driveFiles           DriveFile[]           @relation("CurrentDriveFileAsset")
+  driveFiles           DriveFile[]               @relation("CurrentDriveFileAsset")
   driveFileVersions    DriveFileVersion[]
   meetingRecordings    MeetingRecording[]
+  calendarAttachments  CalendarEventAttachment[]
 
   @@unique([resourceType, deliveryType, publicId])
   @@index([uploadedBy])

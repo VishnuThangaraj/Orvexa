@@ -24,6 +24,7 @@ model CalendarEvent {
   meeting      Meeting?              @relation(fields: [meetingId], references: [id], onDelete: SetNull)
   participants CalendarParticipant[]
   reminders    CalendarReminder[]
+  attachments  CalendarEventAttachment[]
 
   @@index([createdBy, startTime])
   @@index([startTime, endTime])
@@ -131,4 +132,21 @@ model CalendarSetting {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("calendar_settings")
+}
+
+model CalendarEventAttachment {
+  id          BigInt         @id @default(autoincrement())
+  eventId     BigInt         @map("event_id")
+  driveFileId BigInt?        @map("drive_file_id")
+  assetId     BigInt?        @map("asset_id")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  event       CalendarEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  driveFile   DriveFile?     @relation(fields: [driveFileId], references: [id], onDelete: SetNull)
+  asset       FileAsset?     @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([driveFileId])
+  @@index([assetId])
+  @@map("calendar_event_attachments")
 }
