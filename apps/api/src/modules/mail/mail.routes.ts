@@ -5,8 +5,12 @@ import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import {
   attachmentIdParamSchema,
+  batchUpdateStateSchema,
   fetchInboxQuerySchema,
+  messageIdParamSchema,
   sendMailSchema,
+  threadParamSchema,
+  updateMessageStateSchema,
 } from "./mail.validation.js";
 import { mailAttachmentUpload } from "../../middleware/upload.middleware.js";
 
@@ -109,6 +113,34 @@ router.get(
   authenticate,
   authorize("ADMIN", "MEMBER"),
   mailController.fetchCounts,
+);
+
+// get full conversation thread
+router.get(
+  "/threads/:threadId",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(threadParamSchema, "params"),
+  mailController.fetchThread,
+);
+
+// update single message state (star, read/unread, archive, trash)
+router.patch(
+  "/messages/:id/state",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(messageIdParamSchema, "params"),
+  validate(updateMessageStateSchema, "body"),
+  mailController.updateMessageState,
+);
+
+// batch update message states
+router.post(
+  "/messages/batch-state",
+  authenticate,
+  authorize("ADMIN", "MEMBER"),
+  validate(batchUpdateStateSchema, "body"),
+  mailController.batchUpdateState,
 );
 
 export default router;

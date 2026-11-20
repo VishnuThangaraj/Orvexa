@@ -301,6 +301,92 @@ class MailController {
       next(error);
     }
   };
+
+  // Fetch conversation thread endpoint handler
+  fetchThread = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const threadIdParam = Array.isArray(req.params.threadId)
+        ? req.params.threadId[0]
+        : req.params.threadId;
+
+      const result = await this.mailService.fetchThread(
+        BigInt(userId),
+        BigInt(threadIdParam),
+      );
+
+      return sendResponse(
+        res,
+        200,
+        "Conversation thread fetched successfully",
+        result,
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Update message state (star, read, archive, trash)
+  updateMessageState = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const idParam = Array.isArray(req.params.id)
+        ? req.params.id[0]
+        : req.params.id;
+
+      const result = await this.mailService.updateMessageState(
+        BigInt(userId),
+        BigInt(idParam),
+        req.body,
+      );
+
+      return sendResponse(
+        res,
+        200,
+        "Message state updated successfully",
+        result,
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Batch update message states
+  batchUpdateState = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      const { messageIds, ...updates } = req.body;
+      const result = await this.mailService.batchUpdateMessageStates(
+        BigInt(userId),
+        messageIds.map((id: string) => BigInt(id)),
+        updates,
+      );
+
+      return sendResponse(res, 200, "Messages updated successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default MailController;

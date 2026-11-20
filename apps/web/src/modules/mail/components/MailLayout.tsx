@@ -12,7 +12,7 @@ export interface MailLayoutProps {
   onToggleSelect?: (id: string) => void;
 }
 
-const GMAIL_MONTHS = [
+const ORVEXA_MONTHS = [
   "Jan",
   "Feb",
   "Mar",
@@ -27,11 +27,11 @@ const GMAIL_MONTHS = [
   "Dec",
 ];
 
-const formatGmailDate = (timestamp: string | Date | number): string => {
+const formatMailDate = (timestamp: string | Date | number): string => {
   const d = new Date(timestamp);
   if (isNaN(d.getTime())) return "";
   const day = d.getDate();
-  const month = GMAIL_MONTHS[d.getMonth()];
+  const month = ORVEXA_MONTHS[d.getMonth()];
   return `${day} ${month}`;
 };
 
@@ -236,7 +236,7 @@ const MailLayout: React.FC<MailLayoutProps> = ({
             : "font-medium text-slate-500 dark:text-slate-400",
         )}
       >
-        {formatGmailDate(mail.sentAt)}
+        {formatMailDate(mail.sentAt)}
       </div>
     </div>
   );

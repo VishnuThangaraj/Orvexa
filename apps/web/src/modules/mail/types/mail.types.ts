@@ -75,3 +75,38 @@ export interface MailCountsResult {
   snoozed: number;
   sent: number;
 }
+
+export interface MessageStateUpdate {
+  isRead?: boolean;
+  isStarred?: boolean;
+  isArchived?: boolean;
+  isTrashed?: boolean;
+}
+
+export interface FormattedThreadMessage extends FormattedInboxMessage {
+  isArchived: boolean;
+  isTrashed: boolean;
+  labels?: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>;
+}
+
+export interface FetchThreadResult {
+  threadId: string;
+  subject: string;
+  messageCount: number;
+  messages: FormattedThreadMessage[];
+}
+
+export interface SendReplyPayload {
+  to: string | string[];
+  cc?: string | string[];
+  bcc?: string | string[];
+  subject: string;
+  body: string;
+  parentMessageId: string;
+  attachmentIds?: string[];
+}
+

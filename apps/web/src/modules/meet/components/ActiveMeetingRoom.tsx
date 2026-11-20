@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { ConnectionState, DisconnectReason } from "livekit-client";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useMeetStore } from "../store/meet.store";
 import { useMeetingRoom } from "../hooks/useMeetingRoom";
@@ -37,18 +39,19 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
   const isHost =
     currentUser?.id === meeting.hostId || liveKitData?.role === "HOST";
 
-  const handleDisconnected = useCallback(() => {
+  const handleEjectedOrEnded = useCallback(() => {
     navigate(`/meet/${meetingCode}/left`);
   }, [navigate, meetingCode]);
 
   // Connect to Socket.IO for knock/admit signaling & chat
   const { admit, deny, admitAll, sendChat } = useMeetSocket({
     meetingCode,
-    onMeetingEnded: handleDisconnected,
+    onMeetingEnded: handleEjectedOrEnded,
   });
 
   // Connect to LiveKit room for real-time audio/video
   const {
+    connectionState,
     localParticipant,
     remoteParticipants,
     activeSpeakers,
@@ -56,6 +59,7 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
     reactions,
     raisedHands,
     isHandRaised,
+    error: roomError,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
@@ -63,10 +67,21 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
     sendReaction,
     toggleHandRaise,
     leaveMeeting,
+    reconnect,
   } = useMeetingRoom({
     url: liveKitData?.url,
     token: liveKitData?.token,
-    onDisconnected: handleDisconnected,
+    onDisconnected: (reason) => {
+      // Only navigate away if explicitly kicked or room terminated
+      if (
+        reason === DisconnectReason.PARTICIPANT_REMOVED ||
+        reason === DisconnectReason.ROOM_DELETED ||
+        reason === DisconnectReason.ROOM_CLOSED ||
+        reason === DisconnectReason.USER_REJECTED
+      ) {
+        handleEjectedOrEnded();
+      }
+    },
   });
 
   // Global Keyboard Shortcuts (Ctrl/Cmd + D for mic, Ctrl/Cmd + E for camera)
@@ -124,6 +139,35 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
 
   return (
     <div className="min-h-screen w-full bg-[#202124] text-white flex flex-col font-sans select-none overflow-hidden">
+      {/* Top Banner Status Indicator */}
+      {connectionState === ConnectionState.Connecting && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-neutral-900/90 border border-neutral-700 text-neutral-200 text-xs px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xl backdrop-blur-md">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+          <span>Connecting to video server…</span>
+        </div>
+      )}
+
+      {connectionState === ConnectionState.Reconnecting && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-amber-950/90 border border-amber-700/80 text-amber-200 text-xs px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xl backdrop-blur-md">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+          <span>Reconnecting to video server…</span>
+        </div>
+      )}
+
+      {roomError && connectionState === ConnectionState.Disconnected && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-red-950/90 border border-red-700/80 text-red-200 text-xs px-4 py-2 rounded-full flex items-center gap-3 shadow-xl backdrop-blur-md">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <span className="max-w-xs truncate">{roomError}</span>
+          <button
+            onClick={reconnect}
+            className="flex items-center gap-1.5 px-3 py-1 bg-red-800 hover:bg-red-700 text-white rounded-full font-medium transition cursor-pointer"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>Reconnect</span>
+          </button>
+        </div>
+      )}
+
       {/* Main Display: Canvas + Side Panel */}
       <div className="flex-1 w-full flex overflow-hidden relative">
         <MeetingRoomCanvas

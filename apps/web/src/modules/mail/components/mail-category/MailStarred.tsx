@@ -5,7 +5,7 @@ import MailLayout from "../MailLayout";
 import { useMailStore } from "../../store/mail.store";
 
 const MailStarred: React.FC = () => {
-  const { page, limit, selectedIds, toggleSelect } = useMailStore();
+  const { page, limit, selectedIds, toggleSelect, openThread } = useMailStore();
   const { data, isLoading, isError, error } = useStarred({ page, limit });
 
   return (
@@ -24,12 +24,21 @@ const MailStarred: React.FC = () => {
             No starred messages
           </div>
         )}
-        {data?.messages.map((mail) => (
+        {data?.messages.map((mail, idx) => (
           <MailLayout
             key={mail.id}
             mail={mail}
             selected={selectedIds.includes(mail.id)}
             onToggleSelect={toggleSelect}
+            onClick={(clickedMail) => {
+              openThread(
+                clickedMail,
+                data.messages,
+                idx,
+                data.pagination.total,
+                "starred",
+              );
+            }}
           />
         ))}
       </div>

@@ -3,6 +3,7 @@ import type {
   CreateAssetData,
   CreateMailRecordData,
   FetchInboxOptions,
+  MessageStateUpdate,
 } from "./mail.types.js";
 
 class MailRepository {
@@ -807,6 +808,181 @@ class MailRepository {
           },
         },
       });
+    });
+  }
+
+  // Find all messages in a conversation thread by thread ID or message ID
+  async findThreadMessages(userId: bigint, targetId: bigint) {
+    const baseMessage = await prisma.mailMessage.findFirst({
+      where: {
+        OR: [{ id: targetId }, { threadId: targetId }],
+      },
+      select: { id: true, threadId: true, subject: true },
+    });
+
+    if (!baseMessage) {
+      return null;
+    }
+
+    const effectiveThreadId = baseMessage.threadId ?? baseMessage.id;
+
+    const messages = await prisma.mailMessage.findMany({
+      where: {
+        OR: [{ threadId: effectiveThreadId }, { id: effectiveThreadId }],
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            fullName: true,
+            username: true,
+            email: true,
+          },
+        },
+        recipients: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
+        userStates: {
+          where: { userId },
+          select: {
+            isRead: true,
+            readAt: true,
+            isStarred: true,
+            isArchived: true,
+            isTrashed: true,
+          },
+        },
+        attachments: {
+          include: {
+            asset: {
+              select: {
+                id: true,
+                publicId: true,
+                originalFilename: true,
+                mimeType: true,
+                bytes: true,
+                resourceType: true,
+                format: true,
+                secureUrl: true,
+              },
+            },
+          },
+        },
+        messageLabels: {
+          include: {
+            label: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { sentAt: "asc" },
+    });
+
+    return {
+      threadId: effectiveThreadId,
+      subject: baseMessage.subject,
+      messages,
+    };
+  }
+
+  // Mark all given messages as read for a specific user
+  async markMessagesAsRead(userId: bigint, messageIds: bigint[]) {
+    if (messageIds.length === 0) return;
+
+    await prisma.mailUserState.updateMany({
+      where: {
+        userId,
+        messageId: { in: messageIds },
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+  }
+
+  // Upsert user state for a single message
+  async updateMessageUserState(
+    userId: bigint,
+    messageId: bigint,
+    updates: MessageStateUpdate,
+  ) {
+    const dataToUpdate: any = {};
+    if (updates.isStarred !== undefined) dataToUpdate.isStarred = updates.isStarred;
+    if (updates.isRead !== undefined) {
+      dataToUpdate.isRead = updates.isRead;
+      dataToUpdate.readAt = updates.isRead ? new Date() : null;
+    }
+    if (updates.isArchived !== undefined)
+      dataToUpdate.isArchived = updates.isArchived;
+    if (updates.isTrashed !== undefined) {
+      dataToUpdate.isTrashed = updates.isTrashed;
+      dataToUpdate.trashedAt = updates.isTrashed ? new Date() : null;
+    }
+
+    return prisma.mailUserState.upsert({
+      where: {
+        messageId_userId: {
+          messageId,
+          userId,
+        },
+      },
+      create: {
+        messageId,
+        userId,
+        isStarred: updates.isStarred ?? false,
+        isRead: updates.isRead ?? false,
+        readAt: updates.isRead ? new Date() : null,
+        isArchived: updates.isArchived ?? false,
+        isTrashed: updates.isTrashed ?? false,
+        trashedAt: updates.isTrashed ? new Date() : null,
+      },
+      update: dataToUpdate,
+    });
+  }
+
+  // Batch update user states for multiple messages
+  async batchUpdateMessageStates(
+    userId: bigint,
+    messageIds: bigint[],
+    updates: MessageStateUpdate,
+  ) {
+    if (messageIds.length === 0) return { count: 0 };
+
+    const dataToUpdate: any = {};
+    if (updates.isStarred !== undefined) dataToUpdate.isStarred = updates.isStarred;
+    if (updates.isRead !== undefined) {
+      dataToUpdate.isRead = updates.isRead;
+      dataToUpdate.readAt = updates.isRead ? new Date() : null;
+    }
+    if (updates.isArchived !== undefined)
+      dataToUpdate.isArchived = updates.isArchived;
+    if (updates.isTrashed !== undefined) {
+      dataToUpdate.isTrashed = updates.isTrashed;
+      dataToUpdate.trashedAt = updates.isTrashed ? new Date() : null;
+    }
+
+    return prisma.mailUserState.updateMany({
+      where: {
+        userId,
+        messageId: { in: messageIds },
+      },
+      data: dataToUpdate,
     });
   }
 }

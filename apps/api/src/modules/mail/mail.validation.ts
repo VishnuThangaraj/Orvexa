@@ -98,3 +98,53 @@ export const fetchInboxQuerySchema = z.object({
 
 export type SendMailInput = z.infer<typeof sendMailSchema>;
 export type FetchInboxQuery = z.infer<typeof fetchInboxQuerySchema>;
+
+export const threadParamSchema = z.object({
+  threadId: z.string().regex(/^\d+$/, "Invalid thread ID format"),
+});
+
+export const messageIdParamSchema = z.object({
+  id: z.string().regex(/^\d+$/, "Invalid message ID format"),
+});
+
+export const updateMessageStateSchema = z
+  .object({
+    isRead: z.boolean().optional(),
+    isStarred: z.boolean().optional(),
+    isArchived: z.boolean().optional(),
+    isTrashed: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.isRead !== undefined ||
+      data.isStarred !== undefined ||
+      data.isArchived !== undefined ||
+      data.isTrashed !== undefined,
+    {
+      message: "At least one state property must be provided to update",
+    },
+  );
+
+export const batchUpdateStateSchema = z
+  .object({
+    messageIds: z
+      .array(z.string().regex(/^\d+$/, "Invalid message ID format"))
+      .min(1, "At least one message ID is required"),
+    isRead: z.boolean().optional(),
+    isStarred: z.boolean().optional(),
+    isArchived: z.boolean().optional(),
+    isTrashed: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.isRead !== undefined ||
+      data.isStarred !== undefined ||
+      data.isArchived !== undefined ||
+      data.isTrashed !== undefined,
+    {
+      message: "At least one state property must be provided to update",
+    },
+  );
+
+export type UpdateMessageStateInput = z.infer<typeof updateMessageStateSchema>;
+export type BatchUpdateStateInput = z.infer<typeof batchUpdateStateSchema>;
