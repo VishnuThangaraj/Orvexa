@@ -2,6 +2,7 @@ import { AccessToken, RoomServiceClient, WebhookReceiver } from "livekit-server-
 import AppError from "../../common/errors/AppError.js";
 import env from "../../config/env.js";
 import { prisma } from "../../config/prisma.js";
+import { getIO } from "../../sockets/socket.instance.js";
 import MeetRepository from "./meet.repository.js";
 import { generateMeetingCode, normalizeMeetingCode } from "./meet.code.js";
 import type {
@@ -274,7 +275,7 @@ export class MeetService {
     const at = new AccessToken(env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET, {
       identity: String(user.id),
       name: user.fullName,
-      ttl: "1h", // 1 hour token TTL
+      ttl: "2h", // 2 hours token TTL
       metadata: JSON.stringify({
         userId: String(user.id),
         username: user.username,
@@ -389,6 +390,14 @@ export class MeetService {
       status: "ENDED",
       endedAt: new Date(),
     });
+
+    // Notify all participants in the meeting room
+    try {
+      const io = getIO();
+      io.to(`meet:${code}`).emit("meet:ended", { meetingCode: code });
+    } catch (err) {
+      console.warn("[SOCKET] Failed to emit meet:ended:", err);
+    }
 
     // Attempt to delete room from LiveKit server
     try {

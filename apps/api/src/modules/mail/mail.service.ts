@@ -6,9 +6,12 @@ import type {
   CloudinaryResourceType,
   FetchInboxOptions,
   FetchInboxResult,
+  FetchThreadResult,
   FormattedInboxMessage,
+  FormattedThreadMessage,
   MailCountsResult,
   MailRecipientType,
+  MessageStateUpdate,
   RawAttachmentMetadata,
   SendMailServiceParams,
 } from "./mail.types.js";
@@ -629,6 +632,183 @@ class MailService {
     }
 
     return this.mailRepository.fetchCounts(userId);
+  }
+
+  // Fetch full conversation thread by thread ID or message ID
+  async fetchThread(
+    userId: bigint,
+    targetId: bigint,
+  ): Promise<FetchThreadResult> {
+    const user = await this.mailRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    const threadData = await this.mailRepository.findThreadMessages(
+      userId,
+      targetId,
+    );
+    if (!threadData || threadData.messages.length === 0) {
+      throw new AppError("Conversation thread not found", 404);
+    }
+
+    // Authorization check: User must be sender or recipient of at least one message in the thread
+    const isParticipant = threadData.messages.some(
+      (msg) =>
+        msg.senderId === userId ||
+        msg.recipients.some((r) => r.userId === userId),
+    );
+
+    if (!isParticipant) {
+      throw new AppError(
+        "You do not have permission to view this conversation",
+        403,
+      );
+    }
+
+    // Auto-mark unread messages as read for this user
+    const unreadMessageIds = threadData.messages
+      .filter((msg) => {
+        const userState = msg.userStates?.[0];
+        return !userState || !userState.isRead;
+      })
+      .map((msg) => msg.id);
+
+    if (unreadMessageIds.length > 0) {
+      await this.mailRepository.markMessagesAsRead(userId, unreadMessageIds);
+    }
+
+    // Format all messages in chronological order
+    const formattedMessages: FormattedThreadMessage[] =
+      threadData.messages.map((msg) => {
+        const userState = msg.userStates?.[0] ?? null;
+
+        // Privacy: Only show BCC recipients if current user is the sender or that specific BCC recipient
+        const visibleRecipients = (msg.recipients || [])
+          .filter((r) => {
+            if (r.recipientType !== "BCC") return true;
+            return msg.senderId === userId || r.user.id === userId;
+          })
+          .map((r) => ({
+            recipientType: r.recipientType,
+            user: {
+              id: r.user.id.toString(),
+              fullName: r.user.fullName,
+              username: r.user.username,
+              email: r.user.email,
+            },
+          }));
+
+        const cleanBody = (msg.body || "").replace(/\s+/g, " ").trim();
+        const snippet =
+          cleanBody.length > 150 ? `${cleanBody.slice(0, 150)}...` : cleanBody;
+
+        return {
+          id: msg.id.toString(),
+          threadId: msg.threadId ? msg.threadId.toString() : null,
+          parentMessageId: msg.parentMessageId
+            ? msg.parentMessageId.toString()
+            : null,
+          subject: msg.subject,
+          body: msg.body,
+          snippet,
+          sentAt: msg.sentAt,
+          sender: {
+            id: msg.sender.id.toString(),
+            fullName: msg.sender.fullName,
+            username: msg.sender.username,
+            email: msg.sender.email,
+          },
+          recipients: visibleRecipients,
+          isRead: true, // Marked as read upon fetching
+          readAt: userState?.readAt ?? new Date(),
+          isStarred: userState?.isStarred ?? false,
+          isArchived: userState?.isArchived ?? false,
+          isTrashed: userState?.isTrashed ?? false,
+          hasAttachments: (msg.attachments || []).length > 0,
+          attachments: (msg.attachments || []).map((a) => ({
+            id: a.asset.id.toString(),
+            originalFilename: a.asset.originalFilename,
+            mimeType: a.asset.mimeType,
+            bytes: a.asset.bytes.toString(),
+            resourceType: a.asset.resourceType,
+            format: a.asset.format,
+            secureUrl: a.asset.secureUrl,
+          })),
+          labels: (msg.messageLabels || []).map((ml) => ({
+            id: ml.label.id.toString(),
+            name: ml.label.name,
+            color: ml.label.color,
+          })),
+        };
+      });
+
+    return {
+      threadId: threadData.threadId.toString(),
+      subject: threadData.subject,
+      messageCount: formattedMessages.length,
+      messages: formattedMessages,
+    };
+  }
+
+  // Update user state for a single message (star, read/unread, archive, trash)
+  async updateMessageState(
+    userId: bigint,
+    messageId: bigint,
+    updates: MessageStateUpdate,
+  ) {
+    const message = await this.mailRepository.findMessageById(messageId);
+    if (!message) {
+      throw new AppError("Message not found", 404);
+    }
+
+    const isParticipant =
+      message.senderId === userId ||
+      message.recipients.some((r) => r.userId === userId);
+
+    if (!isParticipant) {
+      throw new AppError(
+        "You do not have permission to modify this message",
+        403,
+      );
+    }
+
+    const updated = await this.mailRepository.updateMessageUserState(
+      userId,
+      messageId,
+      updates,
+    );
+
+    return {
+      messageId: messageId.toString(),
+      isRead: updated.isRead,
+      readAt: updated.readAt,
+      isStarred: updated.isStarred,
+      isArchived: updated.isArchived,
+      isTrashed: updated.isTrashed,
+      trashedAt: updated.trashedAt,
+    };
+  }
+
+  // Batch update user states for multiple messages
+  async batchUpdateMessageStates(
+    userId: bigint,
+    messageIds: bigint[],
+    updates: MessageStateUpdate,
+  ) {
+    if (messageIds.length === 0) {
+      return { count: 0 };
+    }
+
+    const result = await this.mailRepository.batchUpdateMessageStates(
+      userId,
+      messageIds,
+      updates,
+    );
+
+    return {
+      count: result.count,
+    };
   }
 }
 

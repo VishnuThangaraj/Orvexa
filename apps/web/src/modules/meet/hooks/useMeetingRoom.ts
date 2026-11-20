@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Room,
   RoomEvent,
@@ -6,6 +6,7 @@ import {
   RemoteParticipant,
   LocalParticipant,
   ConnectionState,
+  DisconnectReason,
 } from "livekit-client";
 import { useMeetStore } from "../store/meet.store";
 
@@ -25,7 +26,7 @@ export interface HandRaiseItem {
 export interface UseMeetingRoomOptions {
   url?: string;
   token?: string;
-  onDisconnected?: () => void;
+  onDisconnected?: (reason?: DisconnectReason) => void;
 }
 
 export interface UseMeetingRoomReturn {
@@ -50,6 +51,37 @@ export interface UseMeetingRoomReturn {
   toggleHandRaise: () => void;
   lowerHand: (participantId: string) => void;
   leaveMeeting: () => void;
+  reconnect: () => Promise<void>;
+}
+
+function resolveLiveKitUrl(inputUrl?: string): string {
+  if (typeof window === "undefined") return inputUrl || "ws://localhost:7880";
+  const currentHost = window.location.hostname;
+  const isHttps = window.location.protocol === "https:";
+  const defaultWsProtocol = isHttps ? "wss:" : "ws:";
+
+  if (!inputUrl) {
+    return `${defaultWsProtocol}//${currentHost}:7880`;
+  }
+
+  try {
+    const parsed = new URL(inputUrl);
+    // If server configured localhost/127.0.0.1 but client is visiting via IP or custom domain,
+    // point to the current browser host
+    if (
+      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") &&
+      currentHost !== "localhost" &&
+      currentHost !== "127.0.0.1"
+    ) {
+      parsed.hostname = currentHost;
+    }
+    if (isHttps && parsed.protocol === "ws:") {
+      parsed.protocol = "wss:";
+    }
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return inputUrl;
+  }
 }
 
 export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingRoomReturn {
@@ -90,10 +122,8 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
   }, [isCameraEnabled]);
 
   const token = options.token || liveKitData?.token;
-  const url =
-    options.url ||
-    liveKitData?.url ||
-    (typeof window !== "undefined" ? `ws://${window.location.hostname}:7880` : "");
+  const rawUrl = options.url || liveKitData?.url;
+  const resolvedUrl = useMemo(() => resolveLiveKitUrl(rawUrl), [rawUrl]);
 
   // Update participant lists from room
   const updateParticipants = useCallback((activeRoom: Room) => {
@@ -208,9 +238,43 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
     }
   }, [isScreenSharing, setIsScreenSharing]);
 
+  // Manual reconnect handler
+  const reconnect = useCallback(async () => {
+    if (!token || !resolvedUrl) return;
+    setError(null);
+    setConnectionState(ConnectionState.Connecting);
+
+    try {
+      let currentRoom = roomRef.current;
+      if (!currentRoom) {
+        currentRoom = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+          videoCaptureDefaults: {
+            resolution: { width: 1280, height: 720, frameRate: 30 },
+          },
+        });
+        roomRef.current = currentRoom;
+        setRoom(currentRoom);
+      } else if (currentRoom.state === ConnectionState.Connected) {
+        await currentRoom.disconnect();
+      }
+
+      await currentRoom.connect(resolvedUrl, token);
+      setConnectionState(ConnectionState.Connected);
+      updateParticipants(currentRoom);
+      setError(null);
+    } catch (err: unknown) {
+      const msg = (err as Error).message || "Failed to reconnect to video server";
+      console.warn("LiveKit manual reconnect error:", msg);
+      setError(msg);
+      setConnectionState(ConnectionState.Disconnected);
+    }
+  }, [token, resolvedUrl, updateParticipants]);
+
   // Connect and handle Room lifecycle
   useEffect(() => {
-    if (!token || !url) return;
+    if (!token || !resolvedUrl) return;
 
     let isSubscribed = true;
     const newRoom = new Room({
@@ -232,21 +296,46 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
       newRoom.on(RoomEvent.Connected, () => {
         if (!isSubscribed) return;
         setConnectionState(ConnectionState.Connected);
+        setError(null);
         updateParticipants(newRoom);
 
-        newRoom.localParticipant
-          .setMicrophoneEnabled(isMicEnabledRef.current)
-          .catch(console.warn);
-        newRoom.localParticipant
-          .setCameraEnabled(isCameraEnabledRef.current)
-          .catch(console.warn);
+        // Publish mic and camera tracks based on pre-join state
+        if (isMicEnabledRef.current) {
+          newRoom.localParticipant
+            .setMicrophoneEnabled(true)
+            .catch((err) => console.warn("Failed to enable initial mic:", err));
+        }
+        if (isCameraEnabledRef.current) {
+          newRoom.localParticipant
+            .setCameraEnabled(true)
+            .catch((err) => console.warn("Failed to enable initial camera:", err));
+        }
       });
 
-      newRoom.on(RoomEvent.Disconnected, () => {
+      newRoom.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
         if (!isSubscribed) return;
         setConnectionState(ConnectionState.Disconnected);
         updateParticipants(newRoom);
-        onDisconnectedRef.current?.();
+
+        console.log("[LIVEKIT] Room disconnected with reason:", reason);
+
+        // Only navigate away if the user was explicitly ejected or the room was ended by the host/server.
+        // Never navigate away on connection glitches, initial connect errors, or strict-mode unmounts!
+        const shouldEject =
+          reason === DisconnectReason.PARTICIPANT_REMOVED ||
+          reason === DisconnectReason.ROOM_DELETED ||
+          reason === DisconnectReason.ROOM_CLOSED ||
+          reason === DisconnectReason.USER_REJECTED;
+
+        if (shouldEject) {
+          onDisconnectedRef.current?.(reason);
+        } else {
+          setError(
+            reason === DisconnectReason.DUPLICATE_IDENTITY
+              ? "Session ended: this account joined from another window or tab."
+              : "Disconnected from video server. Click retry to reconnect."
+          );
+        }
       });
 
       newRoom.on(RoomEvent.ParticipantConnected, () => {
@@ -259,6 +348,16 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
         updateParticipants(newRoom);
         setRaisedHands((prev) => prev.filter((h) => h.participantId !== participant.identity));
         setPinnedParticipantId((prev) => (prev === participant.identity ? null : prev));
+      });
+
+      newRoom.on(RoomEvent.LocalTrackPublished, () => {
+        if (!isSubscribed) return;
+        updateParticipants(newRoom);
+      });
+
+      newRoom.on(RoomEvent.LocalTrackUnpublished, () => {
+        if (!isSubscribed) return;
+        updateParticipants(newRoom);
       });
 
       newRoom.on(RoomEvent.TrackSubscribed, () => {
@@ -320,18 +419,34 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
 
     setupEventListeners();
 
-    const connectToRoom = async () => {
+    const connectToRoom = async (attempt = 0) => {
+      if (!isSubscribed) return;
       try {
         setRoom(newRoom);
         setConnectionState(ConnectionState.Connecting);
-        await newRoom.connect(url, token);
+        setError(null);
+        await newRoom.connect(resolvedUrl, token);
         if (isSubscribed) {
+          setConnectionState(ConnectionState.Connected);
           updateParticipants(newRoom);
+          setError(null);
         }
       } catch (err: unknown) {
         if (!isSubscribed) return;
         const msg = (err as Error).message || "Failed to connect to video server";
-        console.warn("LiveKit connection error:", msg);
+        console.warn("LiveKit connection attempt failed:", msg);
+
+        // Auto retry up to 2 times with 1.5s delay
+        if (attempt < 2 && isSubscribed) {
+          console.log(`[LIVEKIT] Retrying connection attempt ${attempt + 1}...`);
+          setTimeout(() => {
+            if (isSubscribed && newRoom.state !== ConnectionState.Connected) {
+              connectToRoom(attempt + 1);
+            }
+          }, 1500);
+          return;
+        }
+
         setError(msg);
         setConnectionState(ConnectionState.Disconnected);
       }
@@ -341,11 +456,18 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
 
     return () => {
       isSubscribed = false;
-      newRoom.disconnect();
-      roomRef.current = null;
+      try {
+        newRoom.removeAllListeners();
+        newRoom.disconnect();
+      } catch (e) {
+        console.warn("Cleanup room error:", e);
+      }
+      if (roomRef.current === newRoom) {
+        roomRef.current = null;
+      }
       setRoom(null);
     };
-  }, [token, url, updateParticipants]);
+  }, [token, resolvedUrl, updateParticipants]);
 
   // Clean old reactions after 4 seconds
   useEffect(() => {
@@ -385,5 +507,6 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
     toggleHandRaise,
     lowerHand,
     leaveMeeting,
+    reconnect,
   };
 }

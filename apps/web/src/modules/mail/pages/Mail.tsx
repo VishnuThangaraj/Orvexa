@@ -8,12 +8,15 @@ import MailSnoozed from "../components/mail-category/MailSnoozed";
 import MailSent from "../components/mail-category/MailSent";
 import MailDrafts from "../components/mail-category/MailDrafts";
 import MailTrash from "../components/mail-category/MailTrash";
+import MailThreadView from "../components/thread/MailThreadView";
 import { useMailStore } from "../store/mail.store";
 
 const Mail: React.FC = () => {
   const { activeItem, handleSelectItem } = useMail();
+  const activeThreadId = useMailStore((state) => state.activeThreadId);
 
   const handleCategoryChange = (id: string) => {
+    useMailStore.getState().closeThread();
     useMailStore.getState().setPage(1);
     useMailStore.getState().clearSelection();
     handleSelectItem(id);
@@ -29,13 +32,19 @@ const Mail: React.FC = () => {
 
       {/* Main Mail Surface - Rounded White Card container */}
       <div className="flex-1 flex flex-col h-[calc(100%-16px)] my-2 mr-2 bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/70 dark:border-slate-800/80 overflow-hidden relative">
-        <MailPagination activeCategory={activeItem} />
-        {activeItem === "inbox" && <MailInbox />}
-        {activeItem === "starred" && <MailStarred />}
-        {activeItem === "snoozed" && <MailSnoozed />}
-        {activeItem === "sent" && <MailSent />}
-        {activeItem === "drafts" && <MailDrafts />}
-        {activeItem === "trash" && <MailTrash />}
+        {activeThreadId ? (
+          <MailThreadView />
+        ) : (
+          <>
+            <MailPagination activeCategory={activeItem} />
+            {activeItem === "inbox" && <MailInbox />}
+            {activeItem === "starred" && <MailStarred />}
+            {activeItem === "snoozed" && <MailSnoozed />}
+            {activeItem === "sent" && <MailSent />}
+            {activeItem === "drafts" && <MailDrafts />}
+            {activeItem === "trash" && <MailTrash />}
+          </>
+        )}
       </div>
     </div>
   );

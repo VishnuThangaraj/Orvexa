@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import {
   Participant,
+  ParticipantEvent,
   Track,
   ConnectionQuality,
 } from "livekit-client";
@@ -14,12 +15,13 @@ import {
 } from "lucide-react";
 
 interface ParticipantTileProps {
-  participant: Participant;
+  participant?: Participant | null;
   isLocal?: boolean;
   isPinned?: boolean;
   onTogglePin?: (id: string) => void;
   isHandRaised?: boolean;
   fallbackStream?: MediaStream | null;
+  fallbackUser?: { fullName?: string; email?: string } | null;
   className?: string;
 }
 
@@ -30,33 +32,64 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
   onTogglePin,
   isHandRaised = false,
   fallbackStream,
+  fallbackUser,
   className = "",
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Re-render on participant internal track/speaking events
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!participant) return;
+
+    const forceUpdate = () => setTick((t) => t + 1);
+
+    participant.on(ParticipantEvent.TrackPublished, forceUpdate);
+    participant.on(ParticipantEvent.TrackUnpublished, forceUpdate);
+    participant.on(ParticipantEvent.TrackMuted, forceUpdate);
+    participant.on(ParticipantEvent.TrackUnmuted, forceUpdate);
+    participant.on(ParticipantEvent.IsSpeakingChanged, forceUpdate);
+    participant.on(ParticipantEvent.ConnectionQualityChanged, forceUpdate);
+
+    return () => {
+      participant.off(ParticipantEvent.TrackPublished, forceUpdate);
+      participant.off(ParticipantEvent.TrackUnpublished, forceUpdate);
+      participant.off(ParticipantEvent.TrackMuted, forceUpdate);
+      participant.off(ParticipantEvent.TrackUnmuted, forceUpdate);
+      participant.off(ParticipantEvent.IsSpeakingChanged, forceUpdate);
+      participant.off(ParticipantEvent.ConnectionQualityChanged, forceUpdate);
+    };
+  }, [participant]);
+
   // Parse metadata
   const metadata = useMemo(() => {
+    if (!participant?.metadata) return {};
     try {
-      return JSON.parse(participant.metadata || "{}");
+      return JSON.parse(participant.metadata);
     } catch {
       return {};
     }
-  }, [participant.metadata]);
+  }, [participant?.metadata]);
 
   const displayName =
-    metadata.fullName || participant.name || (isLocal ? "You" : "Participant");
+    metadata.fullName ||
+    participant?.name ||
+    fallbackUser?.fullName ||
+    (isLocal ? "You" : "Participant");
   const avatarUrl = metadata.avatar || null;
 
   // Track publications
-  const cameraPub = participant.getTrackPublication(Track.Source.Camera);
-  const screenPub = participant.getTrackPublication(Track.Source.ScreenShare);
-  const audioPub = participant.getTrackPublication(Track.Source.Microphone);
+  const cameraPub = participant?.getTrackPublication?.(Track.Source.Camera);
+  const screenPub = participant?.getTrackPublication?.(Track.Source.ScreenShare);
+  const audioPub = participant?.getTrackPublication?.(Track.Source.Microphone);
 
   const videoTrack = screenPub?.track || cameraPub?.track;
   const isVideoMuted = !videoTrack || videoTrack.isMuted;
-  const isAudioMuted = !audioPub?.track || audioPub.isMuted || !participant.isMicrophoneEnabled;
-  const isSpeaking = participant.isSpeaking;
+  const isAudioMuted =
+    !participant || !audioPub?.track || audioPub.isMuted || !participant.isMicrophoneEnabled;
+  const isSpeaking = participant?.isSpeaking || false;
 
   // Attach video track or local fallback
   useEffect(() => {
@@ -90,6 +123,13 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
 
   // Quality indicator
   const renderQuality = () => {
+    if (!participant) {
+      return (
+        <span title="Connecting...">
+          <Wifi className="w-3.5 h-3.5 text-neutral-400 opacity-60" />
+        </span>
+      );
+    }
     const q = participant.connectionQuality;
     if (q === ConnectionQuality.Poor || q === ConnectionQuality.Lost) {
       return (
@@ -105,7 +145,11 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
     );
   };
 
-  const hasActiveVideo = (!isVideoMuted && Boolean(videoTrack)) || (isLocal && fallbackStream && !isVideoMuted);
+  const hasActiveVideo =
+    (!isVideoMuted && Boolean(videoTrack)) ||
+    (isLocal && Boolean(fallbackStream) && !isVideoMuted);
+
+  const tileIdentity = participant?.identity || (isLocal ? "local-user" : "participant");
 
   return (
     <div
@@ -157,7 +201,7 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
       {/* Top Right: Pin / Unpin Button (hover or pinned) */}
       {onTogglePin && (
         <button
-          onClick={() => onTogglePin(participant.identity)}
+          onClick={() => onTogglePin(tileIdentity)}
           aria-label={isPinned ? "Unpin tile" : "Pin tile to stage"}
           className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-black/60 hover:bg-black/80 text-white backdrop-blur-xs transition ${
             isPinned ? "opacity-100 text-blue-400" : "opacity-0 group-hover:opacity-100"
