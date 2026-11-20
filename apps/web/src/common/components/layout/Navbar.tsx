@@ -66,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
         </Link>
       </div>
 
-      {/* Middle: Google Workspace style search bar */}
+      {/* Middle: Orvexa Workspace style search bar */}
       <div className="hidden md:flex items-center flex-1 max-w-xl mx-8">
         <div className="relative w-full">
           <Search
@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
 
       {/* Right side: Presence status, Theme toggle, User profile & Logout */}
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Google Workspace Presence Status Toggle */}
+        {/* Orvexa Workspace Presence Status Toggle */}
         <div className="relative" ref={statusDropdownRef}>
           <button
             type="button"

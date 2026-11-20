@@ -44,6 +44,13 @@ const env = {
   DUMMY_PASSWORD_HASH:
     process.env.DUMMY_PASSWORD_HASH ||
     "$argon2id$v=19$m=19456,t=2,p=1$NtNKrW3kupAyV35Jwz7Eqw$/1xEcYxQL0ejfjwA4Qjn2HsoEJ7e4Y8rJSRlUYaqv6k",
+
+  // LiveKit Video Meetings
+  LIVEKIT_URL: process.env.LIVEKIT_URL || "ws://localhost:7880",
+  LIVEKIT_API_KEY: process.env.LIVEKIT_API_KEY || "devkey",
+  LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET || "secret",
+  LIVEKIT_WEBHOOK_SECRET:
+    process.env.LIVEKIT_WEBHOOK_SECRET || process.env.LIVEKIT_API_SECRET || "secret",
 };
 
 export default env;

@@ -204,7 +204,7 @@ const AuthPage: React.FC = () => {
               ) : (
                 <>
                   <div className="text-4xl">Sign in</div>
-                  <div className="text-[#444746]">Use your Google Account</div>
+                  <div className="text-[#444746]">Use your Orvexa Account</div>
                 </>
               )}
             </div>

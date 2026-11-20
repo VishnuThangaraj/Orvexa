@@ -25,6 +25,7 @@ export interface CreateEventDto {
   eventType?: CalendarEventType;
   visibility?: EventVisibility;
   recurrenceRule?: string | null;
+  meetingId?: string | number | bigint | null;
   guestUserIds?: Array<string | number | bigint>;
   reminders?: Array<{ minutesBefore: number }>;
 }
@@ -42,6 +43,7 @@ export interface UpdateEventDto {
   eventType?: CalendarEventType;
   visibility?: EventVisibility;
   recurrenceRule?: string | null;
+  meetingId?: string | number | bigint | null;
   guestUserIds?: Array<string | number | bigint>;
   reminders?: Array<{ minutesBefore: number }>;
   recurrenceMode?: "SINGLE" | "FOLLOWING" | "ALL";

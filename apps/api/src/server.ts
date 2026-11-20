@@ -21,6 +21,17 @@ const bootstrap = async () => {
     const httpServer = http.createServer(app);
     initializeSocketServer(httpServer);
 
+    httpServer.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(
+          `[SERVER ERROR] Port ${PORT} is already in use by another process. Please free port ${PORT} or configure a different PORT in .env.`,
+        );
+      } else {
+        console.error("[SERVER ERROR] HTTP server error:", err);
+      }
+      process.exit(1);
+    });
+
     // Start Server
     httpServer.listen(PORT, () => {
       console.log(`Orvexa Server Running on PORT : ${PORT}`);

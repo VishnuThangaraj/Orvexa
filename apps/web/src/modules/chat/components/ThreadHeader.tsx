@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ArrowLeft,
   Info,
@@ -8,6 +8,7 @@ import {
   Star,
   Bell,
   BellOff,
+  Video,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useChatStore } from "../store/chat.store";
@@ -15,6 +16,7 @@ import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { chatApi } from "../api/chat.api";
 import { CHAT_QUERY_KEYS } from "../hooks/use-conversations";
+import { meetApi } from "@/modules/meet/api/meet.api";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "../types/chat.types";
 
@@ -107,6 +109,33 @@ export const ThreadHeader: React.FC<ThreadHeaderProps> = ({
     }
   };
 
+  const [isStartingCall, setIsStartingCall] = useState(false);
+
+  const handleStartVideoCall = async () => {
+    setIsStartingCall(true);
+    try {
+      const meeting = await meetApi.createMeeting({
+        title: `${title} - Call`,
+        requireApproval: false,
+      });
+
+      const meetLink = `${window.location.origin}/meet/${meeting.meetingCode}`;
+      await chatApi.sendMessage(conversation.id, {
+        content: `📹 Video Meeting: Join here -> ${meetLink}`,
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.messages(conversation.id),
+      });
+
+      window.open(`/meet/${meeting.meetingCode}`, "_blank");
+    } catch (err) {
+      console.error("Failed to start video call from chat:", err);
+    } finally {
+      setIsStartingCall(false);
+    }
+  };
+
   return (
     <div className="h-16 px-6 border-b border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between shrink-0 select-none relative">
       {/* Left: Avatar & Details */}
@@ -139,7 +168,7 @@ export const ThreadHeader: React.FC<ThreadHeaderProps> = ({
             </div>
           )}
 
-          {/* Presence Indicator Dot matching Google Chat */}
+          {/* Presence Indicator Dot matching Orvexa Chat */}
           {!isGroup && (
             <span
               className={cn(
@@ -183,6 +212,18 @@ export const ThreadHeader: React.FC<ThreadHeaderProps> = ({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
+        {/* Orvexa Meet Video Call Button */}
+        <button
+          type="button"
+          onClick={handleStartVideoCall}
+          disabled={isStartingCall}
+          title="Start video call with Orvexa Meet"
+          aria-label="Start video call with Orvexa Meet"
+          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <Video size={17} />
+        </button>
+
         {/* Task 5.3: Notification Mute Toggle Button */}
         <button
           type="button"

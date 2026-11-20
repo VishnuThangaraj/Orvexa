@@ -11,6 +11,11 @@ model Meeting {
   startedAt      DateTime?     @map("started_at") @db.Timestamptz(6)
   endedAt        DateTime?     @map("ended_at") @db.Timestamptz(6)
   status         MeetingStatus @default(SCHEDULED)
+  isLocked       Boolean       @default(false) @map("is_locked")
+  requireApproval Boolean      @default(true) @map("require_approval")
+  allowScreenShare Boolean     @default(true) @map("allow_screen_share")
+  allowChat      Boolean       @default(true) @map("allow_chat")
+  allowReactions Boolean       @default(true) @map("allow_reactions")
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -19,6 +24,7 @@ model Meeting {
   calendarEvents CalendarEvent[]
   participants   MeetingParticipant[]
   recordings     MeetingRecording[]
+  messages       MeetingMessage[]
 
   @@index([hostId, status])
   @@index([scheduledStart])
@@ -57,4 +63,19 @@ model MeetingRecording {
   @@index([meetingId])
   @@index([assetId])
   @@map("meeting_recordings")
+}
+
+model MeetingMessage {
+  id         BigInt   @id @default(autoincrement())
+  meetingId  BigInt   @map("meeting_id")
+  senderId   BigInt?  @map("sender_id")
+  senderName String   @map("sender_name") @db.VarChar(255)
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  sender  User?   @relation("MeetingMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([meetingId, createdAt])
+  @@map("meeting_messages")
 }

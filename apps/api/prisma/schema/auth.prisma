@@ -66,6 +66,7 @@ model User {
   hostedMeetings        Meeting[]            @relation("MeetingHost")
   meetingParticipations MeetingParticipant[]
   startedRecordings     MeetingRecording[]   @relation("RecordingStartedBy")
+  sentMeetingMessages   MeetingMessage[]     @relation("MeetingMessageSender")
 
   // Notification relations
   receivedNotifications  Notification[] @relation("NotificationRecipient")

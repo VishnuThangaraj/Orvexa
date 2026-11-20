@@ -18,6 +18,7 @@ export interface CreateEventRepoData {
   eventType?: CalendarEventType;
   visibility?: EventVisibility;
   recurrenceRule?: string | null;
+  meetingId?: bigint | null;
   guestUserIds?: bigint[];
   reminders?: Array<{ minutesBefore: number }>;
 }
@@ -36,6 +37,7 @@ export interface UpdateEventRepoData {
   visibility?: EventVisibility;
   recurrenceRule?: string | null;
   recurrenceExceptions?: string | null;
+  meetingId?: bigint | null;
   guestUserIds?: bigint[];
   reminders?: Array<{ minutesBefore: number }>;
 }
@@ -154,6 +156,7 @@ export class CalendarRepository {
             isVisible: true,
             isPrimary: true,
             isSystem: true,
+            isPublic: true,
             systemType: true,
           },
         },
@@ -188,6 +191,14 @@ export class CalendarRepository {
             remindAt: true,
           },
         },
+        meeting: {
+          select: {
+            id: true,
+            meetingCode: true,
+            title: true,
+            status: true,
+          },
+        },
       },
       orderBy: { startTime: "asc" },
     });
@@ -205,6 +216,7 @@ export class CalendarRepository {
             isVisible: true,
             isPrimary: true,
             isSystem: true,
+            isPublic: true,
             systemType: true,
           },
         },
@@ -232,6 +244,14 @@ export class CalendarRepository {
           },
         },
         reminders: true,
+        meeting: {
+          select: {
+            id: true,
+            meetingCode: true,
+            title: true,
+            status: true,
+          },
+        },
       },
     });
   }
@@ -251,6 +271,7 @@ export class CalendarRepository {
         eventType: data.eventType ?? "PERSONAL",
         visibility: data.visibility ?? "PRIVATE",
         recurrenceRule: data.recurrenceRule ?? null,
+        meetingId: data.meetingId ?? null,
         createdBy: userId,
         participants: {
           create: [
@@ -286,6 +307,7 @@ export class CalendarRepository {
             isVisible: true,
             isPrimary: true,
             isSystem: true,
+            isPublic: true,
             systemType: true,
           },
         },
@@ -313,6 +335,14 @@ export class CalendarRepository {
           },
         },
         reminders: true,
+        meeting: {
+          select: {
+            id: true,
+            meetingCode: true,
+            title: true,
+            status: true,
+          },
+        },
       },
     });
   }
@@ -334,6 +364,7 @@ export class CalendarRepository {
     if (data.recurrenceRule !== undefined) updatePayload.recurrenceRule = data.recurrenceRule;
     if (data.recurrenceExceptions !== undefined)
       updatePayload.recurrenceExceptions = data.recurrenceExceptions;
+    if (data.meetingId !== undefined) updatePayload.meetingId = data.meetingId;
 
     // Execute in transaction if guests or reminders are being updated
     return prisma.$transaction(async (tx) => {
@@ -391,6 +422,7 @@ export class CalendarRepository {
               isVisible: true,
               isPrimary: true,
               isSystem: true,
+              isPublic: true,
               systemType: true,
             },
           },
@@ -418,6 +450,14 @@ export class CalendarRepository {
             },
           },
           reminders: true,
+          meeting: {
+            select: {
+              id: true,
+              meetingCode: true,
+              title: true,
+              status: true,
+            },
+          },
         },
       });
     });

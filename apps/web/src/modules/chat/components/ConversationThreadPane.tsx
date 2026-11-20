@@ -196,7 +196,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
     };
   }, [activeConversationId, conversation, messages, currentUser?.id, emit]);
 
-  // Date Label Helper for date separators matching Google Chat
+  // Date Label Helper for date separators matching Orvexa Chat
   const getDateLabel = (dateStr: string) => {
     const d = new Date(dateStr);
     const today = new Date();
@@ -342,7 +342,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
 
               return (
                 <React.Fragment key={message.id}>
-                  {/* Date separator pill matching Google Chat */}
+                  {/* Date separator pill matching Orvexa Chat */}
                   {showDateSeparator && (
                     <div className="flex items-center justify-center my-3 select-none">
                       <span className="px-3.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold shadow-2xs border border-slate-200/60 dark:border-slate-700/60">

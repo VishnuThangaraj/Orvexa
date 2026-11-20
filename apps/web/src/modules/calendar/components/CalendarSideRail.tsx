@@ -32,7 +32,7 @@ export const CalendarSideRail: React.FC = () => {
     <aside className="w-14 shrink-0 h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col items-center justify-between py-3 select-none z-20">
       {/* Top Icons Rail */}
       <div className="flex flex-col items-center gap-3 w-full">
-        {/* Google Keep (Yellow Lightbulb) */}
+        {/* Orvexa Keep (Yellow Lightbulb) */}
         <button
           type="button"
           onClick={() => handleIconClick("keep")}
@@ -46,7 +46,7 @@ export const CalendarSideRail: React.FC = () => {
           <Lightbulb size={20} className="fill-amber-400 stroke-amber-500" />
         </button>
 
-        {/* Google Tasks (Blue Checkmark in circle) */}
+        {/* Orvexa Tasks (Blue Checkmark in circle) */}
         <button
           type="button"
           onClick={() => handleIconClick("tasks")}
@@ -60,7 +60,7 @@ export const CalendarSideRail: React.FC = () => {
           <CheckCircle2 size={20} className="stroke-[2.5]" />
         </button>
 
-        {/* Google Contacts (Blue person icon) */}
+        {/* Orvexa Contacts (Blue person icon) */}
         <button
           type="button"
           onClick={() => handleIconClick("contacts")}
@@ -74,7 +74,7 @@ export const CalendarSideRail: React.FC = () => {
           <User size={20} className="stroke-[2.2]" />
         </button>
 
-        {/* Google Maps (Pin icon) */}
+        {/* Orvexa Maps (Pin icon) */}
         <button
           type="button"
           onClick={() => handleIconClick("maps")}

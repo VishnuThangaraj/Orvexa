@@ -14,6 +14,9 @@ const Home = lazy(() => import("@/modules/home/Pages/Home"));
 const Mail = lazy(() => import("@/modules/mail/pages/Mail"));
 const Chat = lazy(() => import("@/modules/chat/pages/Chat"));
 const Calendar = lazy(() => import("@/modules/calendar/pages/Calendar"));
+const MeetLanding = lazy(() => import("@/modules/meet/pages/MeetLandingPage"));
+const MeetingRoomPage = lazy(() => import("@/modules/meet/pages/MeetingRoomPage"));
+const MeetingLeftPage = lazy(() => import("@/modules/meet/pages/MeetingLeftPage"));
 
 const Profile = lazy(() => import("@/modules/profile/pages/Profile"));
 
@@ -42,8 +45,12 @@ const App = () => {
             <Route path="/mail" element={<Mail />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/meet" element={<MeetLanding />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
+          {/* Immersive full-screen meeting room & leave screens outside AppLayout */}
+          <Route path="/meet/:code" element={<MeetingRoomPage />} />
+          <Route path="/meet/:code/left" element={<MeetingLeftPage />} />
         </Route>
 
         {/* Catch-all fallback */}

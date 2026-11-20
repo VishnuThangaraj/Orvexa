@@ -68,6 +68,12 @@ export interface CalendarEvent {
   visibility: EventVisibility;
   recurrenceRule?: string | null;
   meetingId?: string | null;
+  meeting?: {
+    id: string;
+    meetingCode: string;
+    title: string;
+    status: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
   cancelledAt?: string | null;
@@ -122,6 +128,7 @@ export interface CreateEventInput {
   eventType?: CalendarEventType;
   visibility?: EventVisibility;
   recurrenceRule?: string | null;
+  meetingId?: string | null;
   guestUserIds?: string[];
   reminders?: Array<{ minutesBefore: number }>;
 }
@@ -139,6 +146,7 @@ export interface UpdateEventInput {
   eventType?: CalendarEventType;
   visibility?: EventVisibility;
   recurrenceRule?: string | null;
+  meetingId?: string | null;
   recurrenceMode?: "SINGLE" | "FOLLOWING" | "ALL";
   targetInstanceDate?: string;
   guestUserIds?: string[];

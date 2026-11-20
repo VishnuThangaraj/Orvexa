@@ -199,7 +199,7 @@ export const TasksSidePanel: React.FC = () => {
             {activeRightPanelTab} panel
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Google Workspace integration placeholder
+            Orvexa Workspace integration placeholder
           </p>
         </div>
       )}
