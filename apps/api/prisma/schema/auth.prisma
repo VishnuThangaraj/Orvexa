@@ -41,16 +41,22 @@ model User {
   receivedChatMentions       ChatMention[]             @relation("MentionedUser")
 
   // Drive relations
-  ownedDriveFolders       DriveFolder[]      @relation("DriveFolderOwner")
-  deletedDriveFolders     DriveFolder[]      @relation("DriveFolderDeletedBy")
-  ownedDriveFiles         DriveFile[]        @relation("DriveFileOwner")
-  deletedDriveFiles       DriveFile[]        @relation("DriveFileDeletedBy")
-  uploadedDriveVersions   DriveFileVersion[] @relation("DriveVersionUploader")
-  drivePermissions        DrivePermission[]  @relation("DrivePermissionUser")
-  grantedDrivePermissions DrivePermission[]  @relation("DrivePermissionGrantedBy")
+  ownedDriveFolders       DriveFolder[]        @relation("DriveFolderOwner")
+  deletedDriveFolders     DriveFolder[]        @relation("DriveFolderDeletedBy")
+  ownedDriveFiles         DriveFile[]          @relation("DriveFileOwner")
+  deletedDriveFiles       DriveFile[]          @relation("DriveFileDeletedBy")
+  uploadedDriveVersions   DriveFileVersion[]   @relation("DriveVersionUploader")
+  drivePermissions        DrivePermission[]    @relation("DrivePermissionUser")
+  grantedDrivePermissions DrivePermission[]    @relation("DrivePermissionGrantedBy")
   driveFavorites          DriveFavorite[]
   driveRecentItems        DriveRecentItem[]
   driveComments           DriveComment[]
+  createdShareLinks       DriveShareLink[]     @relation("ShareLinkCreator")
+  requestedAccesses       DriveAccessRequest[] @relation("AccessRequestedBy")
+  reviewedAccesses        DriveAccessRequest[] @relation("AccessReviewedBy")
+  driveActivities         DriveActivity[]      @relation("DriveActivityUser")
+  driveShortcuts          DriveShortcut[]      @relation("DriveShortcutUser")
+  uploadSessions          DriveUploadSession[] @relation("UploadSessionUser")
 
   // Calendar relations
   createdCalendarEvents  CalendarEvent[]       @relation("CalendarEventCreator")

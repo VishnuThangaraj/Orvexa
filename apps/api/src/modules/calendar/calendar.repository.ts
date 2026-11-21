@@ -3,6 +3,7 @@ import type {
   CalendarEventType,
   EventVisibility,
   InvitationStatus,
+  CalendarAttachmentDto,
 } from "./calendar.types.js";
 
 export interface CreateEventRepoData {
@@ -21,6 +22,7 @@ export interface CreateEventRepoData {
   meetingId?: bigint | null;
   guestUserIds?: bigint[];
   reminders?: Array<{ minutesBefore: number }>;
+  attachments?: CalendarAttachmentDto[];
 }
 
 export interface UpdateEventRepoData {
@@ -40,6 +42,7 @@ export interface UpdateEventRepoData {
   meetingId?: bigint | null;
   guestUserIds?: bigint[];
   reminders?: Array<{ minutesBefore: number }>;
+  attachments?: CalendarAttachmentDto[];
 }
 
 export class CalendarRepository {
@@ -199,6 +202,17 @@ export class CalendarRepository {
             status: true,
           },
         },
+        attachments: {
+          include: {
+            driveFile: {
+              include: {
+                currentAsset: true,
+                owner: true,
+              },
+            },
+            asset: true,
+          },
+        },
       },
       orderBy: { startTime: "asc" },
     });
@@ -252,6 +266,17 @@ export class CalendarRepository {
             status: true,
           },
         },
+        attachments: {
+          include: {
+            driveFile: {
+              include: {
+                currentAsset: true,
+                owner: true,
+              },
+            },
+            asset: true,
+          },
+        },
       },
     });
   }
@@ -294,6 +319,14 @@ export class CalendarRepository {
                 userId,
                 minutesBefore: r.minutesBefore,
                 remindAt: new Date(data.startTime.getTime() - r.minutesBefore * 60 * 1000),
+              })),
+            }
+          : undefined,
+        attachments: data.attachments && data.attachments.length > 0
+          ? {
+              create: data.attachments.map((att) => ({
+                driveFileId: att.fileId ? BigInt(att.fileId) : null,
+                assetId: att.assetId ? BigInt(att.assetId) : null,
               })),
             }
           : undefined,
@@ -341,6 +374,17 @@ export class CalendarRepository {
             meetingCode: true,
             title: true,
             status: true,
+          },
+        },
+        attachments: {
+          include: {
+            driveFile: {
+              include: {
+                currentAsset: true,
+                owner: true,
+              },
+            },
+            asset: true,
           },
         },
       },
@@ -410,6 +454,22 @@ export class CalendarRepository {
         }
       }
 
+      if (data.attachments !== undefined) {
+        await tx.calendarEventAttachment.deleteMany({
+          where: { eventId },
+        });
+
+        if (data.attachments.length > 0) {
+          await tx.calendarEventAttachment.createMany({
+            data: data.attachments.map((att) => ({
+              eventId,
+              driveFileId: att.fileId ? BigInt(att.fileId) : null,
+              assetId: att.assetId ? BigInt(att.assetId) : null,
+            })),
+          });
+        }
+      }
+
       return tx.calendarEvent.update({
         where: { id: eventId },
         data: updatePayload,
@@ -456,6 +516,17 @@ export class CalendarRepository {
               meetingCode: true,
               title: true,
               status: true,
+            },
+          },
+          attachments: {
+            include: {
+              driveFile: {
+                include: {
+                  currentAsset: true,
+                  owner: true,
+                },
+              },
+              asset: true,
             },
           },
         },

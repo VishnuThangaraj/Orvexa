@@ -5,7 +5,11 @@ import { useChatStore } from "../store/chat.store";
 import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { CHAT_QUERY_KEYS } from "./use-conversations";
-import type { ChatMessage, Conversation } from "../types/chat.types";
+import type {
+  ChatMessage,
+  Conversation,
+  FetchMessagesOptions,
+} from "../types/chat.types";
 
 export const useChatSync = () => {
   const queryClient = useQueryClient();
@@ -116,14 +120,46 @@ export const useChatSync = () => {
       const message = rawMessage as ChatMessage;
       const conversationId = String(message.conversationId);
 
-      // Append to message list cache
-      queryClient.setQueryData<ChatMessage[]>(
-        [...CHAT_QUERY_KEYS.messages(conversationId), undefined],
-        (old = []) => {
+      // Reconcile incoming real-time message with optimistic cache across all message queries
+      const queries = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: CHAT_QUERY_KEYS.messages(conversationId) });
+
+      queries.forEach((q) => {
+        const queryOptions = q.queryKey[3] as FetchMessagesOptions | undefined;
+        const targetParentId = queryOptions?.parentMessageId;
+
+        // If this query is for a specific thread, only add if message matches parentMessageId
+        if (targetParentId && targetParentId !== "all") {
+          if (String(message.parentMessageId) !== String(targetParentId)) {
+            return;
+          }
+        } else if (!targetParentId) {
+          // Root query: only add if parentMessageId is null
+          if (message.parentMessageId) {
+            return;
+          }
+        }
+
+        queryClient.setQueryData<ChatMessage[]>(q.queryKey, (old = []) => {
+          // If matching optimistic message exists by clientMessageId or id, replace in place
+          const matchIndex = old.findIndex(
+            (m) =>
+              (message.clientMessageId &&
+                m.clientMessageId === message.clientMessageId) ||
+              m.id === message.id,
+          );
+
+          if (matchIndex !== -1) {
+            const next = [...old];
+            next[matchIndex] = message;
+            return next;
+          }
+
           if (old.some((m) => m.id === message.id)) return old;
           return [...old, message];
-        },
-      );
+        });
+      });
 
       // Update conversation list preview & immediately move chat to top across all conversation views
       queryClient.setQueriesData<{
@@ -206,16 +242,16 @@ export const useChatSync = () => {
       const updated = rawMessage as ChatMessage;
       const conversationId = String(updated.conversationId);
 
-      queryClient.setQueryData<ChatMessage[]>(
-        [...CHAT_QUERY_KEYS.messages(conversationId), undefined],
+      queryClient.setQueriesData<ChatMessage[]>(
+        { queryKey: CHAT_QUERY_KEYS.messages(conversationId) },
         (old = []) => old.map((m) => (m.id === updated.id ? updated : m)),
       );
     });
 
     // 3. Message deleted
     const unsubDeleted = subscribe("message:deleted", (data) => {
-      queryClient.setQueryData<ChatMessage[]>(
-        [...CHAT_QUERY_KEYS.messages(data.conversationId), undefined],
+      queryClient.setQueriesData<ChatMessage[]>(
+        { queryKey: CHAT_QUERY_KEYS.messages(data.conversationId) },
         (old = []) =>
           old.map((m) =>
             m.id === data.messageId
@@ -258,12 +294,10 @@ export const useChatSync = () => {
         },
       );
 
-      // Invalidate queries to ensure full consistency across views
+      // Invalidate conversation details and conversations list to update unread badge counts,
+      // without invalidating message lists (preventing destructive message refetches and race conditions)
       queryClient.invalidateQueries({
         queryKey: CHAT_QUERY_KEYS.conversation(data.conversationId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: CHAT_QUERY_KEYS.messages(data.conversationId),
       });
       queryClient.invalidateQueries({
         queryKey: CHAT_QUERY_KEYS.conversations,
@@ -272,8 +306,8 @@ export const useChatSync = () => {
 
     // 6. Reaction updated
     const unsubReactions = subscribe("message:reaction_updated", (data) => {
-      queryClient.setQueryData<ChatMessage[]>(
-        [...CHAT_QUERY_KEYS.messages(data.conversationId), undefined],
+      queryClient.setQueriesData<ChatMessage[]>(
+        { queryKey: CHAT_QUERY_KEYS.messages(data.conversationId) },
         (old = []) =>
           old.map((m) =>
             m.id === data.messageId ? { ...m, reactions: data.reactions } : m,

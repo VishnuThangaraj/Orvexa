@@ -1,6 +1,7 @@
 import AppError from "../../common/errors/AppError.js";
 import { prisma } from "../../config/prisma.js";
 import CalendarRepository from "./calendar.repository.js";
+import { driveService } from "../drive/drive.service.js";
 import { expandRecurringEvent } from "./recurrence.util.js";
 import { ALL_PUBLIC_HOLIDAYS } from "./calendar.holidays.js";
 import type {
@@ -223,6 +224,24 @@ export class CalendarService {
           r.remindAt instanceof Date
             ? r.remindAt.toISOString()
             : String(r.remindAt),
+      })),
+      attachments: (event.attachments || []).map((a: any) => ({
+        id: String(a.id),
+        fileId: a.driveFileId ? String(a.driveFileId) : null,
+        assetId: a.assetId ? String(a.assetId) : null,
+        title: a.driveFile?.name || a.asset?.originalFilename || "Attachment",
+        fileUrl: a.driveFile ? `/drive/files/${a.driveFile.id}/download` : (a.asset?.secureUrl || null),
+        mimeType: a.driveFile?.currentAsset?.mimeType || a.asset?.mimeType || null,
+        sizeBytes: a.driveFile?.currentAsset?.bytes ? String(a.driveFile.currentAsset.bytes) : (a.asset?.bytes ? String(a.asset.bytes) : null),
+        driveFile: a.driveFile
+          ? {
+              id: String(a.driveFile.id),
+              name: a.driveFile.name,
+              mimeType: a.driveFile.currentAsset?.mimeType,
+              bytes: a.driveFile.currentAsset?.bytes ? String(a.driveFile.currentAsset.bytes) : null,
+              owner: a.driveFile.owner,
+            }
+          : null,
       })),
       myResponseStatus,
     };
@@ -503,7 +522,33 @@ export class CalendarService {
       meetingId: dto.meetingId ? BigInt(dto.meetingId) : undefined,
       guestUserIds,
       reminders: dto.reminders,
+      attachments: dto.attachments,
     });
+
+    if (dto.attachments && dto.attachments.length > 0 && guestUserIds && guestUserIds.length > 0) {
+      for (const att of dto.attachments) {
+        if (att.fileId) {
+          const fileId = BigInt(att.fileId);
+          for (const guestId of guestUserIds) {
+            try {
+              const guest = await prisma.user.findUnique({
+                where: { id: guestId },
+                select: { email: true },
+              });
+              if (guest) {
+                await driveService.addPermission(
+                  userId,
+                  { fileId },
+                  { email: guest.email, accessLevel: "VIEWER", notify: true },
+                );
+              }
+            } catch {
+              // Ignore if already owner or has access
+            }
+          }
+        }
+      }
+    }
 
     return this.formatEvent(event, userId);
   }
@@ -612,9 +657,35 @@ export class CalendarService {
         meetingId,
         guestUserIds,
         reminders: dto.reminders,
+        attachments: dto.attachments,
       },
       userId,
     );
+
+    if (dto.attachments && dto.attachments.length > 0 && guestUserIds && guestUserIds.length > 0) {
+      for (const att of dto.attachments) {
+        if (att.fileId) {
+          const fileId = BigInt(att.fileId);
+          for (const guestId of guestUserIds) {
+            try {
+              const guest = await prisma.user.findUnique({
+                where: { id: guestId },
+                select: { email: true },
+              });
+              if (guest) {
+                await driveService.addPermission(
+                  userId,
+                  { fileId },
+                  { email: guest.email, accessLevel: "VIEWER", notify: true },
+                );
+              }
+            } catch {
+              // Ignore if already owner or has access
+            }
+          }
+        }
+      }
+    }
 
     return this.formatEvent(updated, userId);
   }

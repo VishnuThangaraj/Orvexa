@@ -85,6 +85,8 @@ export interface ChatMessage {
   _count?: {
     replies: number;
   };
+  isOptimistic?: boolean;
+  status?: "sending" | "sent" | "error";
 }
 
 export interface Conversation {

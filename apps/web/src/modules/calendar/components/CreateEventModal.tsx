@@ -10,9 +10,12 @@ import {
   Video,
   Copy,
   Check,
+  Paperclip,
+  HardDrive,
 } from "lucide-react";
 import { useCalendarStore } from "../store/calendar.store";
 import { meetApi } from "@/modules/meet/api/meet.api";
+import { DrivePickerModal, type DriveFileItem } from "@/modules/drive";
 
 const COLOR_PALETTE = [
   { name: "Peacock", value: "#039be5" },
@@ -114,6 +117,20 @@ const CreateEventModalContent: React.FC = () => {
   });
   const [isCreatingMeet, setIsCreatingMeet] = useState(false);
   const [meetCopied, setMeetCopied] = useState(false);
+  const [selectedDriveFiles, setSelectedDriveFiles] = useState<DriveFileItem[]>([]);
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
+
+  const handleDrivePickerSelect = (files: DriveFileItem[]) => {
+    setSelectedDriveFiles((prev) => {
+      const existingIds = new Set(prev.map((f) => f.id));
+      const newFiles = files.filter((f) => !existingIds.has(f.id));
+      return [...prev, ...newFiles];
+    });
+  };
+
+  const handleRemoveDriveFile = (fileId: string) => {
+    setSelectedDriveFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
 
   const handleAddMeet = async () => {
     setIsCreatingMeet(true);
@@ -154,6 +171,14 @@ const CreateEventModalContent: React.FC = () => {
         ? location.trim() || `${window.location.origin}/meet/${meetingCode}`
         : location.trim() || undefined;
 
+      const attachmentsPayload = selectedDriveFiles.map((f) => ({
+        fileId: f.id,
+        assetId: f.asset.id,
+        title: f.name,
+        mimeType: f.asset.mimeType,
+        sizeBytes: f.asset.bytes,
+      }));
+
       await createEvent({
         title: title.trim(),
         description: description.trim() || undefined,
@@ -166,6 +191,7 @@ const CreateEventModalContent: React.FC = () => {
         recurrenceRule: recurrenceRule || null,
         meetingId: meetingId || undefined,
         reminders: reminders.map((m) => ({ minutesBefore: m })),
+        attachments: attachmentsPayload.length > 0 ? attachmentsPayload : undefined,
       });
 
       closeCreateModal();
@@ -379,6 +405,49 @@ const CreateEventModalContent: React.FC = () => {
             />
           </div>
 
+          {/* Drive Attachments Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <div className="flex items-center gap-3">
+                <Paperclip size={18} className="text-slate-400 shrink-0" />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Attachments
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDrivePickerOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-[#1a73e8] hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+              >
+                <HardDrive size={14} />
+                <span>Add from Drive</span>
+              </button>
+            </div>
+
+            {selectedDriveFiles.length > 0 && (
+              <div className="pl-7 flex flex-wrap gap-2">
+                {selectedDriveFiles.map((f) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center gap-2 px-2.5 py-1.5 bg-[#f0f4f9] dark:bg-slate-700/60 rounded-xl border border-slate-200 dark:border-slate-600 text-xs text-slate-800 dark:text-slate-200 shadow-2xs"
+                  >
+                    <HardDrive size={13} className="text-[#1a73e8] shrink-0" />
+                    <span className="font-medium truncate max-w-44" title={f.name}>
+                      {f.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDriveFile(f.id)}
+                      className="text-slate-400 hover:text-rose-500 cursor-pointer ml-1"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Target Calendar Selector */}
           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
             <CalendarIcon size={18} className="text-slate-400 shrink-0" />
@@ -453,6 +522,15 @@ const CreateEventModalContent: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Drive File Picker Modal */}
+      <DrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelect={(files) => handleDrivePickerSelect(files)}
+        allowMultiple={true}
+        title="Attach from Drive"
+      />
     </div>
   );
 };

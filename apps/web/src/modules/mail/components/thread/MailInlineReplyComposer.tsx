@@ -8,10 +8,12 @@ import {
   Send,
   X,
   ChevronDown,
+  HardDrive,
 } from "lucide-react";
 import type { FormattedThreadMessage } from "../../types";
 import { mailApi } from "../../api/mail.api";
 import { formatFullMessageDate, formatFileSize } from "./thread.utils";
+import { DrivePickerModal, driveApi, type DriveFileItem } from "@/modules/drive";
 import { cn } from "@/lib/utils";
 
 export interface MailInlineReplyComposerProps {
@@ -63,6 +65,8 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
 
   // Attachments
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedDriveFiles, setSelectedDriveFiles] = useState<DriveFileItem[]>([]);
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -135,7 +139,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
       return;
     }
 
-    if (!bodyText.trim() && selectedFiles.length === 0) {
+    if (!bodyText.trim() && selectedFiles.length === 0 && selectedDriveFiles.length === 0) {
       setErrorMessage("Please enter a message body");
       return;
     }
@@ -144,16 +148,30 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
     setErrorMessage(null);
 
     try {
-      let uploadedAssetIds: string[] = [];
+      let uploadedAssetIds: string[] = selectedDriveFiles.map((df) => df.asset.id);
 
       if (selectedFiles.length > 0) {
         setIsUploading(true);
         const uploadResult = await mailApi.uploadAttachments(selectedFiles);
         setIsUploading(false);
         if (uploadResult?.assets) {
-          uploadedAssetIds = uploadResult.assets.map((a: any) => a.assetId);
+          uploadedAssetIds = [...uploadedAssetIds, ...uploadResult.assets.map((a: any) => a.assetId)];
         } else if (uploadResult?.assetId) {
-          uploadedAssetIds = [uploadResult.assetId];
+          uploadedAssetIds = [...uploadedAssetIds, uploadResult.assetId];
+        }
+      }
+
+      // Automatically ensure recipients have access to any attached Drive files
+      if (selectedDriveFiles.length > 0 && toRecipients.length > 0) {
+        for (const df of selectedDriveFiles) {
+          try {
+            await driveApi.batchShareRecipients(df.id, {
+              recipientEmails: toRecipients,
+              role: "VIEWER",
+            });
+          } catch (shareErr) {
+            console.warn("Could not batch share drive file with recipients:", shareErr);
+          }
         }
       }
 
@@ -336,7 +354,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
         />
 
         {/* Selected File Chips (if any) */}
-        {selectedFiles.length > 0 && (
+        {(selectedFiles.length > 0 || selectedDriveFiles.length > 0) && (
           <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             {selectedFiles.map((file, idx) => (
               <div
@@ -353,6 +371,32 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
                 <button
                   type="button"
                   onClick={() => handleRemoveFile(idx)}
+                  className="p-0.5 hover:text-red-500 cursor-pointer ml-1"
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            ))}
+
+            {selectedDriveFiles.map((file, idx) => (
+              <div
+                key={file.id + idx}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-100"
+              >
+                <HardDrive className="size-3 text-[#1a73e8]" />
+                <span className="truncate max-w-[150px] font-medium">
+                  {file.name}
+                </span>
+                <span className="text-[10px] text-blue-500/80">
+                  ({formatFileSize(Number(file.asset.bytes))})
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedDriveFiles((prev) =>
+                      prev.filter((_, i) => i !== idx),
+                    )
+                  }
                   className="p-0.5 hover:text-red-500 cursor-pointer ml-1"
                 >
                   <X className="size-3" />
@@ -411,6 +455,17 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             <Paperclip className="size-4" />
           </button>
 
+          {/* Insert from Google Drive */}
+          <button
+            type="button"
+            onClick={() => setIsDrivePickerOpen(true)}
+            title="Insert files using Drive"
+            aria-label="Insert files using Drive"
+            className="p-2 rounded-full hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+          >
+            <HardDrive className="size-4 text-[#1a73e8]" />
+          </button>
+
           {/* Quick Emoji Insert */}
           <button
             type="button"
@@ -436,6 +491,29 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
           </button>
         </div>
       </div>
+
+      {/* Google Drive Picker Modal */}
+      <DrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelect={(selected, insertMode) => {
+          if (insertMode === "link") {
+            const links = selected
+              .map(
+                (f) =>
+                  `\n📎 [${f.name} - Google Drive](${window.location.origin}/drive?preview=${f.id})`,
+              )
+              .join("");
+            setBodyText((prev) => `${prev}${links}\n`);
+          } else {
+            setSelectedDriveFiles((prev) => {
+              const existingIds = new Set(prev.map((d) => d.id));
+              const newlyAdded = selected.filter((d) => !existingIds.has(d.id));
+              return [...prev, ...newlyAdded];
+            });
+          }
+        }}
+      />
     </div>
   );
 };

@@ -146,10 +146,27 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    if (shouldAutoScroll && scrollViewportRef.current && !firstUnreadMessageId) {
+    if (!scrollViewportRef.current || !messages.length) return;
+
+    const lastMessage = messages[messages.length - 1];
+    const isLatestOutgoing =
+      lastMessage &&
+      (String(lastMessage.senderId) === String(currentUser?.id) ||
+        lastMessage.isOptimistic ||
+        lastMessage.status === "sending");
+
+    // Task 4.2: Guarantee auto-scroll to bottom when the current user sends a message
+    if (isLatestOutgoing) {
+      scrollViewportRef.current.scrollTop = scrollViewportRef.current.scrollHeight;
+      setShouldAutoScroll(true);
+      return;
+    }
+
+    // For incoming messages, auto-scroll if user is pinned to bottom and not reviewing unread divider
+    if (shouldAutoScroll && !firstUnreadMessageId) {
       scrollViewportRef.current.scrollTop = scrollViewportRef.current.scrollHeight;
     }
-  }, [messages, shouldAutoScroll, firstUnreadMessageId]);
+  }, [messages, shouldAutoScroll, firstUnreadMessageId, currentUser?.id]);
 
   // Mandatory Fix 2: Mark incoming messages read only when viewport is actively viewed in focused tab
   useEffect(() => {
@@ -371,7 +388,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
                     participants={conversation.participants}
                     isFirstInCluster={isFirstInCluster}
                     showAvatar={isFirstInCluster}
-                    threadReplyCount={replyCounts[message.id] || 0}
+                    threadReplyCount={message._count?.replies ?? replyCounts[message.id] ?? 0}
                     onReplyInThread={(msg) => setActiveThreadRootMessage(msg)}
                     isHighlighted={highlightedMessageId === message.id}
                   />

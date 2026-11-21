@@ -9,6 +9,10 @@ import {
   initializeSocketServer,
   closeSocketServer,
 } from "./sockets/socket.server.js";
+import {
+  startTrashPurgeWorker,
+  stopTrashPurgeWorker,
+} from "./modules/drive/drive.worker.js";
 
 const bootstrap = async () => {
   const PORT = env.PORT;
@@ -35,6 +39,7 @@ const bootstrap = async () => {
     // Start Server
     httpServer.listen(PORT, () => {
       console.log(`Orvexa Server Running on PORT : ${PORT}`);
+      startTrashPurgeWorker();
     });
 
     // Graceful Shutdown
@@ -44,6 +49,7 @@ const bootstrap = async () => {
       isShuttingDown = true;
 
       console.log(`Signal Received ${signal}, Shutting down gracefully...`);
+      stopTrashPurgeWorker();
 
       httpServer.close(async () => {
         try {

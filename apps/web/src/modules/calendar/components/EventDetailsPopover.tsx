@@ -12,6 +12,9 @@ import {
   Video,
   Copy,
   Check,
+  Paperclip,
+  HardDrive,
+  ExternalLink,
 } from "lucide-react";
 import { useCalendarStore } from "../store/calendar.store";
 import type { InvitationStatus } from "../types/calendar.types";
@@ -233,6 +236,45 @@ export const EventDetailsPopover: React.FC = () => {
                 <p className="whitespace-pre-line leading-relaxed">
                   {selectedEvent.description}
                 </p>
+              </div>
+            )}
+
+            {/* Drive Attachments */}
+            {selectedEvent.attachments && selectedEvent.attachments.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700/80">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <Paperclip size={14} />
+                  <span>Attachments ({selectedEvent.attachments.length})</span>
+                </div>
+                <div className="space-y-1.5 pl-6">
+                  {selectedEvent.attachments.map((att) => {
+                    const targetUrl = att.fileId
+                      ? `/drive?preview=${att.fileId}`
+                      : att.fileUrl || "#";
+                    return (
+                      <div
+                        key={att.id}
+                        className="flex items-center justify-between gap-2 p-2 bg-[#f8fafd] dark:bg-slate-700/40 rounded-xl border border-slate-200/80 dark:border-slate-700 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <HardDrive size={15} className="text-[#1a73e8] shrink-0" />
+                          <span className="font-medium text-slate-800 dark:text-slate-200 truncate" title={att.title}>
+                            {att.title}
+                          </span>
+                        </div>
+                        <a
+                          href={targetUrl}
+                          target={att.fileId ? "_self" : "_blank"}
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors cursor-pointer shrink-0"
+                        >
+                          <span>Open</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

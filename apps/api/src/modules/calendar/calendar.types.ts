@@ -12,6 +12,15 @@ export {
   CalendarAccessLevel,
 };
 
+export interface CalendarAttachmentDto {
+  fileId?: string | number | bigint | null;
+  assetId?: string | number | bigint | null;
+  title: string;
+  fileUrl?: string | null;
+  mimeType?: string | null;
+  sizeBytes?: string | number | bigint | null;
+}
+
 export interface CreateEventDto {
   title: string;
   description?: string | null;
@@ -28,6 +37,7 @@ export interface CreateEventDto {
   meetingId?: string | number | bigint | null;
   guestUserIds?: Array<string | number | bigint>;
   reminders?: Array<{ minutesBefore: number }>;
+  attachments?: CalendarAttachmentDto[];
 }
 
 export interface UpdateEventDto {
@@ -46,6 +56,7 @@ export interface UpdateEventDto {
   meetingId?: string | number | bigint | null;
   guestUserIds?: Array<string | number | bigint>;
   reminders?: Array<{ minutesBefore: number }>;
+  attachments?: CalendarAttachmentDto[];
   recurrenceMode?: "SINGLE" | "FOLLOWING" | "ALL";
   targetInstanceDate?: string | Date;
 }

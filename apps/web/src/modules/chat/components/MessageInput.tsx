@@ -14,12 +14,14 @@ import {
   List,
   Link as LinkIcon,
   Type,
+  HardDrive,
 } from "lucide-react";
 import { useChatStore } from "../store/chat.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useSendMessage } from "../hooks/use-messages";
 import { useSocket } from "../hooks/use-socket";
 import { chatApi } from "../api/chat.api";
+import { DrivePickerModal, driveApi, type DriveFileItem } from "@/modules/drive";
 import { cn } from "@/lib/utils";
 import type {
   UploadedChatAsset,
@@ -59,6 +61,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [showFormattingBar, setShowFormattingBar] = useState(false);
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
+  const [selectedDriveFiles, setSelectedDriveFiles] = useState<DriveFileItem[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Task 3.6: Restore composer draft when switching conversations
@@ -331,31 +335,92 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     setAttachments((prev) => prev.filter((a) => a.assetId !== assetId));
   };
 
-  const handleSend = () => {
+  const handleDrivePickerSelect = (files: DriveFileItem[], mode: "attachment" | "link") => {
+    if (mode === "link") {
+      const links = files
+        .map((f) => `📎 [Drive File: ${f.name}](http://localhost:5155/drive?preview=${f.id})`)
+        .join("\n");
+      setContent((prev) => (prev ? `${prev}\n${links}` : links));
+    } else {
+      setSelectedDriveFiles((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newFiles = files.filter((f) => !existingIds.has(f.id));
+        return [...prev, ...newFiles];
+      });
+    }
+  };
+
+  const handleSend = async () => {
     const trimmed = content.trim();
-    if (!trimmed && attachments.length === 0) return;
+    if (!trimmed && attachments.length === 0 && selectedDriveFiles.length === 0) return;
 
     // Cancel typing timer and emit typing:stop
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     emit("typing:stop", { conversationId });
 
     const clientMessageId = crypto.randomUUID();
+    const allAttachmentIds = [
+      ...attachments.map((a) => a.assetId),
+      ...selectedDriveFiles.map((df) => df.asset.id),
+    ];
 
-    sendMessage.mutate({
-      content: trimmed || (attachments.length > 0 ? "Shared attachments" : ""),
-      clientMessageId,
-      parentMessageId: replyingToMessage?.id || null,
-      attachmentIds: attachments.map((a) => a.assetId),
-      ...(isGroup && {
-        mentionedUserIds: selectedMentionUserIds,
-        isMentionAll: isMentionAllSelected,
-      }),
-    });
+    // Share attached Drive files with all participants
+    const participantEmails = participants
+      .map((p) => p.user?.email)
+      .filter((email): email is string => Boolean(email) && email !== currentUser?.email);
 
-    // Task 3.6: Clear persisted draft on send
+    if (selectedDriveFiles.length > 0 && participantEmails.length > 0) {
+      for (const df of selectedDriveFiles) {
+        try {
+          await driveApi.batchShareRecipients(df.id, {
+            recipientEmails: participantEmails,
+            role: "VIEWER",
+          });
+        } catch (shareErr) {
+          console.warn("Could not batch share drive file with chat participants:", shareErr);
+        }
+      }
+    }
+
+    const previousContent = content;
+    const previousAttachments = attachments;
+    const previousSelectedDriveFiles = selectedDriveFiles;
+    const previousReplyingToMessage = replyingToMessage;
+    const previousSelectedMentionUserIds = selectedMentionUserIds;
+    const previousIsMentionAllSelected = isMentionAllSelected;
+
+    sendMessage.mutate(
+      {
+        content: trimmed || (allAttachmentIds.length > 0 ? "Shared attachments" : ""),
+        clientMessageId,
+        parentMessageId: replyingToMessage?.id || null,
+        attachmentIds: allAttachmentIds,
+        ...(isGroup && {
+          mentionedUserIds: selectedMentionUserIds,
+          isMentionAll: isMentionAllSelected,
+        }),
+      },
+      {
+        onError: () => {
+          // Task 2.2: Restore draft and input state on error to prevent lost messages
+          setContent(previousContent);
+          setAttachments(previousAttachments);
+          setSelectedDriveFiles(previousSelectedDriveFiles);
+          setReplyingToMessage(previousReplyingToMessage);
+          setSelectedMentionUserIds(previousSelectedMentionUserIds);
+          setIsMentionAllSelected(previousIsMentionAllSelected);
+          if (previousContent.trim()) {
+            localStorage.setItem(`chat_draft_${conversationId}`, previousContent);
+          }
+        },
+      },
+    );
+
+    // Clear persisted draft on send
     localStorage.removeItem(`chat_draft_${conversationId}`);
     setContent("");
     setAttachments([]);
+    setSelectedDriveFiles([]);
     setReplyingToMessage(null);
     setSelectedMentionUserIds([]);
     setIsMentionAllSelected(false);
@@ -541,7 +606,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       )}
 
       {/* Attachments preview strip */}
-      {attachments.length > 0 && (
+      {(attachments.length > 0 || selectedDriveFiles.length > 0) && (
         <div className="mb-2.5 flex flex-wrap gap-2">
           {attachments.map((att) => (
             <div
@@ -564,6 +629,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 type="button"
                 onClick={() => handleRemoveAttachment(att.assetId)}
                 className="text-slate-400 hover:text-rose-500 cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+
+          {selectedDriveFiles.map((df) => (
+            <div
+              key={df.id}
+              className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2 text-xs shadow-2xs"
+            >
+              <HardDrive size={13} className="text-emerald-600 dark:text-emerald-400" />
+              <span className="truncate max-w-40 font-medium text-emerald-900 dark:text-emerald-200">
+                {df.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedDriveFiles((prev) => prev.filter((f) => f.id !== df.id))}
+                className="text-emerald-500 hover:text-rose-500 cursor-pointer"
               >
                 <X size={13} />
               </button>
@@ -644,7 +728,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       )}
 
       {/* Input container matching uploaded Orvexa Chat screenshot */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* "+" Attachment Button */}
         <button
           type="button"
@@ -658,6 +742,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           ) : (
             <Plus size={19} className="stroke-[2.5]" />
           )}
+        </button>
+
+        {/* Share from Drive Button */}
+        <button
+          type="button"
+          onClick={() => setIsDrivePickerOpen(true)}
+          title="Share from Drive"
+          className="w-10 h-10 rounded-full bg-[#f0f4f9] hover:bg-[#e1e7ee] text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-200/60 dark:border-slate-700/60"
+        >
+          <HardDrive size={18} className="text-[#1a73e8]" />
         </button>
 
         {/* Text Input Pill Container */}
@@ -702,13 +796,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         <button
           type="button"
           onClick={handleSend}
-          disabled={!content.trim() && attachments.length === 0}
+          disabled={!content.trim() && attachments.length === 0 && selectedDriveFiles.length === 0}
           title="Send message"
           className="w-10 h-10 rounded-full bg-[#c2e7ff] hover:bg-[#b3dbf7] text-[#001d35] dark:bg-[#004a77] dark:text-[#c2e7ff] flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs shrink-0 cursor-pointer"
         >
           <Send size={16} className="stroke-[2.2] translate-x-0.5" />
         </button>
       </div>
+
+      {/* Drive File Picker Modal */}
+      <DrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelect={handleDrivePickerSelect}
+        allowMultiple={true}
+        title="Share from Drive"
+      />
     </div>
   );
 };
