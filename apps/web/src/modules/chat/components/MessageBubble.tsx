@@ -12,9 +12,12 @@ import {
   Download,
   Link as LinkIcon,
   MessageSquare,
+  FolderPlus,
+  Loader2,
 } from "lucide-react";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useChatStore } from "../store/chat.store";
+import { driveApi } from "@/modules/drive";
 import {
   useToggleReaction,
   useTogglePin,
@@ -51,6 +54,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const { setReplyingToMessage } = useChatStore();
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [savingAssetIds, setSavingAssetIds] = useState<Set<string>>(new Set());
+  const [savedAssetIds, setSavedAssetIds] = useState<Set<string>>(new Set());
+
+  const handleSaveToDrive = async (
+    e: React.MouseEvent,
+    assetId: string,
+    filename: string,
+  ) => {
+    e.stopPropagation();
+    if (savingAssetIds.has(assetId) || savedAssetIds.has(assetId)) return;
+    setSavingAssetIds((prev) => new Set(prev).add(assetId));
+    try {
+      await driveApi.saveAssetToDrive({ assetId, filename });
+      setSavedAssetIds((prev) => new Set(prev).add(assetId));
+    } catch (err) {
+      console.error("Failed to save chat asset to Drive", err);
+    } finally {
+      setSavingAssetIds((prev) => {
+        const next = new Set(prev);
+        next.delete(assetId);
+        return next;
+      });
+    }
+  };
 
   const toggleReaction = useToggleReaction(message.conversationId);
   const togglePin = useTogglePin(message.conversationId);
@@ -245,13 +272,38 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
                 if (isImg && asset.secureUrl) {
                   return (
-                    <div key={att.id} className="rounded-xl overflow-hidden max-h-72">
+                    <div key={att.id} className="relative group/att rounded-xl overflow-hidden max-h-72">
                       <img
                         src={asset.secureUrl}
                         alt={asset.originalFilename}
                         className="w-full h-auto object-cover rounded-xl hover:opacity-95 cursor-pointer"
                         onClick={() => window.open(asset.secureUrl, "_blank")}
                       />
+                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/att:opacity-100 transition-opacity bg-black/60 backdrop-blur-xs rounded-lg p-1">
+                        <button
+                          type="button"
+                          onClick={(e) => handleSaveToDrive(e, asset.id, asset.originalFilename)}
+                          title={savedAssetIds.has(asset.id) ? "Saved to Drive" : "Save to Drive"}
+                          className="p-1 rounded text-white hover:bg-white/20 transition-colors cursor-pointer"
+                        >
+                          {savingAssetIds.has(asset.id) ? (
+                            <Loader2 size={14} className="animate-spin text-white" />
+                          ) : savedAssetIds.has(asset.id) ? (
+                            <Check size={14} className="text-emerald-400" />
+                          ) : (
+                            <FolderPlus size={14} />
+                          )}
+                        </button>
+                        <a
+                          href={asset.secureUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1 rounded text-white hover:bg-white/20 transition-colors"
+                          title="Download image"
+                        >
+                          <Download size={14} />
+                        </a>
+                      </div>
                     </div>
                   );
                 }
@@ -270,17 +322,33 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         {(Number(asset.bytes) / 1024).toFixed(1)} KB
                       </p>
                     </div>
-                    {asset.secureUrl && (
-                      <a
-                        href={asset.secureUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 hover:text-[#0b57d0] transition-colors"
-                        title="Download file"
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => handleSaveToDrive(e, asset.id, asset.originalFilename)}
+                        title={savedAssetIds.has(asset.id) ? "Saved to Drive" : "Save to Drive"}
+                        className="p-1 hover:text-[#0b57d0] text-slate-500 transition-colors cursor-pointer"
                       >
-                        <Download size={16} />
-                      </a>
-                    )}
+                        {savingAssetIds.has(asset.id) ? (
+                          <Loader2 size={16} className="animate-spin text-[#0b57d0]" />
+                        ) : savedAssetIds.has(asset.id) ? (
+                          <Check size={16} className="text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <FolderPlus size={16} />
+                        )}
+                      </button>
+                      {asset.secureUrl && (
+                        <a
+                          href={asset.secureUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1 hover:text-[#0b57d0] text-slate-500 transition-colors"
+                          title="Download file"
+                        >
+                          <Download size={16} />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 );
               })}

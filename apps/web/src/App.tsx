@@ -14,6 +14,8 @@ const Home = lazy(() => import("@/modules/home/Pages/Home"));
 const Mail = lazy(() => import("@/modules/mail/pages/Mail"));
 const Chat = lazy(() => import("@/modules/chat/pages/Chat"));
 const Calendar = lazy(() => import("@/modules/calendar/pages/Calendar"));
+const Drive = lazy(() => import("@/modules/drive/pages/DrivePage"));
+const DriveRequestAccess = lazy(() => import("@/modules/drive/pages/DriveRequestAccessPage"));
 const MeetLanding = lazy(() => import("@/modules/meet/pages/MeetLandingPage"));
 const MeetingRoomPage = lazy(() => import("@/modules/meet/pages/MeetingRoomPage"));
 const MeetingLeftPage = lazy(() => import("@/modules/meet/pages/MeetingLeftPage"));
@@ -43,6 +45,12 @@ const App = () => {
           <Route element={<AppLayout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/mail" element={<Mail />} />
+            <Route path="/drive" element={<Drive />} />
+            <Route path="/drive/folders/:id" element={<Drive />} />
+            <Route path="/drive/shared" element={<Drive />} />
+            <Route path="/drive/recent" element={<Drive />} />
+            <Route path="/drive/starred" element={<Drive />} />
+            <Route path="/drive/trash" element={<Drive />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/meet" element={<MeetLanding />} />
@@ -51,6 +59,10 @@ const App = () => {
           {/* Immersive full-screen meeting room & leave screens outside AppLayout */}
           <Route path="/meet/:code" element={<MeetingRoomPage />} />
           <Route path="/meet/:code/left" element={<MeetingLeftPage />} />
+
+          {/* Dedicated full-screen share link and request access pages */}
+          <Route path="/drive/s/:token" element={<DriveRequestAccess />} />
+          <Route path="/drive/request-access" element={<DriveRequestAccess />} />
         </Route>
 
         {/* Catch-all fallback */}

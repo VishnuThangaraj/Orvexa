@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Send, Lock } from "lucide-react";
+import { X, Send, Lock, HardDrive } from "lucide-react";
 import { useMeetStore } from "../../store/meet.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { DrivePickerModal, type DriveFileItem } from "@/modules/drive";
 
 interface InCallChatPanelProps {
   meetingCode: string;
@@ -17,6 +18,7 @@ export const InCallChatPanel: React.FC<InCallChatPanelProps> = ({
   onClose,
 }) => {
   const [content, setContent] = useState("");
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const messages = useMeetStore((state) => state.messages);
@@ -41,6 +43,14 @@ export const InCallChatPanel: React.FC<InCallChatPanelProps> = ({
 
     onSendMessage(content.trim());
     setContent("");
+  };
+
+  const handleDrivePickerSelect = (files: DriveFileItem[]) => {
+    if (!canChat || files.length === 0) return;
+    const links = files
+      .map((f) => `Shared from Drive: [${f.name}](http://localhost:5155/drive?preview=${f.id})`)
+      .join("\n");
+    onSendMessage(links);
   };
 
   return (
@@ -101,21 +111,31 @@ export const InCallChatPanel: React.FC<InCallChatPanelProps> = ({
       {/* Chat Input Bar */}
       <div className="p-3 border-t border-neutral-800 bg-[#202124] shrink-0">
         {canChat ? (
-          <form onSubmit={handleSubmit} className="relative flex items-center">
-            <input
-              type="text"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Send a message to everyone"
-              className="w-full bg-neutral-800/90 border border-neutral-700 rounded-full pl-4 pr-11 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            />
+          <form onSubmit={handleSubmit} className="flex items-center gap-2">
             <button
-              type="submit"
-              disabled={!content.trim()}
-              className="absolute right-1.5 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 disabled:bg-transparent disabled:text-neutral-600 text-white flex items-center justify-center transition disabled:cursor-not-allowed shadow-xs"
+              type="button"
+              onClick={() => setIsDrivePickerOpen(true)}
+              title="Share from Drive"
+              className="w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer border border-neutral-700/80"
             >
-              <Send className="w-3.5 h-3.5" />
+              <HardDrive className="w-4 h-4 text-[#1a73e8]" />
             </button>
+            <div className="relative flex-1 flex items-center">
+              <input
+                type="text"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Send a message to everyone"
+                className="w-full bg-neutral-800/90 border border-neutral-700 rounded-full pl-4 pr-11 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+              <button
+                type="submit"
+                disabled={!content.trim()}
+                className="absolute right-1 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-500 disabled:bg-transparent disabled:text-neutral-600 text-white flex items-center justify-center transition disabled:cursor-not-allowed shadow-xs"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </form>
         ) : (
           <div className="flex items-center justify-center gap-2 py-2 text-xs text-neutral-500">
@@ -124,6 +144,15 @@ export const InCallChatPanel: React.FC<InCallChatPanelProps> = ({
           </div>
         )}
       </div>
+
+      {/* Drive File Picker Modal */}
+      <DrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelect={(files) => handleDrivePickerSelect(files)}
+        allowMultiple={true}
+        title="Share Drive File in Meeting"
+      />
     </aside>
   );
 };

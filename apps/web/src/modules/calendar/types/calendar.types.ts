@@ -38,6 +38,23 @@ export interface CalendarReminder {
   remindAt: string;
 }
 
+export interface CalendarEventAttachment {
+  id: string;
+  fileId?: string | null;
+  assetId?: string | null;
+  title: string;
+  fileUrl?: string | null;
+  mimeType?: string | null;
+  sizeBytes?: string | null;
+  driveFile?: {
+    id: string;
+    name: string;
+    mimeType: string;
+    bytes: string;
+    thumbnailUrl?: string | null;
+  } | null;
+}
+
 export interface UserCalendar {
   id: string;
   userId?: string | null;
@@ -90,6 +107,7 @@ export interface CalendarEvent {
   } | null;
   participants?: CalendarParticipant[];
   reminders?: CalendarReminder[];
+  attachments?: CalendarEventAttachment[];
   myResponseStatus?: InvitationStatus;
 }
 
@@ -131,6 +149,14 @@ export interface CreateEventInput {
   meetingId?: string | null;
   guestUserIds?: string[];
   reminders?: Array<{ minutesBefore: number }>;
+  attachments?: Array<{
+    fileId?: string;
+    assetId?: string;
+    title: string;
+    fileUrl?: string;
+    mimeType?: string;
+    sizeBytes?: string | number;
+  }>;
 }
 
 export interface UpdateEventInput {
@@ -151,6 +177,14 @@ export interface UpdateEventInput {
   targetInstanceDate?: string;
   guestUserIds?: string[];
   reminders?: Array<{ minutesBefore: number }>;
+  attachments?: Array<{
+    fileId?: string;
+    assetId?: string;
+    title: string;
+    fileUrl?: string;
+    mimeType?: string;
+    sizeBytes?: string | number;
+  }>;
 }
 
 export interface CreateTaskInput {

@@ -5,10 +5,13 @@ import {
   Image,
   Info,
   FolderPlus,
+  Loader2,
+  Check,
 } from "lucide-react";
 import type { FormattedInboxAttachment } from "../../types";
 import { formatFileSize } from "./thread.utils";
 import MailAttachmentModal from "./MailAttachmentModal";
+import { driveApi } from "@/modules/drive";
 import { cn } from "@/lib/utils";
 
 export interface MailAttachmentListProps {
@@ -25,6 +28,9 @@ export const MailAttachmentList: React.FC<MailAttachmentListProps> = ({
   const [selectedAttachment, setSelectedAttachment] =
     useState<FormattedInboxAttachment | null>(null);
   const [driveAdded, setDriveAdded] = useState(false);
+  const [isSavingAll, setIsSavingAll] = useState(false);
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
   if (!attachments || attachments.length === 0) return null;
 
@@ -33,13 +39,52 @@ export const MailAttachmentList: React.FC<MailAttachmentListProps> = ({
       ? "One attachment"
       : `${attachments.length} attachments`;
 
-  const handleAddToDrive = (e: React.MouseEvent) => {
+  const handleAddToDrive = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setDriveAdded(true);
-    onAddToDrive?.();
-    setTimeout(() => {
-      setDriveAdded(false);
-    }, 2500);
+    if (isSavingAll) return;
+    setIsSavingAll(true);
+    try {
+      for (const att of attachments) {
+        await driveApi.saveAssetToDrive({
+          assetId: att.id,
+          filename: att.originalFilename,
+        });
+      }
+      setSavedIds(new Set(attachments.map((a) => a.id)));
+      setDriveAdded(true);
+      onAddToDrive?.();
+      setTimeout(() => {
+        setDriveAdded(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Failed to save attachments to Drive", err);
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
+
+  const handleSaveOneToDrive = async (
+    e: React.MouseEvent,
+    att: FormattedInboxAttachment,
+  ) => {
+    e.stopPropagation();
+    if (savingIds.has(att.id) || savedIds.has(att.id)) return;
+    setSavingIds((prev) => new Set(prev).add(att.id));
+    try {
+      await driveApi.saveAssetToDrive({
+        assetId: att.id,
+        filename: att.originalFilename,
+      });
+      setSavedIds((prev) => new Set(prev).add(att.id));
+    } catch (err) {
+      console.error("Failed to save attachment to Drive", err);
+    } finally {
+      setSavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(att.id);
+        return next;
+      });
+    }
   };
 
   const handleDownloadAttachment = (
@@ -108,11 +153,24 @@ export const MailAttachmentList: React.FC<MailAttachmentListProps> = ({
           {/* Add to Drive button */}
           <button
             type="button"
+            disabled={isSavingAll}
             onClick={handleAddToDrive}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-60"
           >
-            <FolderPlus className="size-4 text-[#1a73e8]" />
-            <span>{driveAdded ? "Saved to Drive" : "Add to Drive"}</span>
+            {isSavingAll ? (
+              <Loader2 className="size-4 animate-spin text-[#1a73e8]" />
+            ) : driveAdded ? (
+              <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <FolderPlus className="size-4 text-[#1a73e8]" />
+            )}
+            <span>
+              {isSavingAll
+                ? "Saving..."
+                : driveAdded
+                  ? "Saved to Drive"
+                  : "Add to Drive"}
+            </span>
           </button>
         </div>
 
@@ -179,16 +237,36 @@ export const MailAttachmentList: React.FC<MailAttachmentListProps> = ({
                     </span>
                   </div>
 
-                  {/* Quick Download icon */}
-                  <button
-                    type="button"
-                    onClick={(e) => handleDownloadAttachment(e, att)}
-                    title="Download"
-                    aria-label="Download attachment"
-                    className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
-                  >
-                    <Download className="size-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {/* Quick Save to Drive icon */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleSaveOneToDrive(e, att)}
+                      title={savedIds.has(att.id) ? "Saved to Drive" : "Save to Drive"}
+                      aria-label="Save attachment to Drive"
+                      disabled={savingIds.has(att.id)}
+                      className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
+                    >
+                      {savingIds.has(att.id) ? (
+                        <Loader2 className="size-4 animate-spin text-[#1a73e8]" />
+                      ) : savedIds.has(att.id) ? (
+                        <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <FolderPlus className="size-4" />
+                      )}
+                    </button>
+
+                    {/* Quick Download icon */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleDownloadAttachment(e, att)}
+                      title="Download"
+                      aria-label="Download attachment"
+                      className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
+                    >
+                      <Download className="size-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

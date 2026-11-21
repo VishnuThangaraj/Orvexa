@@ -30,7 +30,7 @@ interface NavRailItem {
 const mainNavItems: NavRailItem[] = [
   { id: "home", label: "Home", to: "/home", icon: Home },
   { id: "mail", label: "Mail", to: "/mail", icon: Mail },
-  { id: "drive", label: "Drive", icon: HardDrive },
+  { id: "drive", label: "Drive", to: "/drive", icon: HardDrive },
   { id: "chat", label: "Chat", to: "/chat", icon: MessageSquare },
   { id: "meet", label: "Meet", to: "/meet", icon: Video },
   { id: "calendar", label: "Calendar", to: "/calendar", icon: Calendar },

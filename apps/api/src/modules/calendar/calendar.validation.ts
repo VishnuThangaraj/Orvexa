@@ -24,6 +24,15 @@ const invitationStatusEnum = z.enum([
   "TENTATIVE",
 ]);
 
+export const calendarAttachmentInputSchema = z.object({
+  fileId: z.union([z.string(), z.number()]).nullable().optional(),
+  assetId: z.union([z.string(), z.number()]).nullable().optional(),
+  title: z.string().trim().min(1).max(255),
+  fileUrl: z.string().nullable().optional(),
+  mimeType: z.string().nullable().optional(),
+  sizeBytes: z.union([z.string(), z.number()]).nullable().optional(),
+});
+
 export const createEventSchema = z.object({
   title: z.string().trim().min(1, "Event title is required").max(255),
   description: z.string().trim().nullable().optional(),
@@ -46,6 +55,7 @@ export const createEventSchema = z.object({
       }),
     )
     .optional(),
+  attachments: z.array(calendarAttachmentInputSchema).optional(),
 });
 
 export const updateEventSchema = z.object({
@@ -72,6 +82,7 @@ export const updateEventSchema = z.object({
       }),
     )
     .optional(),
+  attachments: z.array(calendarAttachmentInputSchema).optional(),
 });
 
 export const fetchEventsQuerySchema = z.object({

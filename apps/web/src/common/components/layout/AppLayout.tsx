@@ -12,6 +12,7 @@ export const AppLayout: React.FC<AppLayoutProps> = () => {
   const location = useLocation();
   const isChat = location.pathname.startsWith("/chat");
   const isCalendar = location.pathname.startsWith("/calendar");
+  const isDrive = location.pathname.startsWith("/drive");
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#F0F4F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden">
@@ -21,7 +22,7 @@ export const AppLayout: React.FC<AppLayoutProps> = () => {
         <main
           className={cn(
             "flex-1 h-full",
-            isChat || isCalendar ? "overflow-hidden" : "overflow-y-auto",
+            isChat || isCalendar || isDrive ? "overflow-hidden" : "overflow-y-auto",
           )}
         >
           <Outlet />
