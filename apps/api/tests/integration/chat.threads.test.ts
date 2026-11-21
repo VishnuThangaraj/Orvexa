@@ -157,6 +157,26 @@ test("Task 3.4: In-Line Threading & Parent-Reply Architecture Tests", async (t) 
       assert.equal(String(replyMsg.parentMessageId), String(rootMessageId));
       assert.ok(replyMsg.parentMessage, "Parent message relation must be populated on reply");
       assert.equal(String(replyMsg.parentMessage.id), String(rootMessageId));
+
+      // 3c. All messages query (parentMessageId=all returns both root and replies)
+      const allRes = await fetch(
+        `${restBaseUrl}/conversations/${conversationId}/messages?parentMessageId=all`,
+        {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        },
+      );
+      assert.equal(allRes.status, 200);
+      const allJson = (await allRes.json()) as any;
+      const allMessages = allJson.data;
+
+      assert.ok(
+        allMessages.some((m: any) => String(m.id) === String(rootMessageId)),
+        "Root message must be present in all messages query",
+      );
+      assert.ok(
+        allMessages.some((m: any) => String(m.id) === String(replyMessageId)),
+        "Reply message must be present in all messages query",
+      );
     });
 
     await t.test("4. Soft deleting root message leaves tombstone and preserves thread replies", async () => {

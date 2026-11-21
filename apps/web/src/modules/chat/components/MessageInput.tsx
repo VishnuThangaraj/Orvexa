@@ -382,18 +382,41 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       }
     }
 
-    sendMessage.mutate({
-      content: trimmed || (allAttachmentIds.length > 0 ? "Shared attachments" : ""),
-      clientMessageId,
-      parentMessageId: replyingToMessage?.id || null,
-      attachmentIds: allAttachmentIds,
-      ...(isGroup && {
-        mentionedUserIds: selectedMentionUserIds,
-        isMentionAll: isMentionAllSelected,
-      }),
-    });
+    const previousContent = content;
+    const previousAttachments = attachments;
+    const previousSelectedDriveFiles = selectedDriveFiles;
+    const previousReplyingToMessage = replyingToMessage;
+    const previousSelectedMentionUserIds = selectedMentionUserIds;
+    const previousIsMentionAllSelected = isMentionAllSelected;
 
-    // Task 3.6: Clear persisted draft on send
+    sendMessage.mutate(
+      {
+        content: trimmed || (allAttachmentIds.length > 0 ? "Shared attachments" : ""),
+        clientMessageId,
+        parentMessageId: replyingToMessage?.id || null,
+        attachmentIds: allAttachmentIds,
+        ...(isGroup && {
+          mentionedUserIds: selectedMentionUserIds,
+          isMentionAll: isMentionAllSelected,
+        }),
+      },
+      {
+        onError: () => {
+          // Task 2.2: Restore draft and input state on error to prevent lost messages
+          setContent(previousContent);
+          setAttachments(previousAttachments);
+          setSelectedDriveFiles(previousSelectedDriveFiles);
+          setReplyingToMessage(previousReplyingToMessage);
+          setSelectedMentionUserIds(previousSelectedMentionUserIds);
+          setIsMentionAllSelected(previousIsMentionAllSelected);
+          if (previousContent.trim()) {
+            localStorage.setItem(`chat_draft_${conversationId}`, previousContent);
+          }
+        },
+      },
+    );
+
+    // Clear persisted draft on send
     localStorage.removeItem(`chat_draft_${conversationId}`);
     setContent("");
     setAttachments([]);

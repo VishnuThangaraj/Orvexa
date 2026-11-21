@@ -554,14 +554,26 @@ export class ChatRepository {
   ) {
     const limit = options.limit ?? 50;
     const cursor = options.cursor ? BigInt(options.cursor) : null;
-    const parentMessageId = options.parentMessageId
-      ? BigInt(options.parentMessageId)
-      : null;
+    
+    let parentMessageWhere: { parentMessageId?: bigint | null } = {
+      parentMessageId: null,
+    };
+
+    if (options.parentMessageId === "all") {
+      parentMessageWhere = {};
+    } else if (
+      options.parentMessageId &&
+      options.parentMessageId !== "null"
+    ) {
+      parentMessageWhere = {
+        parentMessageId: BigInt(options.parentMessageId),
+      };
+    }
 
     const messages = await prisma.chatMessage.findMany({
       where: {
         conversationId,
-        parentMessageId,
+        ...parentMessageWhere,
         ...(cursor && { id: { lt: cursor } }),
       },
       take: limit,

@@ -19,7 +19,12 @@ export const ThreadReplyPanel: React.FC<ThreadReplyPanelProps> = ({
 }) => {
   const { activeThreadRootMessage, setActiveThreadRootMessage } = useChatStore();
   const currentUser = useAuthStore((state) => state.user);
-  const { data: messages = [] } = useMessages(conversationId);
+  const { data: threadReplies = [] } = useMessages(
+    conversationId,
+    activeThreadRootMessage
+      ? { parentMessageId: activeThreadRootMessage.id }
+      : undefined,
+  );
   const sendMessage = useSendMessage(conversationId);
 
   const [content, setContent] = useState("");
@@ -36,13 +41,6 @@ export const ThreadReplyPanel: React.FC<ThreadReplyPanelProps> = ({
     const saved = localStorage.getItem(threadDraftKey) || "";
     setContent(saved);
   }, [threadDraftKey]);
-
-  // Find all reply messages where parentMessageId matches root message id
-  const threadReplies = messages.filter(
-    (m) =>
-      activeThreadRootMessage &&
-      String(m.parentMessageId) === String(activeThreadRootMessage.id),
-  );
 
   // Auto-scroll to bottom of thread when replies arrive
   useEffect(() => {
@@ -67,6 +65,7 @@ export const ThreadReplyPanel: React.FC<ThreadReplyPanelProps> = ({
     if (!content.trim()) return;
 
     const clientMessageId = crypto.randomUUID();
+    const prevContent = content;
 
     sendMessage.mutate(
       {
@@ -75,12 +74,23 @@ export const ThreadReplyPanel: React.FC<ThreadReplyPanelProps> = ({
         clientMessageId,
       },
       {
+        onError: () => {
+          // Restore input and draft on failure
+          setContent(prevContent);
+          if (prevContent.trim()) {
+            localStorage.setItem(threadDraftKey, prevContent);
+          }
+        },
         onSuccess: () => {
           setContent("");
           localStorage.removeItem(threadDraftKey);
         },
       },
     );
+
+    // Optimistically clear composer
+    setContent("");
+    localStorage.removeItem(threadDraftKey);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

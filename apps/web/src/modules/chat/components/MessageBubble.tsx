@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Check,
   CheckCheck,
+  Clock,
   Ban,
   MoreVertical,
   Reply,
@@ -375,7 +376,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {/* Mandatory Fix 2: Delivery & Seen indicators for outgoing messages */}
             {isOutgoing && (
-              isGroup ? (
+              message.isOptimistic || message.status === "sending" ? (
+                /* Optimistic in-flight message sending indicator */
+                <span
+                  className="flex items-center gap-0.5 text-slate-400 font-medium text-[11px] ml-1"
+                  title="Sending..."
+                >
+                  <Clock size={12} className="stroke-[2] animate-pulse" />
+                </span>
+              ) : isGroup ? (
                 /* Seen by group members indicator (Screenshot 3) */
                 seenCountInGroup > 0 ? (
                   <div

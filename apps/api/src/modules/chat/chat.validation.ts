@@ -132,7 +132,9 @@ export const messageIdParamSchema = z.object({
 export const fetchMessagesQuerySchema = z.object({
   cursor: z.string().regex(/^\d+$/).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  parentMessageId: z.string().regex(/^\d+$/).optional(),
+  parentMessageId: z
+    .union([z.string().regex(/^\d+$/), z.literal("all"), z.literal("null")])
+    .optional(),
 });
 
 export const reactionSchema = z.object({
