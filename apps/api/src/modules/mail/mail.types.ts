@@ -4,7 +4,7 @@ import type {
   MailRecipientType,
 } from "../../generated/prisma/enums.js";
 
-export { MailRecipientType, CloudinaryResourceType, CloudinaryDeliveryType };
+export type { MailRecipientType, CloudinaryResourceType, CloudinaryDeliveryType };
 
 export interface RawAttachmentMetadata {
   assetId?: string | number | bigint;

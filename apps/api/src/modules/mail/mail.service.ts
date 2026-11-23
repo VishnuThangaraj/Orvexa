@@ -147,7 +147,7 @@ class MailService {
 
       // Ensure sender is a participant in the parent message/thread
       const isSender = parent.senderId === senderId;
-      const isRecipient = parent.recipients.some((r) => r.userId === senderId);
+      const isRecipient = parent.recipients.some((r: any) => r.userId === senderId);
       if (!isSender && !isRecipient) {
         throw new AppError(
           "You do not have permission to reply to this message thread",
@@ -218,7 +218,7 @@ class MailService {
       const foundAssets =
         await this.mailRepository.findAssetsByIds(uniqueAssetIds);
       if (foundAssets.length !== uniqueAssetIds.length) {
-        const foundSet = new Set(foundAssets.map((a) => a.id.toString()));
+        const foundSet = new Set(foundAssets.map((a: any) => a.id.toString()));
         const missing = uniqueAssetIds.find(
           (id) => !foundSet.has(id.toString()),
         );
@@ -342,7 +342,7 @@ class MailService {
     userId: bigint,
     messages: any[],
   ): FormattedInboxMessage[] {
-    return messages.map((msg) => {
+    return messages.map((msg: any) => {
       const userState = msg.userStates?.[0] ?? null;
 
       // Privacy: Only show BCC recipients if current user is the sender or that specific BCC recipient
@@ -401,7 +401,7 @@ class MailService {
 
   // Helper to format MailDraft records into standard FormattedInboxMessage
   private formatDrafts(drafts: any[]): FormattedInboxMessage[] {
-    return drafts.map((draft) => {
+    return drafts.map((draft: any) => {
       const cleanBody = (draft.body || "").replace(/\s+/g, " ").trim();
       const snippet =
         cleanBody.length > 150 ? `${cleanBody.slice(0, 150)}...` : cleanBody;
@@ -654,9 +654,9 @@ class MailService {
 
     // Authorization check: User must be sender or recipient of at least one message in the thread
     const isParticipant = threadData.messages.some(
-      (msg) =>
+      (msg: any) =>
         msg.senderId === userId ||
-        msg.recipients.some((r) => r.userId === userId),
+        msg.recipients.some((r: any) => r.userId === userId),
     );
 
     if (!isParticipant) {
@@ -668,11 +668,11 @@ class MailService {
 
     // Auto-mark unread messages as read for this user
     const unreadMessageIds = threadData.messages
-      .filter((msg) => {
+      .filter((msg: any) => {
         const userState = msg.userStates?.[0];
         return !userState || !userState.isRead;
       })
-      .map((msg) => msg.id);
+      .map((msg: any) => msg.id);
 
     if (unreadMessageIds.length > 0) {
       await this.mailRepository.markMessagesAsRead(userId, unreadMessageIds);
@@ -680,16 +680,16 @@ class MailService {
 
     // Format all messages in chronological order
     const formattedMessages: FormattedThreadMessage[] =
-      threadData.messages.map((msg) => {
+      threadData.messages.map((msg: any) => {
         const userState = msg.userStates?.[0] ?? null;
 
         // Privacy: Only show BCC recipients if current user is the sender or that specific BCC recipient
         const visibleRecipients = (msg.recipients || [])
-          .filter((r) => {
+          .filter((r: any) => {
             if (r.recipientType !== "BCC") return true;
             return msg.senderId === userId || r.user.id === userId;
           })
-          .map((r) => ({
+          .map((r: any) => ({
             recipientType: r.recipientType,
             user: {
               id: r.user.id.toString(),
@@ -726,7 +726,7 @@ class MailService {
           isArchived: userState?.isArchived ?? false,
           isTrashed: userState?.isTrashed ?? false,
           hasAttachments: (msg.attachments || []).length > 0,
-          attachments: (msg.attachments || []).map((a) => ({
+          attachments: (msg.attachments || []).map((a: any) => ({
             id: a.asset.id.toString(),
             originalFilename: a.asset.originalFilename,
             mimeType: a.asset.mimeType,
@@ -735,7 +735,7 @@ class MailService {
             format: a.asset.format,
             secureUrl: a.asset.secureUrl,
           })),
-          labels: (msg.messageLabels || []).map((ml) => ({
+          labels: (msg.messageLabels || []).map((ml: any) => ({
             id: ml.label.id.toString(),
             name: ml.label.name,
             color: ml.label.color,
@@ -764,7 +764,7 @@ class MailService {
 
     const isParticipant =
       message.senderId === userId ||
-      message.recipients.some((r) => r.userId === userId);
+      message.recipients.some((r: any) => r.userId === userId);
 
     if (!isParticipant) {
       throw new AppError(
