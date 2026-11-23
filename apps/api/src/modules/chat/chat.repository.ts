@@ -925,6 +925,46 @@ export class ChatRepository {
       spaces: formattedSpaces,
     };
   }
+
+  async getUnreadCount(userId: bigint): Promise<number> {
+    const participants = await prisma.conversationParticipant.findMany({
+      where: {
+        userId,
+        leftAt: null,
+        isArchived: false,
+        conversation: {
+          archivedAt: null,
+          lastMessageAt: { not: null },
+        },
+      },
+      select: {
+        lastReadAt: true,
+        conversation: {
+          select: {
+            messages: {
+              take: 1,
+              orderBy: { createdAt: "desc" },
+              select: {
+                senderId: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    let count = 0;
+    for (const p of participants) {
+      const lastMsg = p.conversation.messages[0];
+      if (!lastMsg) continue;
+      if (lastMsg.senderId === userId) continue;
+      if (!p.lastReadAt || lastMsg.createdAt > p.lastReadAt) {
+        count++;
+      }
+    }
+    return count;
+  }
 }
 
 export default ChatRepository;

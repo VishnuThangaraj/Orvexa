@@ -492,7 +492,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
         </div>
       </div>
 
-      {/* Google Drive Picker Modal */}
+      {/* Orvexa Drive Picker Modal */}
       <DrivePickerModal
         isOpen={isDrivePickerOpen}
         onClose={() => setIsDrivePickerOpen(false)}
@@ -501,7 +501,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             const links = selected
               .map(
                 (f) =>
-                  `\n📎 [${f.name} - Google Drive](${window.location.origin}/drive?preview=${f.id})`,
+                  `\n📎 [${f.name} - Orvexa Drive](${window.location.origin}/drive?preview=${f.id})`,
               )
               .join("");
             setBodyText((prev) => `${prev}${links}\n`);

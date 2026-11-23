@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import MailSidebar from "../components/MailSidebar";
 import MailInbox from "../components/mail-category/MailInbox";
 import useMail from "../hooks/use-mail";
@@ -12,8 +13,21 @@ import MailThreadView from "../components/thread/MailThreadView";
 import { useMailStore } from "../store/mail.store";
 
 const Mail: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const { activeItem, handleSelectItem } = useMail();
   const activeThreadId = useMailStore((state) => state.activeThreadId);
+
+  // Deep linking to specific email threads
+  useEffect(() => {
+    const threadId = searchParams.get("threadId");
+    if (threadId && useMailStore.getState().activeThreadId !== threadId) {
+      useMailStore.setState({
+        activeThreadId: threadId,
+        activeMessageId: threadId,
+        openedFromCategory: "inbox",
+      });
+    }
+  }, [searchParams]);
 
   const handleCategoryChange = (id: string) => {
     useMailStore.getState().closeThread();

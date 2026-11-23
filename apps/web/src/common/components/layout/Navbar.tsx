@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, LogOut, User as UserIcon, ChevronDown, Check } from "lucide-react";
 import { OrvexaLogo } from "@/common/components/OrvexaLogo";
 import { ThemeToggle } from "@/common/components/ThemeToggle";
+import { AppSwitcher } from "./AppSwitcher";
+import { GlobalSearchModal } from "@/modules/home/components/GlobalSearchModal";
 import { useAuth, useLogout } from "@/modules/auth/hooks/use-auth.hooks";
 import { useSocketStore } from "@/modules/chat/store/socket.store";
 import { useSocket } from "@/modules/chat/hooks/use-socket";
@@ -20,7 +22,20 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
   const { emit } = useSocket();
 
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Global Cmd+K / Ctrl+K keyboard shortcut for search
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!isStatusDropdownOpen) return;
@@ -68,17 +83,22 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
 
       {/* Middle: Orvexa Workspace style search bar */}
       <div className="hidden md:flex items-center flex-1 max-w-xl mx-8">
-        <div className="relative w-full">
+        <button
+          type="button"
+          onClick={() => setIsSearchOpen(true)}
+          className="relative w-full text-left cursor-text group"
+        >
           <Search
             size={18}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 pointer-events-none transition-colors"
           />
-          <input
-            type="text"
-            placeholder="Search in workspace..."
-            className="w-full bg-[#edf2fc] dark:bg-slate-800 text-slate-900 dark:text-slate-100 pl-11 pr-4 py-2 rounded-full text-sm outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#0b57d0]/30 focus:shadow-sm border border-transparent focus:border-[#0b57d0]/40 transition-all placeholder:text-slate-500"
-          />
-        </div>
+          <div className="w-full bg-[#edf2fc] dark:bg-slate-800 text-slate-500 dark:text-slate-400 pl-11 pr-14 py-2 rounded-full text-sm border border-transparent hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-900 transition-all flex items-center justify-between">
+            <span>Search in workspace...</span>
+            <kbd className="px-2 py-0.5 text-[10px] font-mono text-slate-400 bg-white/70 dark:bg-slate-800/80 rounded-md border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+              ⌘K
+            </kbd>
+          </div>
+        </button>
       </div>
 
       {/* Right side: Presence status, Theme toggle, User profile & Logout */}
@@ -160,6 +180,8 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
 
         <ThemeToggle />
 
+        <AppSwitcher />
+
         <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
           <div className="w-7 h-7 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xs font-semibold uppercase shrink-0">
             {displayName.charAt(0) || <UserIcon size={14} />}
@@ -180,6 +202,11 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
           <LogOut size={18} />
         </button>
       </div>
+
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </header>
   );
 };
