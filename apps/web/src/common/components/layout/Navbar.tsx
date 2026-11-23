@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Search, LogOut, User as UserIcon, ChevronDown, Check } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, ChevronDown, Check } from "lucide-react";
 import { OrvexaLogo } from "@/common/components/OrvexaLogo";
 import { ThemeToggle } from "@/common/components/ThemeToggle";
 import { AppSwitcher } from "./AppSwitcher";
 import { GlobalSearchModal } from "@/modules/home/components/GlobalSearchModal";
-import { useAuth, useLogout } from "@/modules/auth/hooks/use-auth.hooks";
+import { useAuth } from "@/modules/auth/hooks/use-auth.hooks";
 import { useSocketStore } from "@/modules/chat/store/socket.store";
 import { useSocket } from "@/modules/chat/hooks/use-socket";
 import { cn } from "@/lib/utils";
@@ -15,9 +15,7 @@ export interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const logoutMutation = useLogout();
   const { myPresenceStatus, setMyPresenceStatus } = useSocketStore();
   const { emit } = useSocket();
 
@@ -57,15 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
     setIsStatusDropdownOpen(false);
   };
 
-  const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSettled: () => {
-        navigate("/authenticate", { replace: true });
-      },
-    });
-  };
-
-  const displayName = user?.fullName || user?.username || "Account";
+  const isAdmin = user?.role === "ADMIN" ? "Administrator" : "Member";
 
   return (
     <header
@@ -142,10 +132,15 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
               >
                 <div className="flex items-center gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#137333] shrink-0" />
-                  <span className="font-medium text-slate-800 dark:text-slate-200">Active</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    Active
+                  </span>
                 </div>
                 {myPresenceStatus === "ACTIVE" && (
-                  <Check size={14} className="text-[#0b57d0] dark:text-[#a8c7fa]" />
+                  <Check
+                    size={14}
+                    className="text-[#0b57d0] dark:text-[#a8c7fa]"
+                  />
                 )}
               </button>
               <button
@@ -155,10 +150,15 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
               >
                 <div className="flex items-center gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#ea8600] shrink-0" />
-                  <span className="font-medium text-slate-800 dark:text-slate-200">Away</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    Away
+                  </span>
                 </div>
                 {myPresenceStatus === "AWAY" && (
-                  <Check size={14} className="text-[#0b57d0] dark:text-[#a8c7fa]" />
+                  <Check
+                    size={14}
+                    className="text-[#0b57d0] dark:text-[#a8c7fa]"
+                  />
                 )}
               </button>
               <button
@@ -168,39 +168,27 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
               >
                 <div className="flex items-center gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#d93025] shrink-0" />
-                  <span className="font-medium text-slate-800 dark:text-slate-200">Do not disturb</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    Do not disturb
+                  </span>
                 </div>
                 {myPresenceStatus === "DND" && (
-                  <Check size={14} className="text-[#0b57d0] dark:text-[#a8c7fa]" />
+                  <Check
+                    size={14}
+                    className="text-[#0b57d0] dark:text-[#a8c7fa]"
+                  />
                 )}
               </button>
             </div>
           )}
         </div>
-
         <ThemeToggle />
-
         <AppSwitcher />
-
         <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-          <div className="w-7 h-7 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xs font-semibold uppercase shrink-0">
-            {displayName.charAt(0) || <UserIcon size={14} />}
-          </div>
           <span className="text-sm font-medium text-slate-700 dark:text-slate-200 hidden sm:inline max-w-35 truncate">
-            {displayName}
+            {isAdmin}
           </span>
         </div>
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={logoutMutation.isPending}
-          title="Sign out"
-          aria-label="Sign out"
-          className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50"
-        >
-          <LogOut size={18} />
-        </button>
       </div>
 
       <GlobalSearchModal
