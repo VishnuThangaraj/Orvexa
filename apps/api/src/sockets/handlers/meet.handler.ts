@@ -272,7 +272,7 @@ export const registerMeetHandlers = (
       });
 
       // Notify all admitted users
-      meeting.participants.forEach((p) => {
+      meeting.participants.forEach((p: any) => {
         io.to(`user:${p.userId}`).emit("meet:admitted", {
           meetingCode: code,
         });

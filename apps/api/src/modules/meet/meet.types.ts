@@ -4,7 +4,7 @@ import type {
   InvitationStatus,
 } from "../../generated/prisma/enums.js";
 
-export { MeetingStatus, MeetingRole, InvitationStatus };
+export type { MeetingStatus, MeetingRole, InvitationStatus };
 
 export interface CreateMeetingRepoData {
   title: string;

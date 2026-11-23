@@ -201,7 +201,7 @@ export class MeetService {
   // List recent and upcoming meetings for user
   async listUserMeetings(userId: bigint) {
     const meetings = await this.meetRepository.listUserMeetings(userId);
-    return meetings.map((m) => this.formatMeeting(m, userId));
+    return meetings.map((m: any) => this.formatMeeting(m, userId));
   }
 
   // Generate LiveKit token for authenticated, authorized participant
@@ -239,7 +239,7 @@ export class MeetService {
     }
 
     const isHost = meeting.hostId === userId;
-    const participant = meeting.participants.find((p) => p.userId === userId);
+    const participant = meeting.participants.find((p: any) => p.userId === userId);
 
     // If meeting is locked, only the host can join
     if (meeting.isLocked && !isHost) {
@@ -458,7 +458,7 @@ export class MeetService {
     if (!meeting) throw new AppError("Meeting not found", 404);
 
     const messages = await this.meetRepository.listMessages(meeting.id);
-    return messages.map((m) => ({
+    return messages.map((m: any) => ({
       id: String(m.id),
       meetingId: String(m.meetingId),
       senderId: m.senderId ? String(m.senderId) : null,
