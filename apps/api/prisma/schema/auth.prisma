@@ -18,6 +18,7 @@ model User {
   sessions            UserSession[]
   passwordResetTokens PasswordResetToken[]
   preferences         UserPreference?
+  dashboardPreference UserDashboardPreference?
 
   // Mail relations
   sentMailMessages    MailMessage[]        @relation("MailSender")

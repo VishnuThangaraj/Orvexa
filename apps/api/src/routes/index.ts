@@ -6,10 +6,12 @@ import chatRoutes from "../modules/chat/chat.routes.js";
 import calendarRoutes from "../modules/calendar/calendar.routes.js";
 import meetRoutes from "../modules/meet/meet.routes.js";
 import driveRoutes from "../modules/drive/drive.routes.js";
+import homeRoutes from "../modules/home/home.routes.js";
 
 const router: Router = Router();
 
 router.use("/auth", authRoutes);
+router.use("/home", homeRoutes);
 router.use("/mail", mailRoutes);
 router.use("/chat", chatRoutes);
 router.use("/calendar", calendarRoutes);

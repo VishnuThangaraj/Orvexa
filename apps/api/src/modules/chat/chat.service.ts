@@ -1004,6 +1004,10 @@ export class ChatService {
   async searchGlobal(userId: bigint, dto: GlobalSearchQueryDto) {
     return this.chatRepository.searchGlobal(userId, dto);
   }
+
+  async getUnreadCount(userId: bigint): Promise<number> {
+    return this.chatRepository.getUnreadCount(userId);
+  }
 }
 
 export default ChatService;

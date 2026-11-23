@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import ChatNavigationSidebar from "../components/ChatNavigationSidebar";
 import ConversationListPane from "../components/ConversationListPane";
 import ConversationThreadPane from "../components/ConversationThreadPane";
@@ -14,6 +15,7 @@ export const Chat: React.FC = () => {
   // Initialize real-time chat socket synchronization
   useChatSync();
 
+  const [searchParams] = useSearchParams();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const {
     activeConversationId,
@@ -28,6 +30,14 @@ export const Chat: React.FC = () => {
 
   const { data } = useConversations();
   const conversations = data?.conversations || [];
+
+  // Deep link from Home / Global Search
+  useEffect(() => {
+    const convoId = searchParams.get("conversationId");
+    if (convoId && convoId !== activeConversationId) {
+      setActiveConversationId(convoId);
+    }
+  }, [searchParams, activeConversationId, setActiveConversationId]);
 
   // Keyboard navigation shortcuts: Escape and ArrowUp / ArrowDown
   useEffect(() => {

@@ -40,7 +40,7 @@ export const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
   isOpen,
   onClose,
   onSelect,
-  title = "Select files from Google Drive",
+  title = "Select files from Orvexa Drive",
   allowMultiple = true,
   allowedTypes,
   initialMode = "attachment",
