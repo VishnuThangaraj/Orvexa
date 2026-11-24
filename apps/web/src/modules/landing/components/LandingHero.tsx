@@ -8,10 +8,10 @@ const LandingHero: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <div className="flex justify-between gap-10">
+    <div className="flex justify-between gap-10 px-[10%] ">
       <div className="size-1/2">
         <div className="flex flex-col gap-7">
-          <div className="font-semibold text-[50px] leading-tight tracking-wide">
+          <div className="font-semibold text-[54px] leading-tight tracking-normal">
             The better <br />
             <span>way to work</span>
           </div>
