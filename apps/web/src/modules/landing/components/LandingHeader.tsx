@@ -13,6 +13,13 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ className = "" }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 w-full h-16 bg-white dark:bg-slate-900 shadow-md flex items-center px-6 ${className}`}
@@ -26,23 +33,61 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ className = "" }) => {
             </span>
           </div>
 
-          <nav className="flex items-center gap-8 text-sm font-medium">
-            <span className="header-nav-link">What's Included</span>
-            <span className="header-nav-link">Premium Features</span>
-            <span className="header-nav-link">FAQ</span>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => scrollToSection("included")}
+              className="header-nav-link"
+            >
+              What's Included
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection("features")}
+              className="header-nav-link"
+            >
+              Features
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection("pricing")}
+              className="header-nav-link"
+            >
+              Pricing
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection("latest")}
+              className="header-nav-link"
+            >
+              Latest
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection("faq")}
+              className="header-nav-link"
+            >
+              FAQ
+            </button>
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
-          <Button variant={"secondary-blue"} className="rounded-full">
-            Contact Us
+          <Button
+            variant={"secondary-blue"}
+            className="rounded-full"
+            onClick={() => scrollToSection("faq")}
+          >
+            Learn More
           </Button>
           <Button
             variant={"primary-blue"}
             className="rounded-full"
-            onClick={() => navigate("/authenticate")}
+            onClick={() =>
+              navigate(isAuthenticated ? "/home" : "/authenticate")
+            }
           >
-            { isAuthenticated ? "Go to Dashboard" : "Sign In"}
+            {isAuthenticated ? "Go to Dashboard" : "Sign In"}
           </Button>
         </div>
       </div>

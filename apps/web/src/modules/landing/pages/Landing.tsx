@@ -3,20 +3,23 @@ import LandingHeader from "../components/LandingHeader";
 import LandingHero from "../components/LandingHero";
 import LandingIncluded from "../components/LandingIncluded";
 import LandingFeatures from "../components/LandingFeatures";
+import LandingPricing from "../components/LandingPricing";
+import LandingLatest from "../components/LandingLatest";
 import LandingFAQ from "../components/LandingFAQ";
 import LandingFooter from "../components/LandingFooter";
 
 const Landing: React.FC = () => {
   return (
-    <div className="relative min-h-screen pt-16">
+    <div className="relative min-h-screen pt-16 scroll-smooth">
       <LandingHeader />
-      <div className="py-20 flex flex-col gap-10">
+      <div className="pt-20 flex flex-col gap-10">
         <LandingHero />
         <LandingIncluded />
         <LandingFeatures />
+        <LandingPricing />
         <LandingFAQ />
-        <div>sdf</div>
-        <LandingFooter/>
+        <LandingLatest />
+        <LandingFooter />
       </div>
     </div>
   );
