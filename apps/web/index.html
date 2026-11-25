@@ -20,7 +20,7 @@
   <script>
     (function () {
       try {
-        var stored = localStorage.getItem('orvexa-theme') || 'system';
+        var stored = localStorage.getItem('orvexa-theme') || 'light';
         var isDark =
           stored === 'dark' ||
           (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);

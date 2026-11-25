@@ -32,7 +32,7 @@ const applyThemeToDocument = (resolved: ResolvedTheme) => {
 
 export const ThemeProvider = ({
   children,
-  defaultTheme = "system",
+  defaultTheme = "light",
   storageKey = THEME_STORAGE_KEY,
 }: ThemeProviderProps) => {
   const [theme, setThemeState] = useState<Theme>(() => {

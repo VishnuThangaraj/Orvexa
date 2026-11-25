@@ -1,4 +1,5 @@
 import { OrvexaLogo } from "@/common/components/OrvexaLogo";
+import { ThemeToggle } from "@/common/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -72,7 +73,8 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ className = "" }) => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <ThemeToggle className="border border-[#E8EAED] dark:border-slate-700/80 bg-[#F8F9FA] dark:bg-slate-800/60" />
           <Button
             variant={"secondary-blue"}
             className="rounded-full"
