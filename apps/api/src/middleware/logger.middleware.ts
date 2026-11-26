@@ -43,7 +43,7 @@ export const logger = (req: Request, res: Response, next: NextFunction): void =>
   res.on("finish", async () => {
     try {
       // Ignore unnecessary routes
-      if (req.originalUrl === "/health") return;
+      if (req.originalUrl === "/health" || req.originalUrl === "/api/health") return;
 
       // Get authenticated user ID if present
       const reqUser = (req as Request & { user?: { id?: unknown; userId?: unknown } }).user;

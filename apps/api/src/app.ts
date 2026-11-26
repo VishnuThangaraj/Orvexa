@@ -5,8 +5,9 @@ import express, { Application, Request, Response } from "express";
 
 import env from "./config/env.js";
 import "./common/utils/bigint.js";
+import AppError from "./common/errors/AppError.js";
 import corsOptions from "./config/cors.js";
-import cloudinary from "./config/cloudinary.js";
+import cloudinary, { isCloudinaryConfigured } from "./config/cloudinary.js";
 
 import routes from "./routes/index.js";
 import { logger } from "./middleware/logger.middleware.js";
@@ -44,6 +45,10 @@ app.get("/health", (_req: Request, res: Response) => {
 
 // Cloudinary Health
 app.get("/health/cloudinary", async (_req: Request, res: Response) => {
+  if (!isCloudinaryConfigured) {
+    throw new AppError("Cloudinary is not configured", 500);
+  }
+
   const result = await cloudinary.api.ping();
 
   res.status(200).json({

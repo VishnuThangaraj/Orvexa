@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { defineConfig, env } from "@prisma/config";
+import { defineConfig } from "@prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema",
@@ -10,6 +10,9 @@ export default defineConfig({
   },
 
   datasource: {
-    url: env("DATABASE_URL"),
+    url:
+      process.env.DATABASE_URL ||
+      process.env.CLOUD_DATABASE_URL ||
+      "postgresql://localhost:5432/orvexa",
   },
 });

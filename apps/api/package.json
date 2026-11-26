@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "postinstall": "prisma generate",
     "prebuild": "prisma generate",
     "build": "tsc",
     "test": "tsx --test --test-concurrency=1 'tests/unit/*.test.ts' 'tests/integration/*.test.ts' 'tests/e2e/*.test.ts'",

@@ -3,19 +3,32 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import env from "../../config/env.js";
 import { PrismaClient } from "../../generated/prisma/client.js";
 
-const pool = new pg.Pool({
-  connectionString: env.DATABASE_URL,
-});
-
-pool.on("error", (err) => {
-  console.error("[DATABASE] Unexpected pg pool error:", err);
-});
-
-const adapter = new PrismaPg(pool);
-
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
+  pgPool?: pg.Pool;
 };
+
+if (!env.DATABASE_URL) {
+  console.warn(
+    "[DATABASE] DATABASE_URL is not configured; database queries will fail until it is set.",
+  );
+}
+
+const createPool = (): pg.Pool => {
+  const newPool = new pg.Pool({
+    connectionString: env.DATABASE_URL || undefined,
+    max: process.env.VERCEL ? 5 : 10,
+  });
+
+  newPool.on("error", (err) => {
+    console.error("[DATABASE] Unexpected pg pool error:", err);
+  });
+
+  return newPool;
+};
+
+const pool = globalForPrisma.pgPool ?? createPool();
+const adapter = new PrismaPg(pool);
 
 export const prisma =
   globalForPrisma.prisma ??
@@ -27,9 +40,8 @@ export const prisma =
         : ["warn", "error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.pgPool = pool;
+globalForPrisma.prisma = prisma;
 
 export const connectDatabase = async (): Promise<void> => {
   try {

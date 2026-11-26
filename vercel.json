@@ -3,14 +3,29 @@
   "services": {
     "api": {
       "root": "apps/api",
-      "framework": "express"
+      "framework": "express",
+      "entrypoint": "src/app.ts",
+      "buildCommand": "prisma generate && tsc --noEmit",
+      "outputDirectory": "."
     },
     "web": {
       "root": "apps/web",
-      "framework": "vite"
+      "framework": "vite",
+      "rewrites": [
+        {
+          "source": "/((?!assets/|images/).*)",
+          "destination": "/index.html"
+        }
+      ]
     }
   },
   "rewrites": [
+    {
+      "source": "/api",
+      "destination": {
+        "service": "api"
+      }
+    },
     {
       "source": "/api/(.*)",
       "destination": {

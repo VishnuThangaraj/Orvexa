@@ -1,5 +1,8 @@
 import type { UploadApiErrorResponse, UploadApiResponse } from "cloudinary";
-import cloudinary from "../../config/cloudinary.js";
+import AppError from "../../common/errors/AppError.js";
+import cloudinary, {
+  isCloudinaryConfigured,
+} from "../../config/cloudinary.js";
 
 export interface CloudinaryUploadOptions {
   folder?: string;
@@ -15,6 +18,10 @@ export const uploadBufferToCloudinary = (
   buffer: Buffer,
   options: CloudinaryUploadOptions = {},
 ): Promise<UploadApiResponse> => {
+  if (!isCloudinaryConfigured) {
+    return Promise.reject(new AppError("Cloudinary is not configured", 500));
+  }
+
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
@@ -41,6 +48,9 @@ export const deleteFromCloudinary = async (
   publicId: string,
   resourceType: "image" | "video" | "raw" = "raw",
 ): Promise<void> => {
+  if (!isCloudinaryConfigured) {
+    throw new AppError("Cloudinary is not configured", 500);
+  }
   await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 };
 

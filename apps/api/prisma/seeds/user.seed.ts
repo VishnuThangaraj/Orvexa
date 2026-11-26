@@ -16,6 +16,10 @@ export const seedAdmin = async () => {
     throw new Error("Admin Password is missing from environment variables!");
   }
 
+  if (!username) {
+    throw new Error("Admin Username is missing from environment variables!");
+  }
+
   const hashedPassword = await hashPassword(password);
 
   const admin = await prisma.user.upsert({

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
+import AppError from "../errors/AppError.js";
 import { Role } from "../types/roles.js";
 import env from "../../config/env.js";
 
@@ -11,10 +12,27 @@ export interface JwtPayload {
   exp?: number;
 }
 
+const getJwtSecret = (): string => {
+  if (!env.JWT_SECRET) {
+    throw new AppError("Server configuration error: JWT_SECRET is missing", 500);
+  }
+  return env.JWT_SECRET;
+};
+
+const getJwtRefreshSecret = (): string => {
+  if (!env.JWT_REFRESH_SECRET) {
+    throw new AppError(
+      "Server configuration error: JWT_REFRESH_SECRET is missing",
+      500,
+    );
+  }
+  return env.JWT_REFRESH_SECRET;
+};
+
 export const generateAccessToken = (payload: JwtPayload): string => {
   return jwt.sign(
     { id: payload.id.toString(), role: payload.role },
-    env.JWT_SECRET,
+    getJwtSecret(),
     {
       expiresIn: env.JWT_EXPIRES_IN,
     } as SignOptions,
@@ -28,7 +46,7 @@ export const generateRefreshToken = (payload: JwtPayload): string => {
       role: payload.role,
       jti: crypto.randomUUID(),
     },
-    env.JWT_REFRESH_SECRET,
+    getJwtRefreshSecret(),
     {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN,
     } as SignOptions,
@@ -46,9 +64,9 @@ export const generateToken = (payload: JwtPayload): string => {
 };
 
 export const verifyToken = (token: string): JwtPayload => {
-  return jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+  return jwt.verify(token, getJwtSecret()) as JwtPayload;
 };
 
 export const verifyRefreshToken = (token: string): JwtPayload => {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET) as JwtPayload;
+  return jwt.verify(token, getJwtRefreshSecret()) as JwtPayload;
 };
