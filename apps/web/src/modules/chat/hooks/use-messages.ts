@@ -31,10 +31,19 @@ export const useSendMessage = (conversationId: string) => {
       chatApi.sendMessage(conversationId, payload),
 
     onMutate: async (payload: SendMessagePayload) => {
-      // 1. Cancel outgoing queries for messages of this conversation
-      await queryClient.cancelQueries({
-        queryKey: CHAT_QUERY_KEYS.messages(conversationId),
-      });
+      const existingQueries = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: CHAT_QUERY_KEYS.messages(conversationId) });
+      const hadUnloadedQuery = existingQueries.some(
+        (q) => q.state.data === undefined,
+      );
+
+      // 1. Cancel outgoing queries that already have loaded data (avoid aborting initial history fetch)
+      if (!hadUnloadedQuery) {
+        await queryClient.cancelQueries({
+          queryKey: CHAT_QUERY_KEYS.messages(conversationId),
+        });
+      }
 
       // 2. Snapshot previous queries for rollback
       const previousMessages = queryClient.getQueriesData<ChatMessage[]>({
@@ -71,7 +80,12 @@ export const useSendMessage = (conversationId: string) => {
               username: currentUser.username,
               email: currentUser.email,
               role: currentUser.role,
-              profileImage: (currentUser as any).profileImage || null,
+              profileImage: currentUser.profileImage?.secureUrl
+                ? {
+                    id: currentUser.profileImage.id,
+                    secureUrl: currentUser.profileImage.secureUrl,
+                  }
+                : null,
             }
           : {
               id: "0",
@@ -166,6 +180,7 @@ export const useSendMessage = (conversationId: string) => {
         previousMessages,
         tempId,
         clientMessageId: payload.clientMessageId,
+        hadUnloadedQuery,
       };
     },
 
@@ -179,12 +194,24 @@ export const useSendMessage = (conversationId: string) => {
     },
 
     onSuccess: (newMessage, _payload, context) => {
-      // Replace optimistic message with server response
+      // Replace optimistic message with server response (or append if missing from matching query)
       const queries = queryClient
         .getQueryCache()
         .findAll({ queryKey: CHAT_QUERY_KEYS.messages(conversationId) });
 
       queries.forEach((q) => {
+        const queryOptions = q.queryKey[3] as FetchMessagesOptions | undefined;
+        const targetParentId = queryOptions?.parentMessageId;
+
+        const belongsToQuery =
+          targetParentId && targetParentId !== "all"
+            ? String(newMessage.parentMessageId) === String(targetParentId)
+            : !targetParentId
+              ? !newMessage.parentMessageId
+              : true;
+
+        if (!belongsToQuery) return;
+
         queryClient.setQueryData<ChatMessage[]>(q.queryKey, (old = []) => {
           const index = old.findIndex(
             (m) =>
@@ -193,7 +220,7 @@ export const useSendMessage = (conversationId: string) => {
               m.id === context?.tempId ||
               (newMessage.clientMessageId &&
                 m.clientMessageId === newMessage.clientMessageId) ||
-              m.id === newMessage.id,
+              String(m.id) === String(newMessage.id),
           );
 
           if (index !== -1) {
@@ -202,10 +229,16 @@ export const useSendMessage = (conversationId: string) => {
             return next;
           }
 
-          if (old.some((m) => m.id === newMessage.id)) return old;
-          return old;
+          if (old.some((m) => String(m.id) === String(newMessage.id))) return old;
+          return [...old, newMessage];
         });
       });
+
+      if (context?.hadUnloadedQuery) {
+        queryClient.invalidateQueries({
+          queryKey: CHAT_QUERY_KEYS.messages(conversationId),
+        });
+      }
 
       // Invalidate conversation list so lastMessageAt and preview update
       queryClient.invalidateQueries({
@@ -227,10 +260,14 @@ export const useEditMessage = (conversationId: string) => {
       content: string;
     }) => chatApi.editMessage(conversationId, messageId, content),
     onSuccess: (updated) => {
-      queryClient.setQueryData<ChatMessage[]>(
-        [...CHAT_QUERY_KEYS.messages(conversationId), undefined],
-        (old = []) => old.map((m) => (m.id === updated.id ? updated : m)),
+      queryClient.setQueriesData<ChatMessage[]>(
+        { queryKey: CHAT_QUERY_KEYS.messages(conversationId) },
+        (old = []) =>
+          old.map((m) => (String(m.id) === String(updated.id) ? updated : m)),
       );
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversations,
+      });
     },
   });
 };
@@ -242,10 +279,14 @@ export const useDeleteMessage = (conversationId: string) => {
     mutationFn: (messageId: string) =>
       chatApi.deleteMessage(conversationId, messageId),
     onSuccess: (deleted) => {
-      queryClient.setQueryData<ChatMessage[]>(
-        [...CHAT_QUERY_KEYS.messages(conversationId), undefined],
-        (old = []) => old.map((m) => (m.id === deleted.id ? deleted : m)),
+      queryClient.setQueriesData<ChatMessage[]>(
+        { queryKey: CHAT_QUERY_KEYS.messages(conversationId) },
+        (old = []) =>
+          old.map((m) => (String(m.id) === String(deleted.id) ? deleted : m)),
       );
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversations,
+      });
     },
   });
 };
@@ -262,10 +303,12 @@ export const useToggleReaction = (conversationId: string) => {
       emoji: string;
     }) => chatApi.toggleReaction(conversationId, messageId, emoji),
     onSuccess: (reactions, { messageId }) => {
-      queryClient.setQueryData<ChatMessage[]>(
-        [...CHAT_QUERY_KEYS.messages(conversationId), undefined],
+      queryClient.setQueriesData<ChatMessage[]>(
+        { queryKey: CHAT_QUERY_KEYS.messages(conversationId) },
         (old = []) =>
-          old.map((m) => (m.id === messageId ? { ...m, reactions } : m)),
+          old.map((m) =>
+            String(m.id) === String(messageId) ? { ...m, reactions } : m,
+          ),
       );
     },
   });

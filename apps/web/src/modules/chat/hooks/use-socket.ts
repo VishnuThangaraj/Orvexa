@@ -37,7 +37,7 @@ export const useSocket = () => {
         console.warn(`[SOCKET] Cannot emit ${String(event)}: Socket not connected.`);
         return;
       }
-      (socket as any).emit(event, ...args);
+      socket.emit(event, ...args);
     },
     [],
   );
@@ -50,10 +50,12 @@ export const useSocket = () => {
       const socket = socketService.getSocket();
       if (!socket) return () => {};
 
-      (socket as any).on(event, listener);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      socket.on(event, listener as any);
 
       return () => {
-        (socket as any).off(event, listener);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        socket.off(event, listener as any);
       };
     },
     [],

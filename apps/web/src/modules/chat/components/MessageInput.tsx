@@ -1,4 +1,11 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+} from "react";
 import {
   Plus,
   Send,
@@ -29,14 +36,16 @@ import type {
   ConversationMemberRole,
 } from "../types/chat.types";
 
+export interface MessageInputHandle {
+  handleDroppedFiles: (files: File[]) => void;
+}
+
 interface MessageInputProps {
   conversationId: string;
   placeholder?: string;
   isGroup?: boolean;
   participants?: ConversationParticipant[];
   currentUserRole?: ConversationMemberRole;
-  droppedFiles?: File[] | null;
-  onClearDroppedFiles?: () => void;
 }
 
 interface MentionCandidate {
@@ -47,16 +56,16 @@ interface MentionCandidate {
   isAll?: boolean;
 }
 
-export const MessageInput: React.FC<MessageInputProps> = ({
+export const MessageInput = forwardRef<MessageInputHandle, MessageInputProps>(({
   conversationId,
   placeholder = "Type a message...",
   isGroup = false,
   participants = [],
   currentUserRole = "MEMBER",
-  droppedFiles = null,
-  onClearDroppedFiles,
-}) => {
-  const [content, setContent] = useState("");
+}, ref) => {
+  const [content, setContent] = useState(
+    () => localStorage.getItem(`chat_draft_${conversationId}`) || "",
+  );
   const [attachments, setAttachments] = useState<UploadedChatAsset[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -65,18 +74,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [selectedDriveFiles, setSelectedDriveFiles] = useState<DriveFileItem[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Task 3.6: Restore composer draft when switching conversations
-  useEffect(() => {
-    const saved = localStorage.getItem(`chat_draft_${conversationId}`) || "";
-    setContent(saved);
-  }, [conversationId]);
-
   // Mention autocomplete state (Mandatory Fix 3: strictly for Spaces)
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionStartIndex, setMentionStartIndex] = useState<number>(-1);
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const [selectedMentionUserIds, setSelectedMentionUserIds] = useState<string[]>([]);
   const [isMentionAllSelected, setIsMentionAllSelected] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -164,6 +168,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setContent(val);
+    if (sendError) setSendError(null);
 
     // Task 3.6: Persist draft
     if (val.trim()) {
@@ -274,8 +279,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       if (res.assets) {
         setAttachments((prev) => [...prev, ...res.assets]);
       }
-    } catch (err: any) {
-      if (err.name === "CanceledError" || err.name === "AbortError") {
+    } catch (err: unknown) {
+      const errorName = err instanceof Error ? err.name : "";
+      if (errorName === "CanceledError" || errorName === "AbortError") {
         console.log("Upload cancelled by user");
       } else {
         console.error("Failed to upload chat attachments:", err);
@@ -288,6 +294,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      handleDroppedFiles: (files: File[]) => {
+        if (files.length > 0) {
+          void uploadFiles(files);
+        }
+      },
+    }),
+    [],
+  );
+
   const handleCancelUpload = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -296,14 +314,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     setIsUploading(false);
     setUploadProgress(null);
   };
-
-  // Task 4.1: Handle dropped files from parent viewport
-  useEffect(() => {
-    if (droppedFiles && droppedFiles.length > 0) {
-      uploadFiles(droppedFiles);
-      onClearDroppedFiles?.();
-    }
-  }, [droppedFiles]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -337,8 +347,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleDrivePickerSelect = (files: DriveFileItem[], mode: "attachment" | "link") => {
     if (mode === "link") {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       const links = files
-        .map((f) => `📎 [Drive File: ${f.name}](http://localhost:5155/drive?preview=${f.id})`)
+        .map((f) => `📎 [Drive File: ${f.name}](${origin}/drive?preview=${f.id})`)
         .join("\n");
       setContent((prev) => (prev ? `${prev}\n${links}` : links));
     } else {
@@ -401,7 +412,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         }),
       },
       {
-        onError: () => {
+        onError: (err) => {
           // Task 2.2: Restore draft and input state on error to prevent lost messages
           setContent(previousContent);
           setAttachments(previousAttachments);
@@ -412,6 +423,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           if (previousContent.trim()) {
             localStorage.setItem(`chat_draft_${conversationId}`, previousContent);
           }
+          const msg =
+            (err as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message ||
+            "Failed to send message. Please try again.";
+          setSendError(msg);
         },
       },
     );
@@ -490,6 +506,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   return (
     <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 shrink-0 relative">
+      {sendError && (
+        <div className="mb-2 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center justify-between gap-2 text-xs text-rose-700 dark:text-rose-300">
+          <span>{sendError}</span>
+          <button
+            type="button"
+            onClick={() => setSendError(null)}
+            className="text-rose-500 hover:text-rose-700 cursor-pointer"
+            aria-label="Dismiss error"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
       {/* Hidden File Input */}
       <input
         type="file"
@@ -814,6 +843,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       />
     </div>
   );
-};
+});
+
+MessageInput.displayName = "MessageInput";
 
 export default MessageInput;

@@ -27,20 +27,15 @@ export const ThreadReplyPanel: React.FC<ThreadReplyPanelProps> = ({
   );
   const sendMessage = useSendMessage(conversationId);
 
-  const [content, setContent] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   const threadDraftKey = activeThreadRootMessage
     ? `chat_draft_thread_${activeThreadRootMessage.id}`
     : "";
 
-  // Restore draft
-  useEffect(() => {
-    if (!threadDraftKey) return;
-    const saved = localStorage.getItem(threadDraftKey) || "";
-    setContent(saved);
-  }, [threadDraftKey]);
+  const [content, setContent] = useState(
+    () => (threadDraftKey ? localStorage.getItem(threadDraftKey) || "" : ""),
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom of thread when replies arrive
   useEffect(() => {

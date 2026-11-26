@@ -47,7 +47,7 @@ export const updateConversationSchema = z.object({
 
 export const discoverSpacesQuerySchema = z.object({
   search: z.string().trim().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(30),
+  limit: z.coerce.number().int().min(1).max(100).default(100),
   offset: z.coerce.number().int().min(0).default(0),
 });
 
@@ -93,7 +93,7 @@ export const fetchConversationsQuerySchema = z.object({
     .transform((val) => val === true || val === "true")
     .optional(),
   search: z.string().trim().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(30),
+  limit: z.coerce.number().int().min(1).max(100).default(100),
   offset: z.coerce.number().int().min(0).default(0),
 });
 

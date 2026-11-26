@@ -9,6 +9,7 @@ import {
   Pin,
   Copy,
   Trash2,
+  Pencil,
   FileText,
   Download,
   Link as LinkIcon,
@@ -23,10 +24,16 @@ import {
   useToggleReaction,
   useTogglePin,
   useDeleteMessage,
+  useEditMessage,
 } from "../hooks/use-messages";
 import RichTextRenderer from "./RichTextRenderer";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, ConversationParticipant } from "../types/chat.types";
+import type {
+  ChatAttachment,
+  ChatMessage,
+  ChatReactionItem,
+  ConversationParticipant,
+} from "../types/chat.types";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -55,6 +62,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const { setReplyingToMessage } = useChatStore();
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
   const [savingAssetIds, setSavingAssetIds] = useState<Set<string>>(new Set());
   const [savedAssetIds, setSavedAssetIds] = useState<Set<string>>(new Set());
 
@@ -83,6 +92,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const toggleReaction = useToggleReaction(message.conversationId);
   const togglePin = useTogglePin(message.conversationId);
   const deleteMessage = useDeleteMessage(message.conversationId);
+  const editMessage = useEditMessage(message.conversationId);
+
+  const handleSaveEdit = () => {
+    const trimmed = editContent.trim();
+    if (!trimmed || trimmed === message.content) {
+      setIsEditing(false);
+      return;
+    }
+    editMessage.mutate(
+      { messageId: message.id, content: trimmed },
+      {
+        onSuccess: () => setIsEditing(false),
+      },
+    );
+  };
 
   const isOutgoing = String(message.senderId) === String(currentUser?.id);
   const isDeleted = Boolean(message.deletedAt);
@@ -110,7 +134,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   // Group reactions by emoji with list of users who reacted (Task 3.3)
-  const reactionsList = (message.reactions as any[]) || [];
+  const reactionsList: ChatReactionItem[] = message.reactions || [];
   const reactionCounts: Record<
     string,
     { count: number; userReacted: boolean; userNames: string[] }
@@ -264,7 +288,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {/* Attachments rendering */}
           {message.attachments && message.attachments.length > 0 && (
             <div className="space-y-2 mb-2">
-              {message.attachments.map((att: any) => {
+              {message.attachments.map((att: ChatAttachment) => {
                 const asset = att.asset;
                 if (!asset) return null;
                 const isImg =
@@ -272,13 +296,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   asset.mimeType?.startsWith("image/");
 
                 if (isImg && asset.secureUrl) {
+                  const secureUrl = asset.secureUrl;
                   return (
                     <div key={att.id} className="relative group/att rounded-xl overflow-hidden max-h-72">
                       <img
-                        src={asset.secureUrl}
+                        src={secureUrl}
                         alt={asset.originalFilename}
                         className="w-full h-auto object-cover rounded-xl hover:opacity-95 cursor-pointer"
-                        onClick={() => window.open(asset.secureUrl, "_blank")}
+                        onClick={() => window.open(secureUrl, "_blank")}
                       />
                       <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/att:opacity-100 transition-opacity bg-black/60 backdrop-blur-xs rounded-lg p-1">
                         <button
@@ -356,11 +381,52 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
           )}
 
-          {/* Rich Text / Markdown Content */}
-          <RichTextRenderer
-            content={message.content}
-            isGroup={isGroup}
-          />
+          {/* Rich Text / Markdown Content or Inline Editor */}
+          {isEditing ? (
+            <div className="space-y-2 min-w-52">
+              <input
+                type="text"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSaveEdit();
+                  } else if (e.key === "Escape") {
+                    setEditContent(message.content);
+                    setIsEditing(false);
+                  }
+                }}
+                className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-[#0b57d0] dark:border-[#a8c7fa] text-sm outline-none"
+                autoFocus
+              />
+              <div className="flex justify-end gap-1.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditContent(message.content);
+                    setIsEditing(false);
+                  }}
+                  className="px-2.5 py-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={editMessage.isPending || !editContent.trim()}
+                  className="px-3 py-1 rounded-full bg-[#0b57d0] text-white dark:bg-[#a8c7fa] dark:text-[#062e6f] font-medium cursor-pointer disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          ) : (
+            <RichTextRenderer
+              content={message.content}
+              isGroup={isGroup}
+            />
+          )}
 
           {/* Footer Metadata: Timestamp & Seen Status */}
           <div className="flex items-center justify-end gap-1.5 mt-1.5 select-none">
@@ -557,18 +623,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 <Pin size={13} />
                 <span>Pin Message</span>
               </button>
-              {isOutgoing && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    deleteMessage.mutate(message.id);
-                    setShowMenu(false);
-                  }}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 text-rose-600"
-                >
-                  <Trash2 size={13} />
-                  <span>Delete</span>
-                </button>
+              {isOutgoing && !message.isOptimistic && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditContent(message.content);
+                      setIsEditing(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                  >
+                    <Pencil size={13} />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      deleteMessage.mutate(message.id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 text-rose-600"
+                  >
+                    <Trash2 size={13} />
+                    <span>Delete</span>
+                  </button>
+                </>
               )}
             </div>
           )}

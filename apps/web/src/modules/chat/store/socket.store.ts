@@ -33,7 +33,11 @@ export const useSocketStore = create<SocketState>((set) => ({
   myPresenceStatus: "ACTIVE",
 
   setConnected: (isConnected) =>
-    set({ isConnected, isConnecting: false, connectionError: isConnected ? null : undefined }),
+    set((state) => ({
+      isConnected,
+      isConnecting: false,
+      connectionError: isConnected ? null : state.connectionError,
+    })),
 
   setConnecting: (isConnecting) => set({ isConnecting }),
 
@@ -67,10 +71,14 @@ export const useSocketStore = create<SocketState>((set) => ({
     })),
 
   removeOnlineUser: (userId) =>
-    set((state) => ({
-      onlineUsers: { ...state.onlineUsers, [userId]: false },
-      presenceStatuses: { ...state.presenceStatuses, [userId]: undefined as any },
-    })),
+    set((state) => {
+      const restStatuses = { ...state.presenceStatuses };
+      delete restStatuses[userId];
+      return {
+        onlineUsers: { ...state.onlineUsers, [userId]: false },
+        presenceStatuses: restStatuses,
+      };
+    }),
 
   addActiveRoom: (room) =>
     set((state) => ({

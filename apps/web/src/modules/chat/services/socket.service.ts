@@ -132,7 +132,12 @@ class SocketService {
     });
 
     this.socket.on("presence:state", (data) => {
-      useSocketStore.getState().setUserOnline(data.userId, data.isOnline);
+      const store = useSocketStore.getState();
+      if (data.isOnline) {
+        store.addOnlineUser(data.userId, data.status);
+      } else {
+        store.removeOnlineUser(data.userId);
+      }
     });
 
     this.socket.on("error", (err) => {
