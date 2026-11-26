@@ -16,11 +16,7 @@ class SocketService {
     const rawUrl =
       import.meta.env.VITE_WS_URL ||
       import.meta.env.VITE_SERVER_URL ||
-      (import.meta.env.DEV
-        ? "http://localhost:6969"
-        : typeof window !== "undefined"
-          ? window.location.origin
-          : "");
+      (import.meta.env.DEV ? "http://localhost:6969" : "");
     return rawUrl.trim().replace(/\/+$/, "").replace(/\/api$/, "");
   }
 
@@ -65,11 +61,15 @@ class SocketService {
       return this.socket;
     }
 
+    const url = this.getBaseUrl();
+    if (!url) {
+      return null;
+    }
+
     const socketStore = useSocketStore.getState();
     socketStore.setConnecting(true);
 
     if (!this.socket) {
-      const url = this.getBaseUrl();
       this.socket = io(url, {
         auth: { token: accessToken },
         transports: ["websocket", "polling"],

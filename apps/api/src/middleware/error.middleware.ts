@@ -3,7 +3,7 @@ import AppError from "../common/errors/AppError.js";
 
 export function errorHandler(
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ) {
@@ -14,6 +14,14 @@ export function errorHandler(
     });
   }
 
+  const errWithCode = err as Error & { code?: unknown; meta?: unknown };
+  console.error("[API ERROR]", {
+    method: req.method,
+    path: req.originalUrl,
+    code: errWithCode.code,
+    meta: errWithCode.meta,
+    message: err.message,
+  });
   console.error(err);
 
   return res.status(500).json({
