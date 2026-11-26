@@ -1,5 +1,30 @@
 export type UserRole = "ADMIN" | "MEMBER";
 
+export interface UserProfileImage {
+  id: string;
+  secureUrl?: string | null;
+  originalFilename?: string;
+  mimeType?: string;
+  width?: number | null;
+  height?: number | null;
+}
+
+export interface NotificationPreferences {
+  mail?: boolean;
+  chat?: boolean;
+  calendar?: boolean;
+  security?: boolean;
+}
+
+export interface UserPreferences {
+  id?: string;
+  userId?: string;
+  theme: "light" | "dark" | "system" | string;
+  language: string;
+  timezone: string;
+  notificationPreferences?: NotificationPreferences | null;
+}
+
 export interface User {
   id: string;
   fullName: string;
@@ -12,6 +37,12 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   profileImageId?: string | null;
+  profileImage?: UserProfileImage | null;
+  preferences?: UserPreferences | null;
+  credentials?: {
+    passwordChangedAt?: string | null;
+  } | null;
+  activeSessionsCount?: number;
   lastLoginAt?: string | null;
   createdAt?: string;
   updatedAt?: string;

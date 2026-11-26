@@ -1,11 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Search, ChevronDown, Check } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Search,
+  ChevronDown,
+  Check,
+  LogOut,
+  Settings,
+  X,
+  Camera,
+} from "lucide-react";
 import { OrvexaLogo } from "@/common/components/OrvexaLogo";
-import { ThemeToggle } from "@/common/components/ThemeToggle";
+import { UserAvatar } from "@/common/components/UserAvatar";
 import { AppSwitcher } from "./AppSwitcher";
 import { GlobalSearchModal } from "@/modules/home/components/GlobalSearchModal";
-import { useAuth } from "@/modules/auth/hooks/use-auth.hooks";
+import { useAuth, useLogout } from "@/modules/auth/hooks/use-auth.hooks";
 import { useSocketStore } from "@/modules/chat/store/socket.store";
 import { useSocket } from "@/modules/chat/hooks/use-socket";
 import { cn } from "@/lib/utils";
@@ -15,13 +23,17 @@ export interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const logoutMutation = useLogout();
   const { myPresenceStatus, setMyPresenceStatus } = useSocketStore();
   const { emit } = useSocket();
 
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   // Global Cmd+K / Ctrl+K keyboard shortcut for search
   useEffect(() => {
@@ -36,18 +48,26 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
   }, []);
 
   useEffect(() => {
-    if (!isStatusDropdownOpen) return;
+    if (!isStatusDropdownOpen && !isAccountMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (
+        isStatusDropdownOpen &&
         statusDropdownRef.current &&
         !statusDropdownRef.current.contains(e.target as Node)
       ) {
         setIsStatusDropdownOpen(false);
       }
+      if (
+        isAccountMenuOpen &&
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(e.target as Node)
+      ) {
+        setIsAccountMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isStatusDropdownOpen]);
+  }, [isStatusDropdownOpen, isAccountMenuOpen]);
 
   const handleSelectStatus = (status: "ACTIVE" | "AWAY" | "DND") => {
     setMyPresenceStatus(status);
@@ -55,7 +75,8 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
     setIsStatusDropdownOpen(false);
   };
 
-  const isAdmin = user?.role === "ADMIN" ? "Administrator" : "Member";
+  const firstName = user?.fullName?.split(" ")[0] || user?.username || "there";
+  const workspaceEmail = user?.username ? `${user.username}@orvexa.com` : user?.email;
 
   return (
     <header
@@ -182,12 +203,112 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
             </div>
           )}
         </div>
-        <ThemeToggle />
         <AppSwitcher />
-        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-200 hidden sm:inline max-w-35 truncate">
-            {isAdmin}
-          </span>
+        <div className="relative" ref={accountMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+            aria-label="Orvexa Account"
+            title={user?.fullName || "Orvexa Account"}
+            className="flex items-center gap-2 p-1 pr-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer"
+          >
+            <UserAvatar
+              src={user?.profileImage?.secureUrl}
+              name={user?.fullName}
+              username={user?.username}
+              size="sm"
+            />
+            <span className="text-sm font-medium text-[#1f1f1f] dark:text-[#e3e3e3] hidden sm:inline max-w-32 truncate">
+              {firstName}
+            </span>
+          </button>
+
+          {isAccountMenuOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-[#e9eef6] dark:bg-[#282a2c] border border-[#dadce0] dark:border-[#3c4043] rounded-[28px] shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center justify-between px-2 mb-3">
+                <span className="text-xs font-medium text-[#444746] dark:text-[#c4c7c5] truncate max-w-56">
+                  {workspaceEmail}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsAccountMenuOpen(false)}
+                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5] cursor-pointer"
+                  aria-label="Close account menu"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex flex-col items-center text-center bg-white dark:bg-[#1e1f20] rounded-3xl p-5 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountMenuOpen(false);
+                    navigate("/profile");
+                  }}
+                  className="relative group cursor-pointer mb-3"
+                  title="Update profile picture"
+                >
+                  <UserAvatar
+                    src={user?.profileImage?.secureUrl}
+                    name={user?.fullName}
+                    username={user?.username}
+                    size="xl"
+                    className="ring-2 ring-[#d3e3fd] dark:ring-[#004a77]"
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-white dark:bg-[#282a2c] border border-[#dadce0] dark:border-[#3c4043] flex items-center justify-center shadow-sm text-[#1f1f1f] dark:text-[#e3e3e3] group-hover:scale-105 transition-transform">
+                    <Camera size={13} />
+                  </span>
+                </button>
+
+                <div className="text-lg font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  Hi, {firstName}!
+                </div>
+                <div className="text-xs text-[#444746] dark:text-[#c4c7c5] mt-0.5 truncate max-w-full">
+                  {user?.email}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountMenuOpen(false);
+                    navigate("/profile");
+                  }}
+                  className="mt-4 px-5 py-2 rounded-full border border-[#747775] dark:border-[#8e918f] text-sm font-medium text-[#0b57d0] dark:text-[#a8c7fa] hover:bg-[#0b57d0]/8 dark:hover:bg-[#a8c7fa]/10 transition-colors cursor-pointer"
+                >
+                  Manage your Orvexa Account
+                </button>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountMenuOpen(false);
+                    navigate("/profile?tab=preferences");
+                  }}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-white dark:bg-[#1e1f20] hover:bg-white/80 dark:hover:bg-[#333537] text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3] transition-colors cursor-pointer"
+                >
+                  <Settings size={14} />
+                  <span>Preferences</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountMenuOpen(false);
+                    logoutMutation.mutate(undefined, {
+                      onSettled: () => navigate("/authenticate", { replace: true }),
+                    });
+                  }}
+                  disabled={logoutMutation.isPending}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-white dark:bg-[#1e1f20] hover:bg-white/80 dark:hover:bg-[#333537] text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3] transition-colors cursor-pointer"
+                >
+                  <LogOut size={14} />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

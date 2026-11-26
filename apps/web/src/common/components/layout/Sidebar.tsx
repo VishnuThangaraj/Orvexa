@@ -7,8 +7,9 @@ import {
   Video,
   Calendar,
   HardDrive,
-  User,
+  ShieldCheck,
 } from "lucide-react";
+import { useAuth } from "@/modules/auth/hooks/use-auth.hooks";
 import { cn } from "@/lib/utils";
 
 export interface SidebarProps {
@@ -36,13 +37,15 @@ const mainNavItems: NavRailItem[] = [
   { id: "calendar", label: "Calendar", to: "/calendar", icon: Calendar },
 ];
 
-const bottomNavItems: NavRailItem[] = [
-  { id: "profile", label: "Profile", to: "/profile", icon: User },
+const adminNavItems: NavRailItem[] = [
+  { id: "admin", label: "Admin", to: "/admin", icon: ShieldCheck },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [selectedNonRouteTab, setSelectedNonRouteTab] = useState<string | null>(null);
 
   const handleItemClick = (item: NavRailItem) => {
@@ -125,10 +128,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         {mainNavItems.map(renderItem)}
       </nav>
 
-      {/* Bottom navigation rail items: Profile */}
-      <div className="flex flex-col items-center gap-3 w-full mt-auto pt-3 border-t border-slate-100 dark:border-slate-800/80">
-        {bottomNavItems.map(renderItem)}
-      </div>
+      {/* Bottom navigation rail items: Administration (Admin only) */}
+      {isAdmin && (
+        <div className="flex flex-col items-center gap-3 w-full mt-auto pt-3 border-t border-slate-100 dark:border-slate-800/80">
+          {adminNavItems.map(renderItem)}
+        </div>
+      )}
     </aside>
   );
 };

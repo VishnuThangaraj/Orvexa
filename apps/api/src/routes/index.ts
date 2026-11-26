@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import authRoutes from "../modules/auth/auth.routes.js";
+import profileRoutes from "../modules/profile/profile.routes.js";
 import mailRoutes from "../modules/mail/mail.routes.js";
 import chatRoutes from "../modules/chat/chat.routes.js";
 import calendarRoutes from "../modules/calendar/calendar.routes.js";
@@ -11,6 +12,7 @@ import homeRoutes from "../modules/home/home.routes.js";
 const router: Router = Router();
 
 router.use("/auth", authRoutes);
+router.use("/profile", profileRoutes);
 router.use("/home", homeRoutes);
 router.use("/mail", mailRoutes);
 router.use("/chat", chatRoutes);
