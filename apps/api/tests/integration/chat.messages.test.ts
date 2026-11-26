@@ -335,4 +335,45 @@ test("Chat Messaging Real-Time Engine & History Integration Tests", async (t) =>
     assert.ok(Array.isArray(json.data));
     assert.ok(json.data.length >= 1);
   });
+
+  await t.test("GET /conversations orders active conversations ahead of newer empty conversations (NULLS LAST)", async () => {
+    const emptyConvRes = await fetch(`${restBaseUrl}/conversations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({
+        name: "Newer Empty Space",
+        type: "GROUP",
+        participantIds: [String(memberUser.id)],
+      }),
+    });
+    assert.equal(emptyConvRes.status, 201);
+    const emptyConvJson = await emptyConvRes.json();
+    const emptyConvId = String(emptyConvJson.data.id);
+
+    try {
+      const listRes = await fetch(`${restBaseUrl}/conversations`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      assert.equal(listRes.status, 200);
+      const listJson = await listRes.json();
+      const ids = (listJson.data.conversations as Array<{ id: string }>).map(
+        (c) => String(c.id),
+      );
+      const activeIdx = ids.indexOf(conversationId);
+      const emptyIdx = ids.indexOf(emptyConvId);
+      assert.ok(activeIdx !== -1, "Active conversation must appear in list");
+      assert.ok(emptyIdx !== -1, "Empty conversation must appear in list");
+      assert.ok(
+        activeIdx < emptyIdx,
+        "Conversation with messages must rank ahead of empty conversation with null lastMessageAt",
+      );
+    } finally {
+      await prisma.conversation.deleteMany({
+        where: { id: BigInt(emptyConvId) },
+      });
+    }
+  });
 });

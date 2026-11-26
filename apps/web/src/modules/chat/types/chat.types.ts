@@ -58,6 +58,39 @@ export interface ChatMention {
   user?: ChatUser | null;
 }
 
+export interface ChatReactionItem {
+  id: string;
+  messageId: string;
+  userId: string;
+  emoji: string;
+  createdAt?: string;
+  user?: ChatUser | null;
+}
+
+export interface PinnedMessageItem {
+  id: string;
+  conversationId: string;
+  messageId: string;
+  pinnedBy: string;
+  pinnedAt?: string;
+  message?: ChatMessage | null;
+  pinnedByUser?: ChatUser | null;
+}
+
+export interface ChatSearchMessageResult extends ChatMessage {
+  conversation?: {
+    id: string;
+    name?: string | null;
+    type: ConversationType;
+  } | null;
+}
+
+export interface ChatGlobalSearchResult {
+  messages: ChatSearchMessageResult[];
+  people: ChatUser[];
+  spaces: DiscoveredSpace[];
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
@@ -74,7 +107,7 @@ export interface ChatMessage {
   updatedAt: string;
   sender: ChatUser;
   attachments?: ChatAttachment[];
-  reactions?: unknown[];
+  reactions?: ChatReactionItem[];
   mentions?: ChatMention[];
   parentMessage?: {
     id: string;

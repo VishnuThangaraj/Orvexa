@@ -10,13 +10,19 @@ import {
   Loader2,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { useChatStore } from "../store/chat.store";
 import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
-import { useConversations } from "../hooks/use-conversations";
+import { CHAT_QUERY_KEYS, useConversations } from "../hooks/use-conversations";
 import { chatApi } from "../api/chat.api";
 import { cn } from "@/lib/utils";
-import type { Conversation } from "../types/chat.types";
+import type {
+  ChatSearchMessageResult,
+  ChatUser,
+  Conversation,
+  DiscoveredSpace,
+} from "../types/chat.types";
 
 type HomeFilterTab = "ALL" | "UNREAD" | "STARRED" | "MENTIONS";
 type SearchFilterTab = "ALL" | "MESSAGES" | "PEOPLE" | "SPACES";
@@ -36,6 +42,7 @@ export const ConversationListPane: React.FC = () => {
   const [homeFilter, setHomeFilter] = useState<HomeFilterTab>("ALL");
   const [searchTab, setSearchTab] = useState<SearchFilterTab>("ALL");
 
+  const [, setSearchParams] = useSearchParams();
   const currentUser = useAuthStore((state) => state.user);
   const onlineUsers = useSocketStore((state) => state.onlineUsers);
   const queryClient = useQueryClient();
@@ -181,21 +188,21 @@ export const ConversationListPane: React.FC = () => {
   };
 
   // Task 4.2: Direct action handlers for search result clicks
-  const handleSelectMessageResult = (message: any) => {
+  const handleSelectMessageResult = (message: ChatSearchMessageResult) => {
     const convId = String(message.conversationId);
     const msgId = String(message.id);
     setActiveConversationId(convId);
     setHighlightedMessageId(msgId);
-    window.history.pushState({}, "", `/chat?c=${convId}&m=${msgId}`);
+    setSearchParams({ c: convId, m: msgId });
     setSearchQuery("");
   };
 
-  const handleSelectPersonResult = async (person: any) => {
+  const handleSelectPersonResult = async (person: ChatUser) => {
     try {
       const directConv = await chatApi.createDirectConversation({
         recipientId: String(person.id),
       });
-      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations });
       setActiveConversationId(directConv.id);
       setSearchQuery("");
     } catch (err) {
@@ -203,11 +210,11 @@ export const ConversationListPane: React.FC = () => {
     }
   };
 
-  const handleSelectSpaceResult = async (space: any) => {
+  const handleSelectSpaceResult = async (space: DiscoveredSpace) => {
     try {
       if (!space.isMember && space.visibility === "PUBLIC") {
         await chatApi.joinPublicSpace(String(space.id));
-        queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations });
       }
       setActiveConversationId(String(space.id));
       setSearchQuery("");
@@ -370,7 +377,7 @@ export const ConversationListPane: React.FC = () => {
                       <MessageSquare size={13} className="text-[#0b57d0]" />
                       <span>Messages ({searchResults.messages.length})</span>
                     </div>
-                    {searchResults.messages.map((msg: any) => (
+                    {searchResults.messages.map((msg) => (
                       <div
                         key={msg.id}
                         onClick={() => handleSelectMessageResult(msg)}
@@ -404,7 +411,7 @@ export const ConversationListPane: React.FC = () => {
                       <Users size={13} className="text-[#0b57d0]" />
                       <span>People ({searchResults.people.length})</span>
                     </div>
-                    {searchResults.people.map((person: any) => (
+                    {searchResults.people.map((person) => (
                       <div
                         key={person.id}
                         onClick={() => handleSelectPersonResult(person)}
@@ -443,7 +450,7 @@ export const ConversationListPane: React.FC = () => {
                       <Hash size={13} className="text-[#0b57d0]" />
                       <span>Spaces ({searchResults.spaces.length})</span>
                     </div>
-                    {searchResults.spaces.map((space: any) => (
+                    {searchResults.spaces.map((space) => (
                       <div
                         key={space.id}
                         onClick={() => handleSelectSpaceResult(space)}

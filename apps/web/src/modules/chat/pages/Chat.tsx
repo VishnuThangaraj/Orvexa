@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import ChatNavigationSidebar from "../components/ChatNavigationSidebar";
 import ConversationListPane from "../components/ConversationListPane";
@@ -29,11 +29,12 @@ export const Chat: React.FC = () => {
   } = useChatStore();
 
   const { data } = useConversations();
-  const conversations = data?.conversations || [];
+  const conversations = useMemo(() => data?.conversations || [], [data?.conversations]);
 
-  // Deep link from Home / Global Search
+  // Deep link from Home / Global Search / Notifications (?conversationId= or ?c=)
   useEffect(() => {
-    const convoId = searchParams.get("conversationId");
+    const convoId =
+      searchParams.get("conversationId") || searchParams.get("c");
     if (convoId && convoId !== activeConversationId) {
       setActiveConversationId(convoId);
     }

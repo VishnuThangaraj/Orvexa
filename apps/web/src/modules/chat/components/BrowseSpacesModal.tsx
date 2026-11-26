@@ -99,7 +99,7 @@ export const BrowseSpacesModal: React.FC<BrowseSpacesModalProps> = ({
               </p>
             </div>
           ) : (
-            spaces.map((space: any) => (
+            spaces.map((space) => (
               <div
                 key={space.id}
                 className="p-3.5 rounded-2xl bg-[#f8fafd] dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3 hover:border-slate-300 transition-all"

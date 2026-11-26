@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Pin, UploadCloud } from "lucide-react";
 import { useChatStore } from "../store/chat.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
@@ -7,9 +8,14 @@ import { useConversationDetails } from "../hooks/use-conversations";
 import { useMessages, usePinnedMessages } from "../hooks/use-messages";
 import ThreadHeader from "./ThreadHeader";
 import MessageBubble from "./MessageBubble";
-import MessageInput from "./MessageInput";
+import MessageInput, { type MessageInputHandle } from "./MessageInput";
 import ThreadReplyPanel from "./ThreadReplyPanel";
 import EmptyConversationView from "./EmptyConversationView";
+
+const parseNumericId = (id?: string | null): bigint | null => {
+  if (!id || !/^\d+$/.test(String(id))) return null;
+  return BigInt(id);
+};
 
 interface ConversationThreadPaneProps {
   isFullscreen: boolean;
@@ -30,13 +36,14 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
   const typingUsers = useChatStore((state) => state.typingUsers);
   const currentUser = useAuthStore((state) => state.user);
   const { emit } = useSocket();
+  const [searchParams] = useSearchParams();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const unreadDividerRef = useRef<HTMLDivElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const messageInputRef = useRef<MessageInputHandle>(null);
+  const shouldAutoScrollRef = useRef(true);
   const hasScrolledToInitialRef = useRef<string | null>(null);
 
   // Task 4.1: Drag-and-drop file upload handling (hooks declared at top level)
-  const [droppedFiles, setDroppedFiles] = useState<File[] | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dragCounterRef = useRef(0);
 
@@ -71,7 +78,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
     setIsDraggingOver(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setDroppedFiles(Array.from(e.dataTransfer.files));
+      messageInputRef.current?.handleDroppedFiles(Array.from(e.dataTransfer.files));
     }
   };
 
@@ -98,18 +105,16 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
   const myParticipant = conversation?.participants.find(
     (p) => String(p.userId) === String(currentUser?.id),
   );
-  const currentReadId = myParticipant?.lastReadMessageId
-    ? BigInt(myParticipant.lastReadMessageId)
-    : BigInt(0);
+  const currentReadId = parseNumericId(myParticipant?.lastReadMessageId) ?? BigInt(0);
 
-  // Find the first unread incoming message
+  // Find the first unread incoming message (guarded against temp/non-numeric IDs)
   const firstUnreadMessageId = useMemo(() => {
     if (!messages.length) return null;
-    const incomingUnread = messages.find(
-      (m) =>
-        String(m.senderId) !== String(currentUser?.id) &&
-        BigInt(m.id) > currentReadId,
-    );
+    const incomingUnread = messages.find((m) => {
+      if (String(m.senderId) === String(currentUser?.id)) return false;
+      const msgNumericId = parseNumericId(m.id);
+      return msgNumericId !== null && msgNumericId > currentReadId;
+    });
     return incomingUnread?.id || null;
   }, [messages, currentReadId, currentUser?.id]);
 
@@ -129,8 +134,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
 
   // Deep linking to specific message: /chat?c={convId}&m={messageId}
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const linkedMsgId = params.get("m");
+    const linkedMsgId = searchParams.get("m");
     if (linkedMsgId && messages.length > 0) {
       setHighlightedMessageId(linkedMsgId);
       const targetEl = document.getElementById(`msg-${linkedMsgId}`);
@@ -142,7 +146,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
         return () => clearTimeout(timer);
       }
     }
-  }, [messages, setHighlightedMessageId]);
+  }, [searchParams, messages, setHighlightedMessageId]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -158,15 +162,15 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
     // Task 4.2: Guarantee auto-scroll to bottom when the current user sends a message
     if (isLatestOutgoing) {
       scrollViewportRef.current.scrollTop = scrollViewportRef.current.scrollHeight;
-      setShouldAutoScroll(true);
+      shouldAutoScrollRef.current = true;
       return;
     }
 
     // For incoming messages, auto-scroll if user is pinned to bottom and not reviewing unread divider
-    if (shouldAutoScroll && !firstUnreadMessageId) {
+    if (shouldAutoScrollRef.current && !firstUnreadMessageId) {
       scrollViewportRef.current.scrollTop = scrollViewportRef.current.scrollHeight;
     }
-  }, [messages, shouldAutoScroll, firstUnreadMessageId, currentUser?.id]);
+  }, [messages, firstUnreadMessageId, currentUser?.id]);
 
   // Mandatory Fix 2: Mark incoming messages read only when viewport is actively viewed in focused tab
   useEffect(() => {
@@ -181,20 +185,21 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
         return;
       }
 
-      const myParticipant = conversation.participants.find(
+      const myPart = conversation.participants.find(
         (p) => String(p.userId) === String(currentUser?.id),
       );
       const incomingMessages = messages.filter(
-        (m) => String(m.senderId) !== String(currentUser?.id),
+        (m) =>
+          String(m.senderId) !== String(currentUser?.id) &&
+          parseNumericId(m.id) !== null,
       );
       if (!incomingMessages.length) return;
 
       const latestIncoming = incomingMessages[incomingMessages.length - 1];
-      const currentReadId = myParticipant?.lastReadMessageId
-        ? BigInt(myParticipant.lastReadMessageId)
-        : BigInt(0);
+      const latestId = parseNumericId(latestIncoming.id);
+      const readCursor = parseNumericId(myPart?.lastReadMessageId) ?? BigInt(0);
 
-      if (BigInt(latestIncoming.id) > currentReadId) {
+      if (latestId !== null && latestId > readCursor) {
         emit("message:read", {
           conversationId: activeConversationId,
           messageId: latestIncoming.id,
@@ -237,7 +242,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
     if (!scrollViewportRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollViewportRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 80;
-    setShouldAutoScroll(isAtBottom);
+    shouldAutoScrollRef.current = isAtBottom;
   };
 
   if (!activeConversationId) {
@@ -299,7 +304,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
             <Pin size={13} className="text-[#0b57d0] fill-[#0b57d0] shrink-0" />
             <span className="font-semibold shrink-0">Pinned message:</span>
             <span className="truncate flex-1 text-slate-700 dark:text-slate-300">
-              {(pinnedMessages[0] as any).message?.content}
+              {pinnedMessages[0]?.message?.content}
             </span>
             <span className="text-[10px] text-slate-400 shrink-0">
               ({pinnedMessages.length})
@@ -414,19 +419,20 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
 
         {/* Input area */}
         <MessageInput
+          key={activeConversationId}
+          ref={messageInputRef}
           conversationId={activeConversationId}
           placeholder={placeholder}
           isGroup={isGroup}
           participants={conversation.participants}
           currentUserRole={myParticipant?.memberRole}
-          droppedFiles={droppedFiles}
-          onClearDroppedFiles={() => setDroppedFiles(null)}
         />
       </div>
 
       {/* Task 3.4: In-Line Thread Reply Collapsible Panel */}
       {activeThreadRootMessage && (
         <ThreadReplyPanel
+          key={activeThreadRootMessage.id}
           conversationId={activeConversationId}
           isGroup={isGroup}
           participants={conversation.participants}

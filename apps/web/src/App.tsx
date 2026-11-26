@@ -5,6 +5,7 @@ import Loader from "@/common/components/ui/Loader/Loader";
 import PublicRoute from "@/common/components/PublicRoute";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import ProtectedRoute from "@/common/components/ProtectedRoute";
+import AdminRoute from "@/common/components/AdminRoute";
 import AppLayout from "@/common/components/layout/AppLayout";
 
 const AuthPage = lazy(() => import("@/modules/auth/pages/AuthPage"));
@@ -21,6 +22,9 @@ const MeetingRoomPage = lazy(() => import("@/modules/meet/pages/MeetingRoomPage"
 const MeetingLeftPage = lazy(() => import("@/modules/meet/pages/MeetingLeftPage"));
 
 const Profile = lazy(() => import("@/modules/profile/pages/Profile"));
+const Administration = lazy(
+  () => import("@/modules/admin/pages/AdministrationPage"),
+);
 
 const App = () => {
   const { hasHydrated } = useAuthStore();
@@ -55,6 +59,9 @@ const App = () => {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/meet" element={<MeetLanding />} />
             <Route path="/profile" element={<Profile />} />
+            <Route element={<AdminRoute />}>
+              <Route path="/admin" element={<Administration />} />
+            </Route>
           </Route>
           {/* Immersive full-screen meeting room & leave screens outside AppLayout */}
           <Route path="/meet/:code" element={<MeetingRoomPage />} />

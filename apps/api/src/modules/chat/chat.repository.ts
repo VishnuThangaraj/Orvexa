@@ -206,7 +206,7 @@ export class ChatRepository {
     userId: bigint,
     options: FetchConversationsQueryDto,
   ) {
-    const limit = options.limit ?? 30;
+    const limit = options.limit ?? 100;
     const offset = options.offset ?? 0;
 
     const whereClause: any = {
@@ -261,7 +261,7 @@ export class ChatRepository {
         take: limit,
         skip: offset,
         orderBy: [
-          { lastMessageAt: "desc" },
+          { lastMessageAt: { sort: "desc", nulls: "last" } },
           { createdAt: "desc" },
         ],
         include: {
@@ -277,6 +277,13 @@ export class ChatRepository {
             orderBy: { createdAt: "desc" },
             include: {
               sender: { select: userSelect },
+              mentions: {
+                select: {
+                  id: true,
+                  userId: true,
+                  isAll: true,
+                },
+              },
             },
           },
         },
@@ -437,7 +444,10 @@ export class ChatRepository {
         where: whereClause,
         take: limit,
         skip: offset,
-        orderBy: [{ lastMessageAt: "desc" }, { createdAt: "desc" }],
+        orderBy: [
+          { lastMessageAt: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+        ],
         include: {
           image: true,
           participants: {

@@ -1,14 +1,17 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocket } from "./use-socket";
+import { chatApi } from "../api/chat.api";
 import { useChatStore } from "../store/chat.store";
 import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { CHAT_QUERY_KEYS } from "./use-conversations";
 import type {
   ChatMessage,
+  ChatReactionItem,
   Conversation,
   FetchMessagesOptions,
+  FetchConversationsResult,
 } from "../types/chat.types";
 
 export const useChatSync = () => {
@@ -23,12 +26,27 @@ export const useChatSync = () => {
   const {
     addOnlineUser,
     removeOnlineUser,
+    setOnlineUsers,
     myPresenceStatus,
     setMyPresenceStatus,
   } = useSocketStore();
 
   const wasConnectedRef = useRef(false);
+  const activeConversationIdRef = useRef<string | null>(activeConversationId);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastActivityRef = useRef<number>(0);
+  const myPresenceRef = useRef(myPresenceStatus);
+  const typingTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {},
+  );
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+
+  useEffect(() => {
+    myPresenceRef.current = myPresenceStatus;
+  }, [myPresenceStatus]);
 
   // Task 5.2: Request browser notification permission on mount
   useEffect(() => {
@@ -41,28 +59,37 @@ export const useChatSync = () => {
     }
   }, []);
 
-  // Task 5.4: Missed messages sync upon reconnect
+  // Task 5.4: Missed messages & initial online presence sync upon connect/reconnect
   useEffect(() => {
     if (isConnected) {
       if (!wasConnectedRef.current) {
-        // Reconnection occurred or fresh connection -> backfill missed data
         queryClient.invalidateQueries({
           queryKey: CHAT_QUERY_KEYS.conversations,
         });
-        if (activeConversationId) {
+        const currentConvoId = activeConversationIdRef.current;
+        if (currentConvoId) {
           queryClient.invalidateQueries({
-            queryKey: CHAT_QUERY_KEYS.messages(activeConversationId),
+            queryKey: CHAT_QUERY_KEYS.messages(currentConvoId),
           });
           queryClient.invalidateQueries({
-            queryKey: CHAT_QUERY_KEYS.conversation(activeConversationId),
+            queryKey: CHAT_QUERY_KEYS.conversation(currentConvoId),
           });
         }
+        // Seed initial online presence list
+        chatApi
+          .getOnlinePresence()
+          .then((ids) => {
+            if (Array.isArray(ids)) {
+              setOnlineUsers(ids);
+            }
+          })
+          .catch(() => {});
       }
       wasConnectedRef.current = true;
     } else {
       wasConnectedRef.current = false;
     }
-  }, [isConnected, activeConversationId, queryClient]);
+  }, [isConnected, queryClient, setOnlineUsers]);
 
   // Task 5.1: Idle detection (10 minutes) & presence status broadcast
   useEffect(() => {
@@ -70,12 +97,7 @@ export const useChatSync = () => {
 
     const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
-    const handleUserActivity = () => {
-      if (myPresenceStatus === "AWAY") {
-        setMyPresenceStatus("ACTIVE");
-        emit("presence:update", { status: "ACTIVE" });
-      }
-
+    const resetIdleTimer = () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       idleTimerRef.current = setTimeout(() => {
         setMyPresenceStatus("AWAY");
@@ -83,13 +105,27 @@ export const useChatSync = () => {
       }, IDLE_TIMEOUT_MS);
     };
 
-    window.addEventListener("mousemove", handleUserActivity);
-    window.addEventListener("keydown", handleUserActivity);
-    window.addEventListener("touchstart", handleUserActivity);
-    window.addEventListener("scroll", handleUserActivity);
+    const handleUserActivity = () => {
+      const now = Date.now();
+      if (now - lastActivityRef.current < 5000 && idleTimerRef.current) {
+        return;
+      }
+      lastActivityRef.current = now;
 
-    // Initial activity heartbeat
-    handleUserActivity();
+      if (myPresenceRef.current === "AWAY") {
+        setMyPresenceStatus("ACTIVE");
+        emit("presence:update", { status: "ACTIVE" });
+      }
+
+      resetIdleTimer();
+    };
+
+    window.addEventListener("mousemove", handleUserActivity, { passive: true });
+    window.addEventListener("keydown", handleUserActivity);
+    window.addEventListener("touchstart", handleUserActivity, { passive: true });
+    window.addEventListener("scroll", handleUserActivity, { passive: true });
+
+    resetIdleTimer();
 
     return () => {
       window.removeEventListener("mousemove", handleUserActivity);
@@ -98,7 +134,7 @@ export const useChatSync = () => {
       window.removeEventListener("scroll", handleUserActivity);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
-  }, [isConnected, myPresenceStatus, emit, setMyPresenceStatus]);
+  }, [isConnected, emit, setMyPresenceStatus]);
 
   // Join active conversation room on socket connect or room switch
   useEffect(() => {
@@ -111,9 +147,37 @@ export const useChatSync = () => {
     };
   }, [isConnected, activeConversationId, emit]);
 
-  // Listen to incoming real-time socket events
+  // Listen to incoming real-time socket events (stable across room switches)
   useEffect(() => {
     if (!isConnected) return;
+
+    const resolveParticipantName = (
+      conversationId: string,
+      userId: string,
+    ): string => {
+      const convDetail = queryClient.getQueryData<Conversation>(
+        CHAT_QUERY_KEYS.conversation(conversationId),
+      );
+      const fromDetail = convDetail?.participants?.find(
+        (p) => String(p.userId) === String(userId),
+      )?.user?.fullName;
+      if (fromDetail) return fromDetail;
+
+      const convListQueries = queryClient.getQueriesData<FetchConversationsResult>(
+        { queryKey: CHAT_QUERY_KEYS.conversations },
+      );
+      for (const [, listData] of convListQueries) {
+        const conv = listData?.conversations?.find(
+          (c) => String(c.id) === String(conversationId),
+        );
+        const fromList = conv?.participants?.find(
+          (p) => String(p.userId) === String(userId),
+        )?.user?.fullName;
+        if (fromList) return fromList;
+      }
+
+      return `User ${userId}`;
+    };
 
     // 1. New message received
     const unsubMessage = subscribe("message:received", (rawMessage) => {
@@ -129,25 +193,22 @@ export const useChatSync = () => {
         const queryOptions = q.queryKey[3] as FetchMessagesOptions | undefined;
         const targetParentId = queryOptions?.parentMessageId;
 
-        // If this query is for a specific thread, only add if message matches parentMessageId
         if (targetParentId && targetParentId !== "all") {
           if (String(message.parentMessageId) !== String(targetParentId)) {
             return;
           }
         } else if (!targetParentId) {
-          // Root query: only add if parentMessageId is null
           if (message.parentMessageId) {
             return;
           }
         }
 
         queryClient.setQueryData<ChatMessage[]>(q.queryKey, (old = []) => {
-          // If matching optimistic message exists by clientMessageId or id, replace in place
           const matchIndex = old.findIndex(
             (m) =>
               (message.clientMessageId &&
                 m.clientMessageId === message.clientMessageId) ||
-              m.id === message.id,
+              String(m.id) === String(message.id),
           );
 
           if (matchIndex !== -1) {
@@ -156,46 +217,57 @@ export const useChatSync = () => {
             return next;
           }
 
-          if (old.some((m) => m.id === message.id)) return old;
+          if (old.some((m) => String(m.id) === String(message.id))) return old;
           return [...old, message];
         });
       });
 
       // Update conversation list preview & immediately move chat to top across all conversation views
-      queryClient.setQueriesData<{
-        conversations: Conversation[];
-        totalCount: number;
-      }>({ queryKey: CHAT_QUERY_KEYS.conversations }, (old) => {
-        if (!old) return old;
-        const exists = old.conversations.some((c) => String(c.id) === conversationId);
-        if (!exists) {
-          queryClient.invalidateQueries({
-            queryKey: CHAT_QUERY_KEYS.conversations,
+      queryClient.setQueriesData<FetchConversationsResult>(
+        { queryKey: CHAT_QUERY_KEYS.conversations },
+        (old) => {
+          if (!old) return old;
+          const exists = old.conversations.some(
+            (c) => String(c.id) === conversationId,
+          );
+          if (!exists) {
+            queryClient.invalidateQueries({
+              queryKey: CHAT_QUERY_KEYS.conversations,
+            });
+            return old;
+          }
+
+          const targetConv = old.conversations.find(
+            (c) => String(c.id) === conversationId,
+          )!;
+          const updatedTarget: Conversation = {
+            ...targetConv,
+            lastMessageAt: message.createdAt,
+            messages: [message],
+          };
+
+          const others = old.conversations.filter(
+            (c) => String(c.id) !== conversationId,
+          );
+          const updatedConversations = [updatedTarget, ...others];
+
+          updatedConversations.sort((a, b) => {
+            const timeA = new Date(a.lastMessageAt || a.createdAt).getTime();
+            const timeB = new Date(b.lastMessageAt || b.createdAt).getTime();
+            return timeB - timeA;
           });
-          return old;
-        }
 
-        const targetConv = old.conversations.find((c) => String(c.id) === conversationId)!;
-        const updatedTarget: Conversation = {
-          ...targetConv,
-          lastMessageAt: message.createdAt,
-          messages: [message],
-        };
+          return { ...old, conversations: updatedConversations };
+        },
+      );
 
-        const others = old.conversations.filter((c) => String(c.id) !== conversationId);
-        const updatedConversations = [updatedTarget, ...others];
+      // Clear typing indicator for sender upon receiving their message
+      const senderName = resolveParticipantName(
+        conversationId,
+        String(message.senderId),
+      );
+      setUserTyping(conversationId, String(message.senderId), senderName, false);
 
-        // Sort by latest message first
-        updatedConversations.sort((a, b) => {
-          const timeA = new Date(a.lastMessageAt || a.createdAt).getTime();
-          const timeB = new Date(b.lastMessageAt || b.createdAt).getTime();
-          return timeB - timeA;
-        });
-
-        return { ...old, conversations: updatedConversations };
-      });
-
-      // Task 5.2: Dispatch browser desktop notification if tab is unfocused
       const isIncoming = String(message.senderId) !== String(currentUser?.id);
       const isTabFocused =
         typeof document !== "undefined" &&
@@ -210,26 +282,32 @@ export const useChatSync = () => {
           (p) => String(p.userId) === String(currentUser?.id),
         );
 
-        if (!myParticipant?.isMuted && typeof window !== "undefined" && "Notification" in window) {
-          if (Notification.permission === "granted") {
-            const notif = new Notification(
-              message.sender?.fullName || conv?.name || "New chat message",
-              {
-                body: message.content,
-                icon: message.sender?.profileImage?.secureUrl || "/favicon.ico",
-                tag: `chat-${conversationId}`,
-              },
-            );
-            notif.onclick = () => {
-              window.focus();
-              setActiveConversationId(conversationId);
-            };
-          }
+        if (
+          !myParticipant?.isMuted &&
+          typeof window !== "undefined" &&
+          "Notification" in window &&
+          Notification.permission === "granted"
+        ) {
+          const notif = new Notification(
+            message.sender?.fullName || conv?.name || "New chat message",
+            {
+              body: message.content,
+              icon: message.sender?.profileImage?.secureUrl || "/favicon.ico",
+              tag: `chat-${conversationId}`,
+            },
+          );
+          notif.onclick = () => {
+            window.focus();
+            setActiveConversationId(conversationId);
+          };
         }
       }
 
-      // Mark as read only if active conversation is opened and tab is focused
-      if (activeConversationId === conversationId && isIncoming && isTabFocused) {
+      if (
+        activeConversationIdRef.current === conversationId &&
+        isIncoming &&
+        isTabFocused
+      ) {
         emit("message:read", {
           conversationId,
           messageId: message.id,
@@ -244,7 +322,8 @@ export const useChatSync = () => {
 
       queryClient.setQueriesData<ChatMessage[]>(
         { queryKey: CHAT_QUERY_KEYS.messages(conversationId) },
-        (old = []) => old.map((m) => (m.id === updated.id ? updated : m)),
+        (old = []) =>
+          old.map((m) => (String(m.id) === String(updated.id) ? updated : m)),
       );
     });
 
@@ -254,26 +333,43 @@ export const useChatSync = () => {
         { queryKey: CHAT_QUERY_KEYS.messages(data.conversationId) },
         (old = []) =>
           old.map((m) =>
-            m.id === data.messageId
-              ? { ...m, deletedAt: new Date().toISOString() }
+            String(m.id) === String(data.messageId)
+              ? {
+                  ...m,
+                  deletedAt: new Date().toISOString(),
+                  content: "This message was deleted",
+                }
               : m,
           ),
       );
     });
 
-    // 4. Typing indicator
+    // 4. Typing indicator with real participant name & auto-expire
     const unsubTyping = subscribe("typing:user_typing", (data) => {
-      setUserTyping(
+      if (String(data.userId) === String(currentUser?.id)) return;
+
+      const displayName = resolveParticipantName(
         data.conversationId,
         data.userId,
-        `User ${data.userId}`,
-        data.isTyping,
       );
+      const timerKey = `${data.conversationId}:${data.userId}`;
+      if (typingTimersRef.current[timerKey]) {
+        clearTimeout(typingTimersRef.current[timerKey]);
+        delete typingTimersRef.current[timerKey];
+      }
+
+      setUserTyping(data.conversationId, data.userId, displayName, data.isTyping);
+
+      if (data.isTyping) {
+        typingTimersRef.current[timerKey] = setTimeout(() => {
+          setUserTyping(data.conversationId, data.userId, displayName, false);
+          delete typingTimersRef.current[timerKey];
+        }, 4000);
+      }
     });
 
     // 5. Read receipt
     const unsubReceipt = subscribe("message:read_receipt", (data) => {
-      // Optimistically advance the participant's read cursor in conversation cache
       queryClient.setQueryData<Conversation>(
         CHAT_QUERY_KEYS.conversation(data.conversationId),
         (old) => {
@@ -294,8 +390,6 @@ export const useChatSync = () => {
         },
       );
 
-      // Invalidate conversation details and conversations list to update unread badge counts,
-      // without invalidating message lists (preventing destructive message refetches and race conditions)
       queryClient.invalidateQueries({
         queryKey: CHAT_QUERY_KEYS.conversation(data.conversationId),
       });
@@ -310,7 +404,9 @@ export const useChatSync = () => {
         { queryKey: CHAT_QUERY_KEYS.messages(data.conversationId) },
         (old = []) =>
           old.map((m) =>
-            m.id === data.messageId ? { ...m, reactions: data.reactions } : m,
+            String(m.id) === String(data.messageId)
+              ? { ...m, reactions: data.reactions as ChatReactionItem[] }
+              : m,
           ),
       );
     });
@@ -331,6 +427,8 @@ export const useChatSync = () => {
       }
     });
 
+    const timersMap = typingTimersRef.current;
+
     return () => {
       unsubMessage();
       unsubUpdated();
@@ -340,10 +438,10 @@ export const useChatSync = () => {
       unsubReactions();
       unsubPinned();
       unsubPresence();
+      Object.values(timersMap).forEach(clearTimeout);
     };
   }, [
     isConnected,
-    activeConversationId,
     subscribe,
     emit,
     queryClient,

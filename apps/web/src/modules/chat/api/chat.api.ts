@@ -13,6 +13,10 @@ import type {
   SendMessagePayload,
   FetchMessagesOptions,
   UploadChatAttachmentsResult,
+  DiscoveredSpace,
+  ChatGlobalSearchResult,
+  ChatReactionItem,
+  PinnedMessageItem,
 } from "../types/chat.types";
 
 export const chatApi = {
@@ -107,11 +111,10 @@ export const chatApi = {
 
   discoverPublicSpaces: async (
     search?: string,
-  ): Promise<{ spaces: any[]; totalCount: number }> => {
-    const res = await api.get<ApiResponse<{ spaces: any[]; totalCount: number }>>(
-      "/chat/spaces/discover",
-      { params: { search } },
-    );
+  ): Promise<{ spaces: DiscoveredSpace[]; totalCount: number }> => {
+    const res = await api.get<
+      ApiResponse<{ spaces: DiscoveredSpace[]; totalCount: number }>
+    >("/chat/spaces/discover", { params: { search } });
     return res.data.data!;
   },
 
@@ -181,8 +184,8 @@ export const chatApi = {
     conversationId: string,
     messageId: string,
     emoji: string,
-  ): Promise<unknown[]> => {
-    const res = await api.post<ApiResponse<unknown[]>>(
+  ): Promise<ChatReactionItem[]> => {
+    const res = await api.post<ApiResponse<ChatReactionItem[]>>(
       `/chat/conversations/${conversationId}/messages/${messageId}/reactions`,
       { emoji },
     );
@@ -201,8 +204,8 @@ export const chatApi = {
 
   getPinnedMessages: async (
     conversationId: string,
-  ): Promise<unknown[]> => {
-    const res = await api.get<ApiResponse<unknown[]>>(
+  ): Promise<PinnedMessageItem[]> => {
+    const res = await api.get<ApiResponse<PinnedMessageItem[]>>(
       `/chat/conversations/${conversationId}/pins`,
     );
     return res.data.data!;
@@ -226,12 +229,13 @@ export const chatApi = {
     q: string,
     type?: "ALL" | "MESSAGES" | "PEOPLE" | "SPACES",
     limit?: number,
-  ): Promise<{ messages: any[]; people: any[]; spaces: any[] }> => {
-    const res = await api.get<
-      ApiResponse<{ messages: any[]; people: any[]; spaces: any[] }>
-    >("/chat/search", {
-      params: { q, type, limit },
-    });
+  ): Promise<ChatGlobalSearchResult> => {
+    const res = await api.get<ApiResponse<ChatGlobalSearchResult>>(
+      "/chat/search",
+      {
+        params: { q, type, limit },
+      },
+    );
     return res.data.data!;
   },
 

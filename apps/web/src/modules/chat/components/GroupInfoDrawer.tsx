@@ -233,7 +233,7 @@ export const GroupInfoDrawer: React.FC = () => {
               <span>Pinned Messages ({pinned.length})</span>
             </h5>
             <div className="space-y-2">
-              {pinned.map((item: any) => (
+              {pinned.map((item) => (
                 <div
                   key={item.id}
                   className="p-2.5 rounded-xl bg-[#eaf1fb] dark:bg-[#004a77]/30 border border-[#c2e7ff] dark:border-[#004a77] text-slate-700 dark:text-slate-300"

@@ -16,6 +16,19 @@ class AuthRepository {
       where: { id },
       include: {
         preferences: true,
+        profileImage: {
+          select: {
+            id: true,
+            secureUrl: true,
+            originalFilename: true,
+            mimeType: true,
+          },
+        },
+        credentials: {
+          select: {
+            passwordChangedAt: true,
+          },
+        },
       },
     });
   }
@@ -35,6 +48,12 @@ class AuthRepository {
       include: {
         credentials: true,
         preferences: true,
+        profileImage: {
+          select: {
+            id: true,
+            secureUrl: true,
+          },
+        },
       },
     });
   }
@@ -57,6 +76,12 @@ class AuthRepository {
       include: {
         credentials: true,
         preferences: true,
+        profileImage: {
+          select: {
+            id: true,
+            secureUrl: true,
+          },
+        },
       },
     });
   }
@@ -76,6 +101,12 @@ class AuthRepository {
       include: {
         credentials: true,
         preferences: true,
+        profileImage: {
+          select: {
+            id: true,
+            secureUrl: true,
+          },
+        },
       },
     });
   }

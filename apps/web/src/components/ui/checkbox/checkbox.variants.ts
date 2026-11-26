@@ -6,7 +6,7 @@ export const checkboxVariants = cva(
     variants: {
       variant: {
         "primary-blue":
-          "border-[#444746] hover:border-[#1f1f1f] dark:border-[#8e918f] dark:hover:border-[#e3e3e3] data-[state=checked]:bg-[#0b57d0] data-[state=checked]:border-[#0b57d0] data-[state=checked]:hover:bg-[#0842a0] data-[state=checked]:hover:border-[#0842a0] data-[state=indeterminate]:bg-[#0b57d0] data-[state=indeterminate]:border-[#0b57d0] text-white focus-visible:ring-[#0b57d0]/40",
+          "border-[#444746] hover:border-[#1f1f1f] dark:border-[#8e918f] dark:hover:border-[#e3e3e3] data-[state=checked]:bg-[#0b57d0] data-[state=checked]:border-[#0b57d0] data-[state=checked]:hover:bg-[#0842a0] data-[state=checked]:hover:border-[#0842a0] data-[state=indeterminate]:bg-[#0b57d0] data-[state=indeterminate]:border-[#0b57d0] dark:data-[state=checked]:bg-[#a8c7fa] dark:data-[state=checked]:border-[#a8c7fa] dark:data-[state=checked]:hover:bg-[#b8d1fb] dark:data-[state=checked]:hover:border-[#b8d1fb] dark:data-[state=indeterminate]:bg-[#a8c7fa] dark:data-[state=indeterminate]:border-[#a8c7fa] text-white dark:text-[#062e6f] focus-visible:ring-[#0b57d0]/40 dark:focus-visible:ring-[#a8c7fa]/40",
         primary:
           "border-[#444746] hover:border-[#1f1f1f] dark:border-[#8e918f] dark:hover:border-[#e3e3e3] data-[state=checked]:bg-[#0b57d0] data-[state=checked]:border-[#0b57d0] data-[state=checked]:hover:bg-[#0842a0] data-[state=checked]:hover:border-[#0842a0] data-[state=indeterminate]:bg-[#0b57d0] data-[state=indeterminate]:border-[#0b57d0] text-white focus-visible:ring-[#0b57d0]/40",
         default:

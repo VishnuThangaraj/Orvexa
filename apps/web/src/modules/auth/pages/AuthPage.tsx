@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { User } from "lucide-react";
 import OrvexaIcon from "@/common/components/OrvexaIcon";
+import ThemeToggle from "@/common/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { TextBox } from "@/components/ui/text-box";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -174,25 +175,27 @@ const AuthPage: React.FC = () => {
     loginMutation.isPending || forgotPasswordMutation.isPending;
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-full bg-[#F0F4F9] p-4">
+    <div className="flex flex-col justify-center items-center min-h-screen w-full bg-[#f0f4f9] dark:bg-[#1e1f20] p-4 transition-colors duration-200">
       <div className="w-full max-w-262 flex flex-col gap-4">
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="w-full flex flex-col justify-between gap-7 bg-white p-10 rounded-3xl shadow-md"
+          className="w-full flex flex-col justify-between gap-7 bg-white dark:bg-[#0e0e0e] text-[#1f1f1f] dark:text-[#e3e3e3] p-10 rounded-3xl shadow-md dark:shadow-none transition-colors duration-200"
         >
           <OrvexaIcon size={50} />
           <div className="flex justify-between gap-x-40">
             <div className="flex flex-col gap-5 w-6/12">
               {isPasswordStep ? (
                 <>
-                  <div className="text-4xl">Welcome</div>
+                  <div className="text-4xl text-[#1f1f1f] dark:text-[#e3e3e3]">
+                    Welcome
+                  </div>
                   <div>
                     {" "}
                     <Button
                       type="button"
-                      variant={"transparent"}
-                      className="px-3 py-2 rounded-full cursor-pointer hover:bg-slate-100"
+                      variant={"empty"}
+                      className="px-3 py-1.5 rounded-full cursor-pointer bg-transparent text-[#1f1f1f] dark:text-[#e3e3e3] border border-[#747775] dark:border-[#8e918f] hover:bg-[#1f1f1f]/6 dark:hover:bg-[#e3e3e3]/8 font-medium text-sm gap-2"
                       onClick={handleBackToIdentifier}
                       title="Switch account"
                     >
@@ -203,8 +206,12 @@ const AuthPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <div className="text-4xl">Sign in</div>
-                  <div className="text-[#444746]">Use your Orvexa Account</div>
+                  <div className="text-4xl text-[#1f1f1f] dark:text-[#e3e3e3]">
+                    Sign in
+                  </div>
+                  <div className="text-[#444746] dark:text-[#c4c7c5]">
+                    Use your Orvexa Account
+                  </div>
                 </>
               )}
             </div>
@@ -256,15 +263,15 @@ const AuthPage: React.FC = () => {
                           handleForgotEmail();
                         }
                       }}
-                      className="text-[#0b57d0] cursor-pointer font-medium select-none w-fit"
+                      className="text-[#0b57d0] dark:text-[#a8c7fa] hover:underline cursor-pointer font-medium select-none w-fit"
                     >
                       Forgot email?
                     </div>
                   </div>
                   <div>
-                    <div className="text-[#444746] ">
+                    <div className="text-[#444746] dark:text-[#c4c7c5]">
                       Not your computer? Use Guest mode to sign in privately.
-                      <span className="ps-2 cursor-pointer hover:underline text-[#0b57d0]">
+                      <span className="ps-2 cursor-pointer hover:underline text-[#0b57d0] dark:text-[#a8c7fa]">
                         Learn more about using Guest mode
                       </span>
                     </div>
@@ -281,7 +288,7 @@ const AuthPage: React.FC = () => {
               onClick={
                 isPasswordStep ? handleForgotPassword : () => navigate("/")
               }
-              className="rounded-full py-3.5"
+              className="rounded-full py-3.5 text-[#0b57d0] hover:text-[#0842a0] hover:bg-[#0b57d0]/8 active:bg-[#0b57d0]/12 dark:text-[#a8c7fa] dark:hover:text-[#d3e3fd] dark:hover:bg-[#a8c7fa]/8 dark:active:bg-[#a8c7fa]/12"
               disabled={isPending}
             >
               {isPasswordStep ? "Forgot Password?" : "Cancel"}
@@ -289,7 +296,7 @@ const AuthPage: React.FC = () => {
             <Button
               type="submit"
               variant={"primary-blue"}
-              className="rounded-full py-3.5"
+              className="rounded-full py-3.5 bg-[#0b57d0] hover:bg-[#0842a0] active:bg-[#0842a0] text-white dark:bg-[#a8c7fa] dark:hover:bg-[#b8d1fb] dark:active:bg-[#93b8f7] dark:text-[#062e6f]"
               loading={isPending}
               disabled={isPending}
             >
@@ -297,12 +304,21 @@ const AuthPage: React.FC = () => {
             </Button>
           </div>
         </form>
-        <div className="text-[#444746] flex justify-between items-center text-sm w-full px-4">
-          <div>English (United States)</div>
+        <div className="text-[#444746] dark:text-[#c4c7c5] flex justify-between items-center text-sm w-full px-4">
+          <div className="flex items-center gap-2">
+            <span>English (United States)</span>
+            <ThemeToggle size={15} />
+          </div>
           <div className="flex justify-between gap-7">
-            <div className="cursor-pointer">Help</div>
-            <div className="cursor-pointer">Privacy</div>
-            <div className="cursor-pointer">Terms</div>
+            <div className="cursor-pointer hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]">
+              Help
+            </div>
+            <div className="cursor-pointer hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]">
+              Privacy
+            </div>
+            <div className="cursor-pointer hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]">
+              Terms
+            </div>
           </div>
         </div>
       </div>
