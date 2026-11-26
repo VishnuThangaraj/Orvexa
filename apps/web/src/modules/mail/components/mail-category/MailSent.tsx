@@ -1,48 +1,25 @@
 import React from "react";
+import { SendHorizontal } from "lucide-react";
 import useSent from "../../hooks/use-mail.sent";
-import { LoaderInPage } from "@/common/components/ui/Loader/Loader";
-import MailLayout from "../MailLayout";
 import { useMailStore } from "../../store/mail.store";
+import MailCategoryView from "./MailCategoryView";
 
 const MailSent: React.FC = () => {
-  const { page, limit, selectedIds, toggleSelect, openThread } = useMailStore();
+  const { page, limit } = useMailStore();
   const { data, isLoading, isError, error } = useSent({ page, limit });
 
   return (
-    <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
-      <div className="relative py-2 overflow-y-auto flex-1 min-h-50">
-        {isLoading && <LoaderInPage />}
-
-        {isError && (
-          <div className="flex h-full w-full text-center align-middle justify-center items-center pb-[10%] animate-pulse">
-            Error loading sent:{" "}
-            {error instanceof Error ? error.message : "Something went wrong"}
-          </div>
-        )}
-        {!isLoading && !isError && data?.messages.length === 0 && (
-          <div className="flex h-full w-full text-center align-middle justify-center items-center pb-[10%] animate-pulse">
-            No sent messages
-          </div>
-        )}
-        {data?.messages.map((mail, idx) => (
-          <MailLayout
-            key={mail.id}
-            mail={mail}
-            selected={selectedIds.includes(mail.id)}
-            onToggleSelect={toggleSelect}
-            onClick={(clickedMail) => {
-              openThread(
-                clickedMail,
-                data.messages,
-                idx,
-                data.pagination.total,
-                "sent",
-              );
-            }}
-          />
-        ))}
-      </div>
-    </div>
+    <MailCategoryView
+      category="sent"
+      data={data}
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      emptyIcon={SendHorizontal}
+      emptyTitle="No sent messages"
+      emptyDescription="Emails you send to recipients will show up here."
+      errorLabel="Error loading sent messages"
+    />
   );
 };
 

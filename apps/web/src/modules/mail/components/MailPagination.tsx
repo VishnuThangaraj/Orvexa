@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import {
+  Archive,
   ChevronLeft,
   ChevronRight,
   RotateCw,
   MoreVertical,
   Trash2,
   MailOpen,
+  Mail as MailUnreadIcon,
   ChevronDown,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -156,84 +158,197 @@ const MailPagination: React.FC<MailPaginationProps> = ({
     }
   };
 
+  const [showSelectMenu, setShowSelectMenu] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
+
+  const handleBatchUpdate = async (updates: {
+    isArchived?: boolean;
+    isTrashed?: boolean;
+    isRead?: boolean;
+  }) => {
+    if (selectedIds.length === 0 || isMutating) return;
+    setIsMutating(true);
+    try {
+      await mailApi.batchUpdateState(selectedIds, updates);
+      clearSelection();
+      await queryClient.invalidateQueries({ queryKey: mailKeys.all });
+    } catch (err) {
+      console.error("Failed to batch update mail state:", err);
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const selectFiltered = (filterFn: (m: FetchInboxResult["messages"][number]) => boolean) => {
+    const matchingIds = (data?.messages || []).filter(filterFn).map((m) => m.id);
+    if (matchingIds.length === 0) {
+      clearSelection();
+    } else {
+      selectAll(matchingIds);
+    }
+    setShowSelectMenu(false);
+  };
+
   const from = total === 0 ? 0 : (activePage - 1) * activeLimit + 1;
   const to = Math.min(activePage * activeLimit, total);
 
   return (
     <div
       className={cn(
-        "relative flex items-center justify-between px-3.5 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800/80 text-sm select-none shrink-0 h-11",
+        "relative flex items-center justify-between px-4 bg-white dark:bg-[#1e1f20] border-b border-[#eceef2] dark:border-[#303134] text-sm select-none shrink-0 h-12 transition-colors",
         className,
       )}
     >
       {/* Subtle indicator bar on refresh */}
-      {showSpinning && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-100 dark:bg-blue-950 overflow-hidden z-10">
-          <div className="h-full bg-[#0b57d0] w-full animate-pulse" />
+      {(showSpinning || isMutating) && (
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d3e3fd] dark:bg-[#004a77]/40 overflow-hidden z-10">
+          <div className="h-full bg-[#0b57d0] dark:bg-[#a8c7fa] w-full animate-pulse" />
         </div>
       )}
 
       {/* Left section: Checkbox, Dropdown, Actions / Refresh */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-0.5">
-          <Checkbox
-            size="sm"
-            checked={isAllSelected}
-            indeterminate={isIndeterminate}
-            onCheckedChange={handleMasterCheckbox}
-          />
+      <div className="flex items-center gap-1.5">
+        <div className="relative flex items-center">
+          <div className="p-1.5 rounded-l-md hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors flex items-center">
+            <Checkbox
+              size="sm"
+              checked={isAllSelected}
+              indeterminate={isIndeterminate}
+              onCheckedChange={handleMasterCheckbox}
+            />
+          </div>
           <button
             type="button"
-            title="Select all / none"
-            onClick={handleMasterCheckbox}
-            className="p-1 -ml-0.5 rounded text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+            title="Select options"
+            aria-label="Select options"
+            onClick={() => setShowSelectMenu((prev) => !prev)}
+            className="p-1 py-2 rounded-r-md text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] cursor-pointer transition-colors"
           >
             <ChevronDown className="size-3.5" />
           </button>
+
+          {showSelectMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-20"
+                onClick={() => setShowSelectMenu(false)}
+              />
+              <div className="absolute left-0 top-9 z-30 w-36 py-1.5 rounded-xl bg-white dark:bg-[#282a2c] border border-[#e1e3e1] dark:border-[#3c4043] shadow-lg text-xs text-[#1f1f1f] dark:text-[#e3e3e3]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    selectAll(currentIds);
+                    setShowSelectMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearSelection();
+                    setShowSelectMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer"
+                >
+                  None
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectFiltered((m) => m.isRead)}
+                  className="w-full text-left px-3.5 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer"
+                >
+                  Read
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectFiltered((m) => !m.isRead)}
+                  className="w-full text-left px-3.5 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer"
+                >
+                  Unread
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectFiltered((m) => m.isStarred)}
+                  className="w-full text-left px-3.5 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer"
+                >
+                  Starred
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {selectedIds.length > 0 ? (
-          <div className="flex items-center gap-2 ml-2">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <div className="flex items-center gap-1 ml-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#e8f0fe] dark:bg-[#004a77]/60 text-[12px] font-medium text-[#0b57d0] dark:text-[#c2e7ff] mr-1">
               {selectedIds.length} selected
             </span>
             <button
               type="button"
-              onClick={clearSelection}
+              disabled={isMutating}
+              onClick={() => handleBatchUpdate({ isArchived: true })}
+              title="Archive"
+              aria-label="Archive selected"
+              className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <Archive className="size-4" />
+            </button>
+            <button
+              type="button"
+              disabled={isMutating}
+              onClick={() => handleBatchUpdate({ isTrashed: true })}
               title="Delete selection"
-              className="p-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              aria-label="Delete selection"
+              className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#d93025] dark:hover:text-[#f28b82] hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer disabled:opacity-50"
             >
               <Trash2 className="size-4" />
             </button>
             <button
               type="button"
-              onClick={clearSelection}
+              disabled={isMutating}
+              onClick={() => handleBatchUpdate({ isRead: true })}
               title="Mark as read"
-              className="p-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              aria-label="Mark as read"
+              className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer disabled:opacity-50"
             >
               <MailOpen className="size-4" />
             </button>
+            <button
+              type="button"
+              disabled={isMutating}
+              onClick={() => handleBatchUpdate({ isRead: false })}
+              title="Mark as unread"
+              aria-label="Mark as unread"
+              className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <MailUnreadIcon className="size-4" />
+            </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1 ml-1">
+          <div className="flex items-center gap-0.5 ml-0.5">
             <button
               type="button"
               onClick={handleRefresh}
               disabled={showSpinning}
               title="Refresh"
-              className="p-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-80"
+              aria-label="Refresh mail"
+              className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer disabled:opacity-80"
             >
               <RotateCw
                 className={cn(
                   "size-4 transition-transform",
-                  showSpinning && "animate-spin text-[#0b57d0]",
+                  showSpinning && "animate-spin text-[#0b57d0] dark:text-[#a8c7fa]",
                 )}
               />
             </button>
             <button
               type="button"
-              title="More"
-              className="p-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              onClick={() => selectFiltered((m) => !m.isRead)}
+              title="Select unread"
+              aria-label="More actions"
+              className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer"
             >
               <MoreVertical className="size-4" />
             </button>
@@ -242,8 +357,8 @@ const MailPagination: React.FC<MailPaginationProps> = ({
       </div>
 
       {/* Right section: Range indicator & Pagination buttons */}
-      <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
-        <span className="mr-2">
+      <div className="flex items-center gap-1 text-xs text-[#444746] dark:text-[#c4c7c5] tabular-nums">
+        <span className="px-2 py-1 rounded-md mr-1">
           {total > 0 ? `${from}–${to} of ${total}` : "0 of 0"}
         </span>
 
@@ -252,7 +367,8 @@ const MailPagination: React.FC<MailPaginationProps> = ({
           onClick={handlePrevPage}
           disabled={!hasPrevPage}
           title="Newer"
-          className="p-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors"
+          aria-label="Newer messages"
+          className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -262,7 +378,8 @@ const MailPagination: React.FC<MailPaginationProps> = ({
           onClick={handleNextPage}
           disabled={!hasNextPage}
           title="Older"
-          className="p-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors"
+          aria-label="Older messages"
+          className="p-2 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors"
         >
           <ChevronRight className="size-4" />
         </button>

@@ -7,6 +7,7 @@ import type {
   MailCountsResult,
   MessageStateUpdate,
   SendReplyPayload,
+  UploadAttachmentResponse,
 } from "../types";
 
 export const mailApi = {
@@ -67,8 +68,8 @@ export const mailApi = {
   updateMessageState: async (
     messageId: string,
     updates: MessageStateUpdate,
-  ): Promise<any> => {
-    const res = await api.patch<ApiResponse<any>>(
+  ): Promise<Record<string, unknown>> => {
+    const res = await api.patch<ApiResponse<Record<string, unknown>>>(
       `/mail/messages/${messageId}/state`,
       updates,
     );
@@ -86,19 +87,30 @@ export const mailApi = {
     return res.data.data;
   },
 
-  sendReply: async (payload: SendReplyPayload): Promise<any> => {
-    const res = await api.post<ApiResponse<any>>("/mail/send", payload);
+  sendReply: async (
+    payload: SendReplyPayload,
+  ): Promise<Record<string, unknown>> => {
+    const res = await api.post<ApiResponse<Record<string, unknown>>>(
+      "/mail/send",
+      payload,
+    );
     return res.data.data;
   },
 
-  uploadAttachments: async (files: File[]): Promise<any> => {
+  uploadAttachments: async (
+    files: File[],
+  ): Promise<UploadAttachmentResponse> => {
     const formData = new FormData();
     for (const file of files) {
       formData.append("files", file);
     }
-    const res = await api.post<ApiResponse<any>>("/mail/attachments", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await api.post<ApiResponse<UploadAttachmentResponse>>(
+      "/mail/attachments",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
     return res.data.data;
   },
 };

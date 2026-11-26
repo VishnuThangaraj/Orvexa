@@ -47,26 +47,26 @@ export const MailThreadHeader: React.FC<MailThreadHeaderProps> = ({
   return (
     <div
       className={cn(
-        "flex items-center justify-between px-6 pt-5 pb-3 bg-white dark:bg-slate-900 select-none gap-4 shrink-0",
+        "flex items-center justify-between px-6 pt-5 pb-3.5 bg-white dark:bg-[#1e1f20] select-none gap-4 shrink-0",
         className,
       )}
     >
       {/* Subject and Category/Label badges */}
       <div className="flex items-center flex-wrap gap-2 min-w-0 flex-1">
-        <h1 className="text-[22px] font-normal tracking-tight text-slate-800 dark:text-slate-100 truncate">
+        <h1 className="text-[22px] font-normal tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3] truncate">
           {subject || "(no subject)"}
         </h1>
 
         {/* Inbox badge with 'x' close button */}
         {showInboxBadge && (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-[#dddddd]/70 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium select-none ml-1">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#e8eaed] dark:bg-[#303134] text-[#444746] dark:text-[#c4c7c5] text-xs font-medium select-none ml-1">
             <span>Inbox</span>
             <button
               type="button"
               onClick={onRemoveInboxLabel}
               title="Remove label 'Inbox'"
               aria-label="Remove label Inbox"
-              className="hover:text-slate-950 dark:hover:text-white rounded-full p-0.5 -mr-0.5 cursor-pointer transition-colors"
+              className="hover:text-[#1f1f1f] dark:hover:text-white rounded-full p-0.5 -mr-0.5 cursor-pointer transition-colors"
             >
               <X className="size-3" strokeWidth={2.5} />
             </button>
@@ -77,7 +77,7 @@ export const MailThreadHeader: React.FC<MailThreadHeaderProps> = ({
         {labels.map((l) => (
           <span
             key={l.id}
-            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium"
+            className="inline-flex items-center px-2 py-0.5 rounded bg-[#e8f0fe] dark:bg-[#004a77]/60 text-[#0b57d0] dark:text-[#c2e7ff] text-xs font-medium"
           >
             {l.name}
           </span>
@@ -85,14 +85,14 @@ export const MailThreadHeader: React.FC<MailThreadHeaderProps> = ({
       </div>
 
       {/* Right actions: Expand all (if thread > 1), Print all, In new window */}
-      <div className="flex items-center gap-1 shrink-0 text-slate-500 dark:text-slate-400">
+      <div className="flex items-center gap-1 shrink-0 text-[#444746] dark:text-[#c4c7c5]">
         {messageCount > 1 && (
           <button
             type="button"
             onClick={onToggleAllExpanded}
             title={allExpanded ? "Collapse all" : "Expand all"}
             aria-label={allExpanded ? "Collapse all" : "Expand all"}
-            className="p-1.5 rounded-full hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer"
           >
             <ChevronsUpDown className="size-4" />
           </button>
@@ -104,7 +104,7 @@ export const MailThreadHeader: React.FC<MailThreadHeaderProps> = ({
           onClick={handlePrint}
           title="Print all"
           aria-label="Print all"
-          className="p-1.5 rounded-full hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="p-2 rounded-full hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer"
         >
           <Printer className="size-4" />
         </button>
@@ -115,7 +115,7 @@ export const MailThreadHeader: React.FC<MailThreadHeaderProps> = ({
           onClick={handleOpenInNewWindow}
           title="In new window"
           aria-label="In new window"
-          className="p-1.5 rounded-full hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="p-2 rounded-full hover:text-[#1f1f1f] dark:hover:text-white hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] transition-colors cursor-pointer"
         >
           <ExternalLink className="size-4" />
         </button>
