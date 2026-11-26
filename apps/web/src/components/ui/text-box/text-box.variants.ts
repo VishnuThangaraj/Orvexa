@@ -8,11 +8,11 @@ export const textBoxVariants = cva(
         outlined:
           "bg-white/70 dark:bg-white/5 border border-slate-300 dark:border-white/15 rounded-xl shadow-xs focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/20 backdrop-blur-md",
         "primary-blue":
-          "bg-white dark:bg-slate-900 text-[#1f1f1f] dark:text-[#e3e3e3] border border-[#747775] dark:border-[#8e918f] rounded-[4px] hover:border-[#1f1f1f] dark:hover:border-[#e3e3e3] focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0] dark:focus:border-[#8ab4f8] dark:focus:ring-[#8ab4f8]",
+          "bg-white dark:bg-[#0e0e0e] text-[#1f1f1f] dark:text-[#e3e3e3] border border-[#747775] dark:border-[#8e918f] rounded-[4px] hover:border-[#1f1f1f] dark:hover:border-[#e3e3e3] focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0] dark:focus:border-[#a8c7fa] dark:focus:ring-[#a8c7fa]",
         "blue-primary":
-          "bg-white dark:bg-slate-900 text-[#1f1f1f] dark:text-[#e3e3e3] border border-[#747775] dark:border-[#8e918f] rounded-[4px] hover:border-[#1f1f1f] dark:hover:border-[#e3e3e3] focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0] dark:focus:border-[#8ab4f8] dark:focus:ring-[#8ab4f8]",
+          "bg-white dark:bg-[#0e0e0e] text-[#1f1f1f] dark:text-[#e3e3e3] border border-[#747775] dark:border-[#8e918f] rounded-[4px] hover:border-[#1f1f1f] dark:hover:border-[#e3e3e3] focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0] dark:focus:border-[#a8c7fa] dark:focus:ring-[#a8c7fa]",
         blue:
-          "bg-white dark:bg-slate-900 text-[#1f1f1f] dark:text-[#e3e3e3] border border-[#747775] dark:border-[#8e918f] rounded-[4px] hover:border-[#1f1f1f] dark:hover:border-[#e3e3e3] focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0] dark:focus:border-[#8ab4f8] dark:focus:ring-[#8ab4f8]",
+          "bg-white dark:bg-[#0e0e0e] text-[#1f1f1f] dark:text-[#e3e3e3] border border-[#747775] dark:border-[#8e918f] rounded-[4px] hover:border-[#1f1f1f] dark:hover:border-[#e3e3e3] focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0] dark:focus:border-[#a8c7fa] dark:focus:ring-[#a8c7fa]",
         filled:
           "bg-slate-100/90 dark:bg-white/10 border-b-2 border-slate-300 dark:border-white/20 rounded-t-xl rounded-b-none focus:border-indigo-600 focus:bg-slate-100 dark:focus:bg-white/15 dark:focus:border-indigo-400",
         standard:

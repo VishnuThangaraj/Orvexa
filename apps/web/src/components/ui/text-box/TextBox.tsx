@@ -47,9 +47,17 @@ const labelFocusColors: Record<string, string> = {
   outlined: "peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400",
   filled: "peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400",
   standard: "peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400",
-  "primary-blue": "peer-focus:text-[#0b57d0] dark:peer-focus:text-[#8ab4f8]",
-  "blue-primary": "peer-focus:text-[#0b57d0] dark:peer-focus:text-[#8ab4f8]",
-  blue: "peer-focus:text-[#0b57d0] dark:peer-focus:text-[#8ab4f8]",
+  "primary-blue": "peer-focus:text-[#0b57d0] dark:peer-focus:text-[#a8c7fa]",
+  "blue-primary": "peer-focus:text-[#0b57d0] dark:peer-focus:text-[#a8c7fa]",
+  blue: "peer-focus:text-[#0b57d0] dark:peer-focus:text-[#a8c7fa]",
+};
+
+const floatingLabelBgColors: Record<string, string> = {
+  "primary-blue":
+    "peer-focus:bg-white dark:peer-focus:bg-[#0e0e0e] peer-not-placeholder-shown:bg-white dark:peer-not-placeholder-shown:bg-[#0e0e0e]",
+  "blue-primary":
+    "peer-focus:bg-white dark:peer-focus:bg-[#0e0e0e] peer-not-placeholder-shown:bg-white dark:peer-not-placeholder-shown:bg-[#0e0e0e]",
+  blue: "peer-focus:bg-white dark:peer-focus:bg-[#0e0e0e] peer-not-placeholder-shown:bg-white dark:peer-not-placeholder-shown:bg-[#0e0e0e]",
 };
 
 export const TextBox = React.forwardRef<HTMLInputElement, TextBoxProps>(
@@ -142,8 +150,10 @@ export const TextBox = React.forwardRef<HTMLInputElement, TextBoxProps>(
                   ? "left-10 peer-focus:left-9 peer-not-placeholder-shown:left-9"
                   : "left-4 peer-focus:left-3 peer-not-placeholder-shown:left-3",
                 "peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100",
-                "peer-focus:-top-2.5 peer-focus:translate-y-0 peer-focus:scale-75 peer-focus:px-1.5 peer-focus:bg-white dark:peer-focus:bg-slate-900",
-                "peer-not-placeholder-shown:-top-2.5 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:scale-75 peer-not-placeholder-shown:px-1.5 peer-not-placeholder-shown:bg-white dark:peer-not-placeholder-shown:bg-slate-900",
+                "peer-focus:-top-2.5 peer-focus:translate-y-0 peer-focus:scale-75 peer-focus:px-1.5",
+                "peer-not-placeholder-shown:-top-2.5 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:scale-75 peer-not-placeholder-shown:px-1.5",
+                floatingLabelBgColors[variant ?? "outlined"] ??
+                  "peer-focus:bg-white dark:peer-focus:bg-slate-900 peer-not-placeholder-shown:bg-white dark:peer-not-placeholder-shown:bg-slate-900",
                 error
                   ? "text-red-600 dark:text-red-400 peer-focus:text-red-600 dark:peer-focus:text-red-400 peer-placeholder-shown:text-red-600 dark:peer-placeholder-shown:text-red-400"
                   : cn(
