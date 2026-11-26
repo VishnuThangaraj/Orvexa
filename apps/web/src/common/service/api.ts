@@ -5,10 +5,14 @@ import axios, {
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import type { ApiResponse } from "@/modules/auth/types";
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:6969";
-export const API_BASE_URL = SERVER_URL.endsWith("/api")
-  ? SERVER_URL
-  : `${SERVER_URL}/api`;
+const rawServerUrl = import.meta.env.VITE_SERVER_URL?.trim().replace(/\/+$/, "");
+const SERVER_URL =
+  rawServerUrl || (import.meta.env.DEV ? "http://localhost:6969" : "");
+export const API_BASE_URL = SERVER_URL
+  ? SERVER_URL.endsWith("/api")
+    ? SERVER_URL
+    : `${SERVER_URL}/api`
+  : "/api";
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

@@ -155,7 +155,10 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
         const uploadResult = await mailApi.uploadAttachments(selectedFiles);
         setIsUploading(false);
         if (uploadResult?.assets) {
-          uploadedAssetIds = [...uploadedAssetIds, ...uploadResult.assets.map((a: any) => a.assetId)];
+          uploadedAssetIds = [
+            ...uploadedAssetIds,
+            ...uploadResult.assets.map((a) => a.assetId),
+          ];
         } else if (uploadResult?.assetId) {
           uploadedAssetIds = [...uploadedAssetIds, uploadResult.assetId];
         }
@@ -205,23 +208,23 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
   return (
     <div
       className={cn(
-        "mt-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden animate-in fade-in-50 duration-150",
+        "mt-5 rounded-2xl border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#1e1f20] shadow-[0_1px_3px_0_rgba(60,64,67,0.16),0_2px_6px_2px_rgba(60,64,67,0.08)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.45)] overflow-hidden animate-in fade-in-50 duration-150",
         className,
       )}
     >
       {/* Header Bar with Mode selector and Recipient Chips */}
-      <div className="p-3 bg-[#f8fafd] dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-2">
+      <div className="p-3 bg-[#f8fafd] dark:bg-[#282a2c] border-b border-[#eceef2] dark:border-[#303134] flex flex-wrap items-center gap-2">
         {/* Mode Selector Dropdown */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowModeDropdown((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 hover:bg-slate-50 cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-[#303134] border border-[#dadce0] dark:border-[#444746] text-[#1f1f1f] dark:text-[#e3e3e3] hover:bg-[#f2f6fc] dark:hover:bg-[#3c4043] cursor-pointer transition-colors"
           >
             {mode === "forward" ? (
-              <Forward className="size-3.5 text-slate-600 dark:text-slate-300" />
+              <Forward className="size-3.5 text-[#444746] dark:text-[#c4c7c5]" />
             ) : (
-              <Reply className="size-3.5 text-slate-600 dark:text-slate-300" />
+              <Reply className="size-3.5 text-[#444746] dark:text-[#c4c7c5]" />
             )}
             <span>
               {mode === "reply"
@@ -230,29 +233,29 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
                   ? "Reply all"
                   : "Forward"}
             </span>
-            <ChevronDown className="size-3 text-slate-400" />
+            <ChevronDown className="size-3 text-[#747775] dark:text-[#9aa0a6]" />
           </button>
 
           {showModeDropdown && (
-            <div className="absolute left-0 top-8 z-30 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1 text-xs">
+            <div className="absolute left-0 top-8 z-30 w-36 bg-white dark:bg-[#282a2c] border border-[#e1e3e1] dark:border-[#3c4043] rounded-xl shadow-lg py-1 text-xs text-[#1f1f1f] dark:text-[#e3e3e3]">
               <button
                 type="button"
                 onClick={() => handleModeChange("reply")}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-2"
+                className="w-full text-left px-3 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer flex items-center gap-2"
               >
                 <Reply className="size-3.5" /> Reply
               </button>
               <button
                 type="button"
                 onClick={() => handleModeChange("replyAll")}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-2"
+                className="w-full text-left px-3 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer flex items-center gap-2"
               >
                 <Reply className="size-3.5" /> Reply all
               </button>
               <button
                 type="button"
                 onClick={() => handleModeChange("forward")}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-2"
+                className="w-full text-left px-3 py-2 hover:bg-[#f2f6fc] dark:hover:bg-[#333639] cursor-pointer flex items-center gap-2"
               >
                 <Forward className="size-3.5" /> Forward
               </button>
@@ -262,17 +265,19 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
 
         {/* Recipients input area */}
         <div className="flex-1 flex flex-wrap items-center gap-1.5 min-w-[200px]">
-          <span className="text-xs text-slate-500 font-medium">To:</span>
+          <span className="text-xs text-[#5e5e5e] dark:text-[#9aa0a6] font-medium">
+            To:
+          </span>
           {toRecipients.map((email) => (
             <span
               key={email}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200/90 dark:bg-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e8eef7] dark:bg-[#303134] border border-[#dadce0] dark:border-[#444746] text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3]"
             >
               <span>{email}</span>
               <button
                 type="button"
                 onClick={() => handleRemoveRecipient("TO", email)}
-                className="hover:text-red-500 cursor-pointer"
+                className="hover:text-[#d93025] cursor-pointer"
               >
                 <X className="size-3" />
               </button>
@@ -291,14 +296,14 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             }}
             onBlur={() => handleAddRecipient("TO", newToInput)}
             placeholder={toRecipients.length === 0 ? "Add recipients..." : ""}
-            className="flex-1 min-w-[120px] bg-transparent text-xs text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
+            className="flex-1 min-w-[120px] bg-transparent text-xs text-[#1f1f1f] dark:text-[#e3e3e3] outline-none placeholder:text-[#747775] dark:placeholder:text-[#8e918f]"
           />
 
           {!showCc && (
             <button
               type="button"
               onClick={() => setShowCc(true)}
-              className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-medium cursor-pointer ml-auto"
+              className="text-xs text-[#5e5e5e] hover:text-[#1f1f1f] dark:text-[#9aa0a6] dark:hover:text-[#e3e3e3] font-medium cursor-pointer ml-auto"
             >
               Cc
             </button>
@@ -308,18 +313,20 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
 
       {/* Optional CC line */}
       {showCc && (
-        <div className="px-3 py-1.5 bg-[#f8fafd] dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-slate-500 font-medium">Cc:</span>
+        <div className="px-3 py-2 bg-[#f8fafd] dark:bg-[#282a2c]/70 border-b border-[#eceef2] dark:border-[#303134] flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-[#5e5e5e] dark:text-[#9aa0a6] font-medium">
+            Cc:
+          </span>
           {ccRecipients.map((email) => (
             <span
               key={email}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200/90 dark:bg-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e8eef7] dark:bg-[#303134] border border-[#dadce0] dark:border-[#444746] text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3]"
             >
               <span>{email}</span>
               <button
                 type="button"
                 onClick={() => handleRemoveRecipient("CC", email)}
-                className="hover:text-red-500 cursor-pointer"
+                className="hover:text-[#d93025] cursor-pointer"
               >
                 <X className="size-3" />
               </button>
@@ -337,41 +344,41 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             }}
             onBlur={() => handleAddRecipient("CC", newCcInput)}
             placeholder="Add Cc recipients..."
-            className="flex-1 min-w-[120px] bg-transparent text-xs text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
+            className="flex-1 min-w-[120px] bg-transparent text-xs text-[#1f1f1f] dark:text-[#e3e3e3] outline-none placeholder:text-[#747775] dark:placeholder:text-[#8e918f]"
           />
         </div>
       )}
 
       {/* Main Textarea */}
-      <div className="p-3">
+      <div className="p-4">
         <textarea
           rows={6}
           autoFocus
           value={bodyText}
           onChange={(e) => setBodyText(e.target.value)}
           placeholder="Type your reply here..."
-          className="w-full resize-y bg-transparent text-sm text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 font-sans leading-relaxed min-h-[120px]"
+          className="w-full resize-y bg-transparent text-[14px] text-[#1f1f1f] dark:text-[#e3e3e3] outline-none placeholder:text-[#747775] dark:placeholder:text-[#8e918f] font-sans leading-relaxed min-h-[120px]"
         />
 
         {/* Selected File Chips (if any) */}
         {(selectedFiles.length > 0 || selectedDriveFiles.length > 0) && (
-          <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-[#eceef2] dark:border-[#303134]">
             {selectedFiles.map((file, idx) => (
               <div
                 key={file.name + idx}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f2f6fc] dark:bg-[#282a2c] border border-[#dadce0] dark:border-[#3c4043] text-xs text-[#1f1f1f] dark:text-[#e3e3e3]"
               >
-                <Paperclip className="size-3 text-slate-500" />
+                <Paperclip className="size-3 text-[#5e5e5e]" />
                 <span className="truncate max-w-[150px] font-medium">
                   {file.name}
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-[#747775]">
                   ({formatFileSize(file.size)})
                 </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveFile(idx)}
-                  className="p-0.5 hover:text-red-500 cursor-pointer ml-1"
+                  className="p-0.5 hover:text-[#d93025] cursor-pointer ml-1"
                 >
                   <X className="size-3" />
                 </button>
@@ -381,13 +388,13 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             {selectedDriveFiles.map((file, idx) => (
               <div
                 key={file.id + idx}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-100"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e8f0fe] dark:bg-[#004a77]/60 border border-[#d2e3fc] dark:border-[#00639b] text-xs text-[#0b57d0] dark:text-[#c2e7ff]"
               >
-                <HardDrive className="size-3 text-[#1a73e8]" />
+                <HardDrive className="size-3" />
                 <span className="truncate max-w-[150px] font-medium">
                   {file.name}
                 </span>
-                <span className="text-[10px] text-blue-500/80">
+                <span className="text-[10px] opacity-80">
                   ({formatFileSize(Number(file.asset.bytes))})
                 </span>
                 <button
@@ -397,7 +404,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
                       prev.filter((_, i) => i !== idx),
                     )
                   }
-                  className="p-0.5 hover:text-red-500 cursor-pointer ml-1"
+                  className="p-0.5 hover:text-[#d93025] cursor-pointer ml-1"
                 >
                   <X className="size-3" />
                 </button>
@@ -408,22 +415,22 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
 
         {/* Error message */}
         {errorMessage && (
-          <div className="mt-2 text-xs text-red-600 dark:text-red-400 font-medium">
+          <div className="mt-2 text-xs text-[#d93025] dark:text-[#f28b82] font-medium">
             {errorMessage}
           </div>
         )}
       </div>
 
       {/* Bottom Action / Formatting Toolbar */}
-      <div className="px-3 py-2 bg-[#f8fafd] dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between select-none">
+      <div className="px-4 py-2.5 bg-[#f8fafd] dark:bg-[#282a2c] border-t border-[#eceef2] dark:border-[#303134] flex items-center justify-between select-none">
         {/* Left: Send Button + File Attachment + Emoji */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Send Button */}
           <button
             type="button"
             onClick={handleSend}
             disabled={isSending || isUploading}
-            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#0b57d0] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer transition-all shadow-xs active:scale-98"
+            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#0b57d0] hover:bg-[#0842a0] dark:bg-[#a8c7fa] dark:hover:bg-[#8ab4f8] dark:text-[#062e6f] disabled:opacity-50 text-white text-xs font-medium cursor-pointer transition-all shadow-xs active:scale-98"
           >
             <Send className="size-3.5" />
             <span>
@@ -450,7 +457,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             onClick={() => fileInputRef.current?.click()}
             title="Attach files"
             aria-label="Attach files"
-            className="p-2 rounded-full hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-black/8 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5] transition-colors cursor-pointer"
           >
             <Paperclip className="size-4" />
           </button>
@@ -461,9 +468,9 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             onClick={() => setIsDrivePickerOpen(true)}
             title="Insert files using Drive"
             aria-label="Insert files using Drive"
-            className="p-2 rounded-full hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-black/8 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5] transition-colors cursor-pointer"
           >
-            <HardDrive className="size-4 text-[#1a73e8]" />
+            <HardDrive className="size-4 text-[#0b57d0] dark:text-[#a8c7fa]" />
           </button>
 
           {/* Quick Emoji Insert */}
@@ -472,7 +479,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             onClick={() => setBodyText((prev) => `${prev} 😊`)}
             title="Insert emoji"
             aria-label="Insert emoji"
-            className="p-2 rounded-full hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-black/8 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5] transition-colors cursor-pointer"
           >
             <Smile className="size-4" />
           </button>
@@ -485,7 +492,7 @@ export const MailInlineReplyComposer: React.FC<MailInlineReplyComposerProps> = (
             onClick={onCancel}
             title="Discard draft"
             aria-label="Discard draft"
-            className="p-2 rounded-full hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-black/8 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5] hover:text-[#d93025] dark:hover:text-[#f28b82] transition-colors cursor-pointer"
           >
             <Trash2 className="size-4" />
           </button>

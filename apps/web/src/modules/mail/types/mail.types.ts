@@ -100,13 +100,27 @@ export interface FetchThreadResult {
   messages: FormattedThreadMessage[];
 }
 
+export interface UploadAttachmentAsset {
+  assetId: string;
+  publicId?: string;
+  originalFilename?: string;
+  mimeType?: string;
+  bytes?: string | number;
+  secureUrl?: string;
+}
+
+export interface UploadAttachmentResponse {
+  assetId?: string;
+  assets?: UploadAttachmentAsset[];
+}
+
 export interface SendReplyPayload {
   to: string | string[];
   cc?: string | string[];
   bcc?: string | string[];
   subject: string;
   body: string;
-  parentMessageId: string;
+  parentMessageId?: string;
   attachmentIds?: string[];
 }
 

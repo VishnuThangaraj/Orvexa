@@ -29,12 +29,12 @@ export const MailCollapsedMessageRow: React.FC<MailCollapsedMessageRowProps> = (
     <div
       onClick={onExpand}
       className={cn(
-        "group flex items-center justify-between px-6 py-3 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800/80 hover:bg-[#f6f8fc] dark:hover:bg-slate-800/60 cursor-pointer select-none transition-colors",
+        "group flex items-center justify-between px-6 py-3.5 bg-[#f8fafd]/70 dark:bg-[#17181a] hover:bg-[#f2f6fc] dark:hover:bg-[#282a2c] cursor-pointer select-none transition-colors",
         className,
       )}
     >
       {/* Left: Avatar + Sender Name + Snippet */}
-      <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
+      <div className="flex items-center gap-3.5 min-w-0 flex-1 mr-4">
         {/* Avatar */}
         <div
           className={cn(
@@ -46,18 +46,18 @@ export const MailCollapsedMessageRow: React.FC<MailCollapsedMessageRowProps> = (
         </div>
 
         {/* Sender Display Name */}
-        <div className="w-44 md:w-56 shrink-0 truncate font-semibold text-sm text-slate-800 dark:text-slate-100">
+        <div className="w-40 md:w-52 shrink-0 truncate font-medium text-[13.5px] text-[#1f1f1f] dark:text-[#e3e3e3]">
           {senderDisplayName}
         </div>
 
         {/* Snippet Preview */}
-        <div className="truncate text-sm text-slate-600 dark:text-slate-400 font-normal">
+        <div className="truncate text-[13.5px] text-[#5e5e5e] dark:text-[#9aa0a6] font-normal">
           {cleanSnippet}
         </div>
       </div>
 
       {/* Right: Date/Time + Star icon */}
-      <div className="flex items-center gap-3 shrink-0 text-xs text-slate-500 dark:text-slate-400">
+      <div className="flex items-center gap-3 shrink-0 text-xs text-[#5e5e5e] dark:text-[#9aa0a6]">
         <span>{formatFullMessageDate(message.sentAt)}</span>
 
         <button
@@ -68,14 +68,14 @@ export const MailCollapsedMessageRow: React.FC<MailCollapsedMessageRowProps> = (
           }}
           title={message.isStarred ? "Starred" : "Not starred"}
           aria-label={message.isStarred ? "Starred" : "Not starred"}
-          className="p-1 -m-1 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none cursor-pointer"
+          className="p-1.5 -m-1.5 rounded-full text-[#747775] hover:text-[#1f1f1f] dark:text-[#8e918f] dark:hover:text-[#e3e3e3] hover:bg-black/5 dark:hover:bg-white/10 transition-colors focus:outline-none cursor-pointer"
         >
           <Star
             className={cn(
               "size-4 transition-colors",
               message.isStarred
-                ? "text-[#1a73e8] fill-[#1a73e8]"
-                : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300",
+                ? "text-[#f4b400] fill-[#f4b400]"
+                : "text-[#9aa0a6] hover:text-[#444746] dark:text-[#8e918f] dark:hover:text-[#e3e3e3]",
             )}
             strokeWidth={message.isStarred ? 0 : 1.75}
           />

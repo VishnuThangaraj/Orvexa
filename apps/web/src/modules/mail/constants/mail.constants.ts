@@ -49,7 +49,6 @@ export const MAIL_MENU: MailMenuItem[] = [
     id: "drafts",
     name: "Drafts",
     icon: File,
-    badge: 2,
     badgeBold: true,
   },
   {

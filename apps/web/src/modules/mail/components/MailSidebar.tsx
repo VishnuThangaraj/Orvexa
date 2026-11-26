@@ -45,16 +45,16 @@ export const MailSidebar: React.FC<MailSidebarProps> = ({
   return (
     <aside
       className={cn(
-        "flex flex-col w-60 md:w-64 bg-[#f6f8fc] dark:bg-slate-950 h-full py-3 select-none shrink-0 overflow-y-auto",
+        "flex flex-col w-60 xl:w-64 bg-[#f6f8fc] dark:bg-[#131314] h-full py-2.5 select-none shrink-0 overflow-y-auto transition-colors",
         className,
       )}
     >
-      {/* Compose Button - Material 3 Large Pill */}
-      <div className="px-4 mb-4">
+      {/* Compose Button - Material 3 FAB */}
+      <div className="px-3 mb-3.5">
         <button
           type="button"
           onClick={onCompose}
-          className="flex items-center gap-3.5 px-6 py-4 rounded-2xl bg-[#c2e7ff] hover:bg-[#b3dbf7] text-[#001d35] dark:bg-[#004a77] dark:text-[#c2e7ff] text-sm font-semibold shadow-xs hover:shadow-md transition-all cursor-pointer"
+          className="inline-flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-[#c2e7ff] hover:bg-[#b5dffc] text-[#001d35] dark:bg-[#c2e7ff] dark:hover:bg-[#d3edff] dark:text-[#001d35] text-[14px] font-medium shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] hover:shadow-[0_2px_4px_0_rgba(60,64,67,0.3),0_4px_8px_3px_rgba(60,64,67,0.15)] active:scale-[0.99] transition-all cursor-pointer"
         >
           <ComposePencilIcon size={20} />
           <span>Compose</span>
@@ -62,7 +62,7 @@ export const MailSidebar: React.FC<MailSidebarProps> = ({
       </div>
 
       {/* Main Categories Navigation */}
-      <nav className="flex flex-col gap-0.5 pr-3">
+      <nav className="flex flex-col gap-0.5 px-3">
         {MAIL_MENU.map((item) => {
           const isActive = activeId === item.id;
           const Icon = isActive && item.activeIcon ? item.activeIcon : item.icon;
@@ -75,35 +75,36 @@ export const MailSidebar: React.FC<MailSidebarProps> = ({
               type="button"
               onClick={() => handleSelect(item)}
               className={cn(
-                "group flex items-center h-8 pl-6 pr-4 rounded-r-full text-sm transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#0b57d0]/40",
+                "group flex items-center h-9 px-3.5 rounded-full text-[13.5px] transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#0b57d0]/40",
                 isActive
-                  ? "bg-[#d3e3fd] text-[#001d35] dark:bg-[#004a77] dark:text-[#c2e7ff] font-bold"
-                  : "text-[#202124] dark:text-slate-300 font-normal hover:bg-slate-200/60 dark:hover:bg-slate-800/60",
-                badgeBold && !isActive
-                  ? "font-bold text-slate-900 dark:text-white"
+                  ? "bg-[#d3e3fd] text-[#001d35] dark:bg-[#004a77] dark:text-[#c2e7ff] font-semibold"
+                  : "text-[#1f1f1f] dark:text-[#e3e3e3] font-normal hover:bg-[#e1e5ea]/75 dark:hover:bg-[#282a2c]",
+                badgeBold && !isActive && badge !== undefined
+                  ? "font-semibold"
                   : "",
               )}
             >
               <Icon
                 size={18}
                 className={cn(
-                  "mr-4 shrink-0 transition-colors",
+                  "mr-3.5 shrink-0 transition-colors",
                   isActive
                     ? "text-[#001d35] dark:text-[#c2e7ff]"
-                    : "text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white",
+                    : "text-[#444746] dark:text-[#c4c7c5] group-hover:text-[#1f1f1f] dark:group-hover:text-white",
                 )}
-                strokeWidth={isActive ? 2.4 : 1.9}
+                strokeWidth={isActive ? 2.25 : 1.85}
               />
               <span className="truncate">{item.name}</span>
 
               {badge !== undefined && (
                 <span
                   className={cn(
-                    "ml-auto text-xs pl-2 select-none",
-                    badgeBold || isActive
-                      ? "font-bold text-slate-900 dark:text-white"
-                      : "font-normal text-slate-600 dark:text-slate-400",
-                    isActive ? "text-[#001d35] dark:text-[#c2e7ff]" : "",
+                    "ml-auto text-xs pl-2 tabular-nums select-none",
+                    isActive
+                      ? "font-semibold text-[#001d35] dark:text-[#c2e7ff]"
+                      : badgeBold
+                        ? "font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]"
+                        : "font-normal text-[#444746] dark:text-[#c4c7c5]",
                   )}
                 >
                   {badge}

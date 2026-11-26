@@ -16,8 +16,12 @@ class SocketService {
     const rawUrl =
       import.meta.env.VITE_WS_URL ||
       import.meta.env.VITE_SERVER_URL ||
-      "http://localhost:6969";
-    return rawUrl.replace(/\/api\/?$/, "");
+      (import.meta.env.DEV
+        ? "http://localhost:6969"
+        : typeof window !== "undefined"
+          ? window.location.origin
+          : "");
+    return rawUrl.trim().replace(/\/+$/, "").replace(/\/api$/, "");
   }
 
   public init() {

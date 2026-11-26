@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMailStore } from "../../store/mail.store";
 import { mailApi } from "../../api/mail.api";
@@ -30,8 +30,9 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
     optimisticUpdateMessage,
   } = useMailStore();
 
-  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
-  const [allExpanded, setAllExpanded] = useState<boolean>(false);
+  const [expandedOverrides, setExpandedOverrides] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
   const [reactionsMap, setReactionsMap] = useState<
     Record<string, Record<string, number>>
   >({});
@@ -46,35 +47,37 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
     enabled: Boolean(activeThreadId),
   });
 
-  // When thread loads, default: latest message is expanded, earlier messages are collapsed
-  useEffect(() => {
-    if (data?.messages && data.messages.length > 0) {
-      const initialMap: Record<string, boolean> = {};
-      const lastIndex = data.messages.length - 1;
+  const threadKey = activeThreadId ?? "__default__";
 
-      data.messages.forEach((msg, idx) => {
-        // If it's the specifically clicked message or the latest message in thread, expand it
-        if (msg.id === activeMessageId || idx === lastIndex) {
-          initialMap[msg.id] = true;
-        } else {
-          initialMap[msg.id] = false;
-        }
-      });
-
-      setExpandedMap(initialMap);
-      setAllExpanded(
-        data.messages.length === 1 ||
-          Object.values(initialMap).every((v) => v === true),
-      );
+  const isMessageExpanded = (
+    msgId: string,
+    idx: number,
+    totalCount: number,
+  ): boolean => {
+    const threadOverrides = expandedOverrides[threadKey];
+    if (threadOverrides && msgId in threadOverrides) {
+      return threadOverrides[msgId];
     }
-  }, [data?.messages, activeMessageId]);
+    return msgId === activeMessageId || idx === totalCount - 1;
+  };
 
-  const toggleMessageExpanded = (id: string) => {
-    setExpandedMap((prev) => {
-      const next = { ...prev, [id]: !prev[id] };
-      setAllExpanded(Object.values(next).every((v) => v === true));
-      return next;
-    });
+  const allExpanded = Boolean(
+    data?.messages &&
+      data.messages.length > 0 &&
+      data.messages.every((msg, idx) =>
+        isMessageExpanded(msg.id, idx, data.messages.length),
+      ),
+  );
+
+  const toggleMessageExpanded = (id: string, idx: number, totalCount: number) => {
+    const currentlyExpanded = isMessageExpanded(id, idx, totalCount);
+    setExpandedOverrides((prev) => ({
+      ...prev,
+      [threadKey]: {
+        ...(prev[threadKey] || {}),
+        [id]: !currentlyExpanded,
+      },
+    }));
   };
 
   const handleToggleAllExpanded = () => {
@@ -84,8 +87,10 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
     data.messages.forEach((m) => {
       nextMap[m.id] = nextState;
     });
-    setExpandedMap(nextMap);
-    setAllExpanded(nextState);
+    setExpandedOverrides((prev) => ({
+      ...prev,
+      [threadKey]: nextMap,
+    }));
   };
 
   const handleToggleStar = async (messageId: string, currentStarred: boolean) => {
@@ -132,7 +137,7 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col h-full bg-white dark:bg-slate-900 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-white dark:bg-[#1e1f20] overflow-hidden">
         <MailThreadToolbar onBack={onBack} />
         <div className="flex-1 flex items-center justify-center">
           <LoaderInPage />
@@ -143,17 +148,19 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
 
   if (isError || !data) {
     return (
-      <div className="flex-1 flex flex-col h-full bg-white dark:bg-slate-900 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-white dark:bg-[#1e1f20] overflow-hidden">
         <MailThreadToolbar onBack={onBack} />
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-600 dark:text-slate-400">
-          <p className="font-semibold text-base mb-2">Unable to load conversation</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-[#444746] dark:text-[#c4c7c5]">
+          <p className="font-medium text-base text-[#1f1f1f] dark:text-[#e3e3e3] mb-2">
+            Unable to load conversation
+          </p>
           <p className="text-sm mb-4">
             {error instanceof Error ? error.message : "Conversation thread not found"}
           </p>
           <button
             type="button"
             onClick={closeThread}
-            className="px-4 py-2 bg-[#0b57d0] text-white text-xs font-medium rounded-full hover:bg-blue-700 cursor-pointer transition-colors"
+            className="px-5 py-2 bg-[#0b57d0] hover:bg-[#0842a0] dark:bg-[#a8c7fa] dark:text-[#062e6f] text-white text-xs font-medium rounded-full cursor-pointer transition-colors"
           >
             Back to {openedFromCategory}
           </button>
@@ -168,7 +175,7 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
   return (
     <div
       className={cn(
-        "flex-1 flex flex-col h-full bg-white dark:bg-slate-900 overflow-hidden",
+        "flex-1 flex flex-col h-full bg-white dark:bg-[#1e1f20] overflow-hidden",
         className,
       )}
     >
@@ -176,7 +183,7 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
       <MailThreadToolbar onBack={onBack} />
 
       {/* Main Thread Content Scroll Container */}
-      <div className="flex-1 overflow-y-auto min-h-0 divide-y divide-slate-200/80 dark:divide-slate-800/80">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {/* Subject and Action Header */}
         <MailThreadHeader
           subject={subject}
@@ -188,9 +195,9 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
         />
 
         {/* Conversation Thread Messages */}
-        <div className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+        <div className="divide-y divide-[#eceef2] dark:divide-[#2a2b2e]">
           {messages.map((message, idx) => {
-            const isExpanded = expandedMap[message.id] ?? true;
+            const isExpanded = isMessageExpanded(message.id, idx, messages.length);
             const isLastMessage = idx === messages.length - 1;
             const isComposingForThis =
               activeComposer?.messageId === message.id;
@@ -200,7 +207,9 @@ export const MailThreadView: React.FC<MailThreadViewProps> = ({
                 <MailCollapsedMessageRow
                   key={message.id}
                   message={message}
-                  onExpand={() => toggleMessageExpanded(message.id)}
+                  onExpand={() =>
+                    toggleMessageExpanded(message.id, idx, messages.length)
+                  }
                   onToggleStar={() =>
                     handleToggleStar(message.id, message.isStarred)
                   }

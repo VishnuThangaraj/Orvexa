@@ -1,6 +1,18 @@
 import React, { useState } from "react";
-import { Star, Image, FileText, Paperclip } from "lucide-react";
+import {
+  Archive,
+  FileText,
+  Image,
+  Mail as MailUnreadIcon,
+  MailOpen,
+  Paperclip,
+  Star,
+  Trash2,
+} from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { FormattedInboxAttachment, FormattedInboxMessage } from "../types";
+import { mailApi } from "../api/mail.api";
+import { mailKeys } from "../hooks/use-mail.inbox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { cn } from "@/lib/utils";
@@ -89,10 +101,12 @@ const MailLayout: React.FC<MailLayoutProps> = ({
   selected: controlledSelected,
   onToggleSelect,
 }) => {
+  const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const [internalSelected, setInternalSelected] = useState(false);
-  const [starred, setStarred] = useState(mail.isStarred);
+  const [optimisticStar, setOptimisticStar] = useState<boolean | null>(null);
 
+  const starred = optimisticStar ?? mail.isStarred;
   const isSelected = controlledSelected ?? internalSelected;
   const isUnread = !mail.isRead;
   const hasAttachments = Boolean(
@@ -119,6 +133,31 @@ const MailLayout: React.FC<MailLayoutProps> = ({
     }
   };
 
+  const handleToggleStar = async () => {
+    const nextStarred = !starred;
+    setOptimisticStar(nextStarred);
+    try {
+      await mailApi.updateMessageState(mail.id, { isStarred: nextStarred });
+      await queryClient.invalidateQueries({ queryKey: mailKeys.all });
+    } catch (err) {
+      console.error("Failed to toggle star:", err);
+      setOptimisticStar(null);
+    }
+  };
+
+  const handleQuickState = async (
+    e: React.MouseEvent,
+    updates: { isArchived?: boolean; isTrashed?: boolean; isRead?: boolean },
+  ) => {
+    e.stopPropagation();
+    try {
+      await mailApi.updateMessageState(mail.id, updates);
+      await queryClient.invalidateQueries({ queryKey: mailKeys.all });
+    } catch (err) {
+      console.error("Failed to update mail state:", err);
+    }
+  };
+
   const isSenderMe = Boolean(user && mail.sender?.id === user.id.toString());
   const displaySender =
     isSenderMe && mail.recipients && mail.recipients.length > 0
@@ -129,18 +168,27 @@ const MailLayout: React.FC<MailLayoutProps> = ({
     <div
       onClick={() => onClick?.(mail)}
       className={cn(
-        "group relative flex items-start gap-3 px-4 py-2.5 text-sm border-b border-slate-200/80 dark:border-slate-800/80 cursor-pointer select-none transition-colors",
+        "group relative flex items-start gap-3 px-4 py-2.5 text-[13.5px] border-b border-[#eceef2] dark:border-[#2a2b2e] cursor-pointer select-none transition-all",
         isSelected
-          ? "bg-[#c2e7ff]/50 dark:bg-blue-950/30"
+          ? "bg-[#c2dbff]/75 dark:bg-[#004a77]/45"
           : isUnread
-            ? "bg-white dark:bg-slate-900"
-            : "bg-[#f2f6fc]/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400",
-        "hover:bg-white dark:hover:bg-slate-800/60 hover:shadow-xs",
+            ? "bg-white dark:bg-[#1e1f20]"
+            : "bg-[#f2f6fc]/80 dark:bg-[#17181a] text-[#444746] dark:text-[#c4c7c5]",
+        !isSelected &&
+          "hover:z-10 hover:bg-white dark:hover:bg-[#282a2c] hover:shadow-[inset_1px_0_0_#dadce0,inset_-1px_0_0_#dadce0,0_1px_2px_0_rgba(60,64,67,0.28),0_1px_3px_1px_rgba(60,64,67,0.12)] dark:hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]",
       )}
     >
+      {/* Unread subtle dot indicator */}
+      {isUnread && !isSelected && (
+        <span
+          aria-hidden="true"
+          className="absolute left-1.5 top-[18px] size-1.5 rounded-full bg-[#0b57d0] dark:bg-[#a8c7fa]"
+        />
+      )}
+
       {/* Selection & Star Controls */}
       <div
-        className="flex items-center gap-2.5 shrink-0 pt-0.5"
+        className="flex items-center gap-2.5 shrink-0 pt-0.5 pl-0.5"
         onClick={(e) => e.stopPropagation()}
       >
         <Checkbox
@@ -150,16 +198,17 @@ const MailLayout: React.FC<MailLayoutProps> = ({
         />
         <button
           type="button"
-          onClick={() => setStarred((prev) => !prev)}
+          onClick={handleToggleStar}
+          title={starred ? "Starred" : "Not starred"}
           aria-label={starred ? "Starred" : "Not starred"}
-          className="p-1 -m-1 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none cursor-pointer"
+          className="p-1 -m-1 rounded-full text-[#747775] hover:text-[#1f1f1f] dark:text-[#8e918f] dark:hover:text-[#e3e3e3] transition-colors focus:outline-none cursor-pointer"
         >
           <Star
             className={cn(
-              "size-4.5 transition-colors",
+              "size-4 transition-colors",
               starred
-                ? "text-[#1a73e8] fill-[#1a73e8]"
-                : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300",
+                ? "text-[#f4b400] fill-[#f4b400]"
+                : "text-[#9aa0a6] hover:text-[#444746] dark:text-[#8e918f] dark:hover:text-[#e3e3e3]",
             )}
             strokeWidth={starred ? 0 : 1.75}
           />
@@ -169,10 +218,10 @@ const MailLayout: React.FC<MailLayoutProps> = ({
       {/* Sender / Recipient Name */}
       <div
         className={cn(
-          "w-44 md:w-52 shrink-0 truncate pt-0.5",
+          "w-40 md:w-52 shrink-0 truncate pt-0.5",
           isUnread
-            ? "font-bold text-slate-900 dark:text-white"
-            : "font-normal text-slate-700 dark:text-slate-300",
+            ? "font-semibold text-[#1f1f1f] dark:text-[#f1f3f4]"
+            : "font-normal text-[#444746] dark:text-[#c4c7c5]",
         )}
       >
         {displaySender}
@@ -180,9 +229,9 @@ const MailLayout: React.FC<MailLayoutProps> = ({
 
       {/* Middle Column: Label Badge + Subject + Snippet and Attachment Chips */}
       <div className="flex-1 min-w-0 pt-0.5">
-        <div className="truncate text-sm flex items-center">
+        <div className="truncate flex items-center">
           {labelBadge && (
-            <span className="shrink-0 px-2 py-0.5 rounded text-xs bg-[#dddddd]/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium mr-1.5 select-none">
+            <span className="shrink-0 px-1.5 py-0.5 rounded bg-[#e8eaed] dark:bg-[#303134] text-[#444746] dark:text-[#c4c7c5] text-[11px] font-medium mr-2 select-none">
               {labelBadge}
             </span>
           )}
@@ -190,21 +239,27 @@ const MailLayout: React.FC<MailLayoutProps> = ({
             className={cn(
               "truncate",
               isUnread
-                ? "font-bold text-slate-900 dark:text-white"
-                : "font-normal text-slate-800 dark:text-slate-200",
+                ? "font-semibold text-[#1f1f1f] dark:text-[#f1f3f4]"
+                : "font-normal text-[#1f1f1f] dark:text-[#e3e3e3]",
             )}
           >
             {displaySubject}
           </span>
-          <span className="text-slate-400 dark:text-slate-500 mx-1.5 shrink-0">-</span>
-          <span className="text-slate-500 dark:text-slate-400 font-normal truncate">
-            {mail.snippet || mail.body}
-          </span>
+          {(mail.snippet || mail.body) && (
+            <>
+              <span className="text-[#747775] dark:text-[#8e918f] mx-1.5 shrink-0">
+                –
+              </span>
+              <span className="text-[#5e5e5e] dark:text-[#9aa0a6] font-normal truncate">
+                {mail.snippet || mail.body}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Attachment Chips */}
         {hasAttachments && (
-          <div className="flex flex-wrap items-center gap-2 mt-1.5 pb-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5 pb-0.5">
             {mail.attachments.map((att) => (
               <div
                 key={att.id}
@@ -215,10 +270,10 @@ const MailLayout: React.FC<MailLayoutProps> = ({
                   }
                 }}
                 title={att.originalFilename}
-                className="inline-flex items-center gap-1.5 h-6 max-w-45 px-2.5 py-0.5 rounded-full border border-slate-300/90 dark:border-slate-700 bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-700/80 transition-colors cursor-pointer shrink-0 shadow-2xs"
+                className="inline-flex items-center gap-1.5 h-6 max-w-45 px-2.5 py-0.5 rounded-full border border-[#dadce0] dark:border-[#3c4043] bg-[#f8fafd] dark:bg-[#282a2c] hover:bg-[#edf2fa] dark:hover:bg-[#333639] transition-colors cursor-pointer shrink-0"
               >
                 {getAttachmentBadge(att)}
-                <span className="truncate text-xs text-slate-700 dark:text-slate-300 font-medium">
+                <span className="truncate text-[11.5px] text-[#444746] dark:text-[#e3e3e3] font-medium">
                   {att.originalFilename}
                 </span>
               </div>
@@ -227,16 +282,55 @@ const MailLayout: React.FC<MailLayoutProps> = ({
         )}
       </div>
 
-      {/* Date */}
-      <div
-        className={cn(
-          "shrink-0 ml-auto pl-4 text-right text-xs whitespace-nowrap pt-1",
-          isUnread
-            ? "font-bold text-slate-900 dark:text-white"
-            : "font-medium text-slate-500 dark:text-slate-400",
-        )}
-      >
-        {formatMailDate(mail.sentAt)}
+      {/* Right Column: Date normally, Quick Hover Actions on desktop hover */}
+      <div className="shrink-0 ml-auto pl-3 flex items-center justify-end min-w-[72px]">
+        <span
+          className={cn(
+            "text-right text-xs whitespace-nowrap pt-0.5 md:group-hover:hidden",
+            isUnread
+              ? "font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]"
+              : "font-normal text-[#5e5e5e] dark:text-[#9aa0a6]",
+          )}
+        >
+          {formatMailDate(mail.sentAt)}
+        </span>
+
+        <div
+          className="hidden md:group-hover:flex items-center gap-0.5 -my-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            title="Archive"
+            aria-label="Archive"
+            onClick={(e) => handleQuickState(e, { isArchived: true })}
+            className="p-1.5 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-black/8 dark:hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <Archive className="size-4" />
+          </button>
+          <button
+            type="button"
+            title="Delete"
+            aria-label="Delete"
+            onClick={(e) => handleQuickState(e, { isTrashed: true })}
+            className="p-1.5 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#d93025] dark:hover:text-[#f28b82] hover:bg-black/8 dark:hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <Trash2 className="size-4" />
+          </button>
+          <button
+            type="button"
+            title={isUnread ? "Mark as read" : "Mark as unread"}
+            aria-label={isUnread ? "Mark as read" : "Mark as unread"}
+            onClick={(e) => handleQuickState(e, { isRead: isUnread })}
+            className="p-1.5 rounded-full text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-white hover:bg-black/8 dark:hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            {isUnread ? (
+              <MailOpen className="size-4" />
+            ) : (
+              <MailUnreadIcon className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
