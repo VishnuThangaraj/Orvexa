@@ -1,170 +1,189 @@
 <div align="center">
 
-  <img src="apps/web/public/images/icon.svg" alt="Orvexa Logo" width="96" height="96" />
+  <img src="apps/web/public/images/icon.svg" alt="Orvexa Logo" width="88" height="88" />
 
-  # Orvexa — Unified Enterprise Digital Workspace
+  <h1>Orvexa</h1>
 
-  <p><strong>Next-Generation Self-Hosted Collaboration Engine & Unified Communications Suite</strong></p>
+  <p><strong>Unified Digital Workspace &amp; Real-Time Collaboration Engine</strong></p>
 
   <p>
-    Consolidating real-time team messaging, WebRTC video conferencing, cloud file storage, webmail, and calendar scheduling into a single, cohesive, high-performance monorepo application.
+    Consolidating customizable Home command center &amp; <code>⌘K</code> federated search, 60 FPS Socket.IO Chat &amp; Spaces, sub-100ms LiveKit WebRTC Meet, versioned Cloud Drive with Exclusive-Arc RBAC, threaded Webmail, and RRULE Calendar &amp; Tasks into a single self-hosted TypeScript monorepo.
   </p>
 
-  <!-- Shields & Badges -->
   <p>
-    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" /></a>
-    <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Express-5.x-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express 5" /></a>
-    <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL 16" /></a>
-    <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-7.x-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" /></a>
-    <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.io-4.x-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io" /></a>
-    <a href="https://livekit.io/"><img src="https://img.shields.io/badge/LiveKit-WebRTC-FF4F00?style=for-the-badge&logo=webrtc&logoColor=white" alt="LiveKit" /></a>
-    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS v4" /></a>
-    <a href="https://vercel.com/"><img src="https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript 6.0" /></a>
+    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.3-149ECA?style=for-the-badge&logo=react&logoColor=white" alt="React 19" /></a>
+    <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-8.3-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8" /></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" /></a>
+    <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Express-5.3-111111?style=for-the-badge&logo=express&logoColor=white" alt="Express 5" /></a>
+    <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-7.10-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma 7" /></a>
+    <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL 16+" /></a>
+    <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.IO-4.8-010101?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Socket.IO 4.8" /></a>
+    <a href="https://livekit.io/"><img src="https://img.shields.io/badge/LiveKit-WebRTC-FF5A1F?style=for-the-badge&logo=webrtc&logoColor=white" alt="LiveKit WebRTC" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-10B981?style=for-the-badge" alt="MIT License" /></a>
   </p>
 
-  <!-- Interactive Quick Jump Bar -->
   <p>
-    <b><a href="#-key-modules--interactive-feature-cards">Features</a></b> •
-    <b><a href="#-system-architecture">Architecture</a></b> •
-    <b><a href="#-tech-stack">Tech Stack</a></b> •
-    <b><a href="#-deep-dive-domain-modules">Modules</a></b> •
-    <b><a href="#-core-engineering-highlights">Engineering Masterclass</a></b> •
-    <b><a href="#-monorepo-directory-structure">Directory Map</a></b> •
-    <b><a href="#-getting-started">Quickstart</a></b> •
-    <b><a href="#-available-scripts--tooling">Scripts</a></b> •
-    <b><a href="#-roadmap--verification-status">Roadmap</a></b>
+    <a href="#executive-overview">Overview</a> &bull;
+    <a href="#workspace-suite">Workspace Suite</a> &bull;
+    <a href="#system-architecture">Architecture</a> &bull;
+    <a href="#tech-stack">Tech Stack</a> &bull;
+    <a href="#engineering-highlights">Engineering</a> &bull;
+    <a href="#domain-modules-and-api-reference">API &amp; Sockets</a> &bull;
+    <a href="#monorepo-and-database-topology">Schema &amp; Repo</a> &bull;
+    <a href="#getting-started">Getting Started</a> &bull;
+    <a href="#scripts-and-automated-testing">Testing</a> &bull;
+    <a href="#security-architecture">Security</a>
   </p>
 
 </div>
 
 ---
 
-## 📑 Interactive Table of Contents
+<details>
+<summary><strong>Table of Contents</strong> &mdash; Click to expand full navigation</summary>
 
-<details open>
-<summary><b>Click to expand / collapse navigation</b></summary>
-
-- [✨ Executive Overview](#-executive-overview)
-- [🧩 Key Modules & Interactive Feature Cards](#-key-modules--interactive-feature-cards)
-- [🏛 System Architecture](#-system-architecture)
-- [🛠 Tech Stack & Ecosystem](#-tech-stack)
-- [🔬 Deep-Dive Domain Modules](#-deep-dive-domain-modules)
-- [💎 Core Engineering Highlights](#-core-engineering-highlights)
-- [📂 Monorepo Directory Structure](#-monorepo-directory-structure)
-- [⚙️ Prerequisites](#-prerequisites)
-- [🏁 Getting Started](#-getting-started)
-  - [1. Clone & Install Dependencies](#1-clone--install-dependencies)
-  - [2. Environment Configuration](#2-environment-configuration)
-  - [3. Database Setup & Migrations](#3-database-setup--migrations)
-  - [4. Running Development Servers](#4-running-the-development-servers)
-  - [5. Production Build & Deployment](#5-production-build--deployment)
-- [📜 Available Scripts & Tooling](#-available-scripts--tooling)
-- [🧪 Test Suite Coverage](#-test-suite-coverage)
-- [🔒 Security & Audit Standards](#-security--audit-standards)
-- [🗺 Roadmap & Verification Status](#-roadmap--verification-status)
-- [🤝 Contributing & Specifications](#-contributing--specifications)
-- [📄 License & Open Standards](#-license--open-standards)
+1. [Executive Overview](#executive-overview)
+2. [Workspace Suite](#workspace-suite)
+3. [System Architecture](#system-architecture)
+4. [Tech Stack](#tech-stack)
+5. [Engineering Highlights](#engineering-highlights)
+6. [Domain Modules and API Reference](#domain-modules-and-api-reference)
+7. [Monorepo and Database Topology](#monorepo-and-database-topology)
+8. [Getting Started](#getting-started)
+9. [Scripts and Automated Testing](#scripts-and-automated-testing)
+10. [Security Architecture](#security-architecture)
+11. [Roadmap](#roadmap)
+12. [Contributing and Documentation](#contributing-and-documentation)
+13. [License](#license)
 
 </details>
 
 ---
 
-## ✨ Executive Overview
+## Executive Overview
 
-**Orvexa** is a modern, high-performance, enterprise-grade unified digital workspace and communication suite. Built as a high-velocity TypeScript monorepo (`@orvexa/web` + `@orvexa/api`), it eliminates context switching across fragmented workplace apps by unifying:
+**Orvexa** is an enterprise-grade, self-hosted digital workspace platform built as a cohesive pnpm TypeScript monorepo (`@orvexa/web` + `@orvexa/api`). It eliminates tool fragmentation and context switching by uniting real-time messaging, WebRTC video conferencing, hierarchical cloud file storage, internal workspace webmail, calendar scheduling, task management, and cross-module discovery inside one unified runtime.
 
-1. **Bi-directional Real-Time Messaging & Spaces** with 60 FPS virtualization over 100,000+ items.
-2. **Sub-100ms WebRTC Multi-Party Video/Audio Conferencing** driven by LiveKit SFU.
-3. **Hierarchical Cloud Drive & Document Management** with Exclusive-Arc RBAC and live ZIP streaming.
-4. **Threaded Enterprise Webmail** with rich recipient routing and transactional SMTP/Resend delivery.
-5. **Intelligent Calendar & RRULE Scheduling Engine** with database-enforced temporal consistency.
-6. **Zero-Knowledge Identity & Dual-Token Authentication** with GPU-resistant Argon2id hashing.
+Unlike loosely coupled SaaS mashups, Orvexa is engineered around shared identity, database-enforced mathematical invariants, and a unified asset model across **51 PostgreSQL tables** and **48 automated test suites**.
+
+| Pillar | Architectural Guarantee |
+| :--- | :--- |
+| **Lossless 64-Bit Identity** | PostgreSQL `BIGINT` (`BIGSERIAL`) keys across every table, serialized losslessly to strings via `BigInt.prototype.toJSON`. |
+| **Schema-Enforced Invariants** | Exclusive-Arc (XOR) foreign keys, canonical `1:1` DM ordering (`low < high`), and `start_time < end_time` enforced in SQL. |
+| **Locked 60 FPS Real-Time UI** | `@tanstack/react-virtual` DOM recycling paired with Socket.IO 4.8 presence, typing indicators, and idempotent dispatch. |
+| **Sub-100ms WebRTC Media** | LiveKit Selective Forwarding Unit (SFU) with cryptographic `xxx-yyyy-zzz` room codes, host knock-to-join waiting rooms, and scoped JWT grants. |
+| **Hybrid Asset & Blob Pipeline** | Cloudinary CDN for avatars, chat, and mail attachments alongside pluggable local/chunked blob storage, Sharp WebP thumbnails, and streamed ZIP archives. |
+| **Zero-Trust Session Defense** | Argon2id password hashing, constant-time dummy verification, account lockouts, rotating `SHA-256` refresh sessions in `HttpOnly` cookies, and audit logging. |
 
 ---
 
-## 🧩 Key Modules & Interactive Feature Cards
+## Workspace Suite
+
+Orvexa consolidates eight tightly integrated modules behind a single workspace shell, App Switcher, and global `⌘K` search modal:
 
 <table>
   <tr>
-    <td width="33%" valign="top">
-      <h3 align="center">💬 Chat & Spaces</h3>
-      <p align="center">
-        <img src="https://img.shields.io/badge/Engine-Socket.io_4.x-black?style=flat-square" alt="Socket.io" />
-        <img src="https://img.shields.io/badge/Virtualization-TanStack_Virtual-blue?style=flat-square" alt="Virtualization" />
+    <td width="50%" valign="top">
+      <h3>Home Command Center &amp; <code>⌘K</code> Search</h3>
+      <p>
+        <img src="https://img.shields.io/badge/Aggregation-Promise.allSettled-0B57D0?style=flat-square" alt="Fault-Isolated Aggregation" />
+        <img src="https://img.shields.io/badge/Discovery-Global_%E2%8C%98K-1A73E8?style=flat-square" alt="Global Search" />
       </p>
       <ul>
-        <li><b>Bi-directional Sockets:</b> Instant dispatch with optimistic UI updates.</li>
-        <li><b>Deduplicated 1:1 Pairs:</b> Database unique index via <code>LEAST/GREATEST</code>.</li>
-        <li><b>Locked 60 FPS:</b> DOM recycling across channels with 100k+ messages.</li>
-        <li><b>Reactions & Mentions:</b> Rich emoji reactions and member tagging.</li>
+        <li><b>Fault-Isolated Dashboard:</b> Aggregates Mail, Chat, Calendar, Meet, Drive, Tasks, and Activity slices concurrently so partial errors never crash the workspace.</li>
+        <li><b>Customizable Layout:</b> Per-user widget ordering, collapse state, visibility, and sizing persisted in <code>user_dashboard_preferences</code>.</li>
+        <li><b>Cross-Module Search (<code>⌘K</code>):</b> Federated instant search spanning Mail threads, Chat messages/people/spaces, Calendar events, and Drive items with deep linking.</li>
       </ul>
     </td>
-    <td width="33%" valign="top">
-      <h3 align="center">📹 Meet (WebRTC)</h3>
-      <p align="center">
-        <img src="https://img.shields.io/badge/SFU-LiveKit_WebRTC-orange?style=flat-square" alt="LiveKit" />
-        <img src="https://img.shields.io/badge/Latency-<100ms-green?style=flat-square" alt="Latency" />
+    <td width="50%" valign="top">
+      <h3>Chat &amp; Spaces</h3>
+      <p>
+        <img src="https://img.shields.io/badge/Transport-Socket.IO_4.8-010101?style=flat-square" alt="Socket.IO" />
+        <img src="https://img.shields.io/badge/Scroll-TanStack_Virtual-00AC47?style=flat-square" alt="TanStack Virtual" />
       </p>
       <ul>
-        <li><b>LiveKit SFU Engine:</b> Multi-party HD audio/video calling.</li>
-        <li><b>Meeting Codes:</b> Instant human-readable <code>xxx-yyyy-zzz</code> codes.</li>
-        <li><b>Interactive Controls:</b> Screen sharing, audio/video toggling, tile grids.</li>
-        <li><b>In-Call Chat:</b> Integrated real-time room side-panel messaging.</li>
-      </ul>
-    </td>
-    <td width="33%" valign="top">
-      <h3 align="center">📁 Drive (Cloud Storage)</h3>
-      <p align="center">
-        <img src="https://img.shields.io/badge/DAM-Cloudinary_CDN-blueviolet?style=flat-square" alt="Cloudinary" />
-        <img src="https://img.shields.io/badge/Security-Exclusive_Arc_RBAC-red?style=flat-square" alt="Exclusive Arc" />
-      </p>
-      <ul>
-        <li><b>Hierarchical Folders:</b> Drag-and-drop explorer with breadcrumb navigation.</li>
-        <li><b>Versioning & Rollbacks:</b> Complete historical revision auditing.</li>
-        <li><b>Batch ZIP Archiving:</b> Streamed on-the-fly via <code>archiver</code>.</li>
-        <li><b>Trash Worker:</b> 30-day soft-delete lifecycle auto-purge worker.</li>
+        <li><b>DMs, Groups &amp; Channels:</b> Canonical deduplicated <code>1:1</code> direct threads plus public/private team spaces with role management.</li>
+        <li><b>60 FPS Virtualized Stream:</b> High-volume feed rendering with <code>clientMessageId</code> idempotency and optimistic state reconciliation.</li>
+        <li><b>Rich Collaboration:</b> Threaded replies, <code>@user</code> and <code>@all</code> mentions, emoji reactions, message pinning, file attachments, watermark read cursors, and live presence (<code>ACTIVE</code>, <code>AWAY</code>, <code>DND</code>).</li>
       </ul>
     </td>
   </tr>
   <tr>
-    <td width="33%" valign="top">
-      <h3 align="center">✉️ Mail (Webmail)</h3>
-      <p align="center">
-        <img src="https://img.shields.io/badge/Delivery-Resend_/_SMTP-black?style=flat-square" alt="Resend" />
-        <img src="https://img.shields.io/badge/Format-Rich_HTML-teal?style=flat-square" alt="Rich HTML" />
+    <td width="50%" valign="top">
+      <h3>Meet (LiveKit WebRTC)</h3>
+      <p>
+        <img src="https://img.shields.io/badge/Media_SFU-LiveKit_WebRTC-FF5A1F?style=flat-square" alt="LiveKit SFU" />
+        <img src="https://img.shields.io/badge/Room_Codes-xxx--yyyy--zzz-00832D?style=flat-square" alt="Room Codes" />
       </p>
       <ul>
-        <li><b>Threaded Conversations:</b> Clustered mail items with unread indicators.</li>
-        <li><b>Rich Composer:</b> Formatting tools with To, CC, and BCC recipient routing.</li>
-        <li><b>Decoupled Attachments:</b> Zero-blob database via DAM file assets.</li>
-        <li><b>Draft Persistence:</b> Auto-saved drafts and folder organization.</li>
+        <li><b>Multi-Party HD Video &amp; Audio:</b> Low-latency SFU routing with adaptive speaker grids, screen sharing, device pickers, and isolated full-screen routes (<code>/meet/:code</code>).</li>
+        <li><b>Host Waiting Room:</b> Real-time <code>meet:knock</code> lobby admitting or denying attendees individually or in bulk (<code>meet:admit_all</code>).</li>
+        <li><b>Moderation &amp; In-Call Chat:</b> Room locking, scoped LiveKit JWTs, host toggles for screen share, chat, and reactions, webhook syncing, and persistent <code>meeting_messages</code>.</li>
       </ul>
     </td>
-    <td width="33%" valign="top">
-      <h3 align="center">📅 Calendar & Recurrence</h3>
-      <p align="center">
-        <img src="https://img.shields.io/badge/Rules-RRULE_Engine-success?style=flat-square" alt="RRULE" />
-        <img src="https://img.shields.io/badge/Integrity-PostgreSQL_Invariants-blue?style=flat-square" alt="PostgreSQL Invariants" />
+    <td width="50%" valign="top">
+      <h3>Drive (Cloud File Management)</h3>
+      <p>
+        <img src="https://img.shields.io/badge/RBAC-Exclusive_Arc_XOR-DC2626?style=flat-square" alt="Exclusive Arc XOR" />
+        <img src="https://img.shields.io/badge/Streaming-Archiver_%2B_Range-F29900?style=flat-square" alt="Streaming" />
       </p>
       <ul>
-        <li><b>Interactive Views:</b> Day, Week, and Month scheduling grids.</li>
-        <li><b>Recurrence Engine:</b> Daily, weekly, monthly, and yearly recurring rules.</li>
-        <li><b>Temporal Invariants:</b> Database constraint enforcing <code>start &lt; end</code>.</li>
-        <li><b>1-Click Meet Binding:</b> Automatic generation of LiveKit meeting rooms.</li>
+        <li><b>Resumable &amp; Batch Uploads:</b> Chunked upload sessions (<code>init</code> / <code>chunk</code> / <code>complete</code> / <code>abort</code>), folder tree ingestion, and recursive CTE traversal.</li>
+        <li><b>Granular Access &amp; Sharing:</b> Inherited folder RBAC (<code>OWNER</code> &gt; <code>MANAGER</code> &gt; <code>EDITOR</code> &gt; <code>COMMENTER</code> &gt; <code>VIEWER</code>), share links (<code>/drive/s/:token</code>), access requests, and download/reshare locks.</li>
+        <li><b>Versioning, Previews &amp; ZIPs:</b> Full revision history &amp; rollbacks, HTTP <code>Range</code> media streaming, Sharp WebP thumbnails, shortcuts, comments, zero-buffer ZIP downloads, and 30-day trash auto-purge.</li>
       </ul>
     </td>
-    <td width="33%" valign="top">
-      <h3 align="center">🔐 Identity & Security</h3>
-      <p align="center">
-        <img src="https://img.shields.io/badge/Hash-Argon2id-critical?style=flat-square" alt="Argon2id" />
-        <img src="https://img.shields.io/badge/Tokens-HTTP--Only_Cookies-informational?style=flat-square" alt="HTTP-Only Cookies" />
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>Mail (Workspace Webmail)</h3>
+      <p>
+        <img src="https://img.shields.io/badge/Routing-Threaded_%40orvexa.com-EA4335?style=flat-square" alt="Threaded Webmail" />
+        <img src="https://img.shields.io/badge/Assets-Cloudinary_DAM-6366F1?style=flat-square" alt="Cloudinary DAM" />
       </p>
       <ul>
-        <li><b>Argon2id Encryption:</b> Memory-hard, GPU-resistant credential hashing.</li>
-        <li><b>Rotating Dual-Token:</b> Short-lived access + rotating refresh tokens.</li>
-        <li><b>Timing Defense:</b> Constant-time dummy hashes against user enumeration.</li>
-        <li><b>Session Revocation:</b> Live tracking and remote session revocation.</li>
+        <li><b>Threaded Conversations:</b> Automatic parent/thread clustering with workspace recipient resolution across <code>TO</code>, <code>CC</code>, and <code>BCC</code>.</li>
+        <li><b>Partitioned Mailbox State:</b> Independent per-recipient <code>mail_user_states</code> across Inbox, Starred, Sent, Drafts, Snoozed, Archive, and Trash plus custom folders and labels.</li>
+        <li><b>Composer &amp; Batch Triage:</b> Rich-text composition, persistent drafts, sidebar unread counters, bulk state actions, and decoupled DAM file attachments.</li>
+      </ul>
+    </td>
+    <td width="50%" valign="top">
+      <h3>Calendar, Recurrence &amp; Tasks</h3>
+      <p>
+        <img src="https://img.shields.io/badge/Recurrence-RFC_RRULE-1A73E8?style=flat-square" alt="RFC RRULE" />
+        <img src="https://img.shields.io/badge/Integrity-start_%3C_end-2563EB?style=flat-square" alt="Temporal Invariant" />
+      </p>
+      <ul>
+        <li><b>Multi-Calendar Views:</b> Interactive Day, Week, and Month views with secondary calendars, calendar sharing, public holidays, and customizable user settings.</li>
+        <li><b>RRULE Expansion Engine:</b> Supports <code>DAILY</code>, <code>WEEKLY</code>, <code>MONTHLY</code>, and <code>YEARLY</code> recurrences with <code>BYDAY</code>, <code>INTERVAL</code>, <code>COUNT</code>, <code>UNTIL</code>, and exception dates.</li>
+        <li><b>Meetings, RSVPs &amp; Tasks:</b> 1-click LiveKit room binding, participant RSVP tracking, Drive/file attachments, reminders, and integrated <code>CalendarTask</code> checklists.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>Identity, Sessions &amp; Profile</h3>
+      <p>
+        <img src="https://img.shields.io/badge/Hashing-Argon2id-7C3AED?style=flat-square" alt="Argon2id" />
+        <img src="https://img.shields.io/badge/Cookies-HttpOnly_%2B_Strict-059669?style=flat-square" alt="HttpOnly Cookies" />
+      </p>
+      <ul>
+        <li><b>Dual-Token Session Rotation:</b> 15-minute JWT access tokens paired with 7-day rotating refresh tokens stored hashed (<code>SHA-256</code>) in <code>user_sessions</code>.</li>
+        <li><b>Multi-Device Session Control:</b> Inspect active IP/device sessions and remotely revoke individual sessions or sign out everywhere.</li>
+        <li><b>Profile &amp; Localization:</b> Live username availability validation, Cloudinary avatar upload/removal, theme toggling (light/dark/system), timezone, and notification preferences.</li>
+      </ul>
+    </td>
+    <td width="50%" valign="top">
+      <h3>Governance, Notifications &amp; Audit</h3>
+      <p>
+        <img src="https://img.shields.io/badge/RBAC-ADMIN_%2F_MEMBER-334155?style=flat-square" alt="Role Guards" />
+        <img src="https://img.shields.io/badge/Compliance-Audit_Trail-475569?style=flat-square" alt="Audit Trail" />
+      </p>
+      <ul>
+        <li><b>Sanitized Request Auditing:</b> Post-response middleware records user ID, method, route, status code, IP, user agent, and redacted payloads into <code>audit_logs</code>.</li>
+        <li><b>Unified Notification Feed:</b> Typed activity events (<code>MAIL</code>, <code>CHAT</code>, <code>CALENDAR</code>, <code>MEETING</code>, <code>DRIVE</code>, <code>SYSTEM</code>) surfaced in Home Activity widgets.</li>
+        <li><b>Role-Gated Administration:</b> Protected <code>AdminRoute</code> and backend <code>authorize("ADMIN", "MEMBER")</code> middleware enforcing workspace privilege boundaries.</li>
       </ul>
     </td>
   </tr>
@@ -172,278 +191,215 @@
 
 ---
 
-## 🏛 System Architecture
+## System Architecture
 
-Orvexa is engineered as a clean multi-tier distributed architecture ensuring strict separation of concerns, high read/write throughput, and sub-100ms real-time latency across audio, video, and data channels.
+Orvexa follows a modular layered architecture separating the React SPA client, Express 5 gateway and validation pipeline, domain service engines, real-time WebSocket/WebRTC signaling planes, and PostgreSQL + asset persistence.
 
-### 🌐 End-to-End Platform Topology
+### End-to-End Platform Topology
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["🖥️ Frontend Client Layer (React 19 + TypeScript + Vite)"]
-        UI["Web UI Components\n(Tailwind CSS v4 + Radix UI)"]
-        State["State & Cache Layer\n(Zustand Stores + TanStack Query v5)"]
-        VirtualDOM["Feed Virtualizer\n(@tanstack/react-virtual 60 FPS)"]
-        SocketCl["Socket.io Client\n(Presence, Typing, Real-Time Sync)"]
-        LKCl["LiveKit WebRTC Client\n(Audio/Video Tracks, Tiles, Screenshare)"]
+    subgraph ClientLayer["Client Layer (@orvexa/web — React 19 + Vite 8 + Tailwind v4)"]
+        UI["Workspace Shell & Views\n(Home, Mail, Chat, Meet, Calendar, Drive, Profile, Admin)"]
+        State["State & Data Layer\n(TanStack Query v5 + Zustand + React Hook Form)"]
+        VirtualDOM["60 FPS Virtualizer\n(@tanstack/react-virtual)"]
+        SocketCl["Socket.IO Client\n(Presence, Typing, Chat & Meet Lobby)"]
+        LKCl["LiveKit WebRTC Client\n(Tracks, Adaptive Grid, Screen Share)"]
     end
 
-    subgraph GatewayLayer["⚡ API Gateway & Middleware (Express 5.x)"]
-        AuthGuard["Auth & Cookie Guard\n(JWT SameSite HttpOnly Cookies)"]
-        RateAudit["Audit & Security Filter\n(Helmet CSP + Audit Logger)"]
-        ZodVal["Validation Layer\n(Zod Request Schemas)"]
-        Router["Express REST Router\n(/api/auth, /api/chat, /api/drive, /api/meet, ...)"]
+    subgraph GatewayLayer["HTTP Gateway & Middleware (@orvexa/api — Express 5.3)"]
+        SecHeaders["Security & Transport\n(Helmet, CORS, Cookie Parser, Trust Proxy)"]
+        RateGuard["Rate & Auth Guards\n(IP Auth Limiter, Bearer JWT + iat Check, RBAC)"]
+        ZodVal["Request Validation\n(Zod Schemas + Multer Memory Buffers)"]
+        Audit["Audit Interceptor\n(Sanitized Async AuditLog Writer)"]
+        Router["REST Router (/api/*)\n(auth, profile, home, mail, chat, calendar, meet, drive)"]
     end
 
-    subgraph ServiceLayer["⚙️ Domain Services & Real-Time Engines"]
-        ChatSvc["Chat & Spaces Service\n(Idempotency, 1:1 Invariant Pairs)"]
-        MeetSvc["Meet Service & Token Engine\n(LiveKit Server SDK, Room Codes)"]
-        DriveSvc["Drive & Archiver Service\n(Streaming ZIP, Exclusive-Arc RBAC)"]
-        MailSvc["Webmail Service\n(Thread Aggregator, SMTP Router)"]
-        CalSvc["Calendar Engine\n(RRULE Expander, Temporal Checks)"]
-        SocketHub["Socket.io Server Hub\n(Multi-Room Events & Presence)"]
-        Worker["Background Workers\n(Drive Trash Auto-Purge Worker)"]
+    subgraph ServiceLayer["Domain Engines, Real-Time Hub & Workers"]
+        HomeSvc["Home & Search Service\n(Promise.allSettled + Cross-Module Search)"]
+        ChatSvc["Chat & Spaces Service\n(Idempotency, Watermark Cursors, Mentions)"]
+        MeetSvc["Meet Service\n(xxx-yyyy-zzz Codes, LiveKit JWT & Webhooks)"]
+        DriveSvc["Drive & Archiver Service\n(Recursive CTEs, XOR RBAC, Chunked Uploads, ZIP)"]
+        MailSvc["Mail & Thread Service\n(Workspace Routing, User States, Drafts)"]
+        CalSvc["Calendar & Task Service\n(RRULE Expander, Holidays, Reminders, Tasks)"]
+        SocketHub["Socket.IO Server\n(Personal, Conversation & Meet Host Rooms)"]
+        Worker["Background Worker\n(drive.worker.ts — 30-Day Trash Auto-Purge)"]
     end
 
-    subgraph InfraLayer["🗄️ Persistence & Cloud Infrastructure"]
-        Prisma["Prisma ORM 7.x\n(Modular Multi-File Schemas)"]
-        PG[("PostgreSQL 16+\n(64-bit BigInt Keys + Invariants)")]
-        LKSFU["LiveKit SFU Server\n(Selective Forwarding Unit / WebRTC)"]
-        Cloudinary["Cloudinary DAM & CDN\n(Zero-Blob Decoupled Asset Store)"]
-        SMTPGateway["Email Gateway\n(Resend API / Transactional SMTP)"]
+    subgraph InfraLayer["Persistence, Media & SFU Infrastructure"]
+        Prisma["Prisma ORM 7.10 (@prisma/adapter-pg)\n(12 Modular Schemas, 51 Models, 16 Enums)"]
+        PG[("PostgreSQL 16+\n(BigInt Keys, CHECK Invariants, Partial Indexes)")]
+        LKSFU["LiveKit SFU Server\n(Sub-100ms WebRTC Media Routing)"]
+        Cloudinary["Cloudinary DAM & CDN\n(Avatars, Chat & Mail Attachments)"]
+        BlobFS["Pluggable Blob Storage\n(LocalStorageProvider — SHA-256 + Range + Chunks)"]
     end
 
-    UI --> State
+    UI --> State --> Router
     State --> VirtualDOM
-    State --> Router
     SocketCl <--> SocketHub
     LKCl <--> LKSFU
 
-    Router --> AuthGuard --> RateAudit --> ZodVal
-    ZodVal --> ChatSvc
-    ZodVal --> MeetSvc
-    ZodVal --> DriveSvc
-    ZodVal --> MailSvc
-    ZodVal --> CalSvc
+    Router --> SecHeaders --> RateGuard --> ZodVal
+    ZodVal --> HomeSvc & ChatSvc & MeetSvc & DriveSvc & MailSvc & CalSvc
+    Router -. "res.on('finish')" .-> Audit
 
     ChatSvc --> SocketHub
+    MeetSvc --> SocketHub
     MeetSvc --> LKSFU
-    DriveSvc --> Cloudinary
-    MailSvc --> SMTPGateway
+    MailSvc & ChatSvc --> Cloudinary
+    DriveSvc --> BlobFS
 
-    ChatSvc --> Prisma
-    MeetSvc --> Prisma
-    DriveSvc --> Prisma
-    MailSvc --> Prisma
-    CalSvc --> Prisma
-    Worker --> Prisma
-
+    HomeSvc & ChatSvc & MeetSvc & DriveSvc & MailSvc & CalSvc & Audit & Worker --> Prisma
     Prisma <--> PG
 ```
 
-### 🔄 Interactive Communication & Data Flow Diagrams
+### Real-Time & Storage Data Flows
 
 <details open>
-<summary><b>Click to view: Real-Time WebSockets & LiveKit WebRTC Signaling Lifecycle</b></summary>
+<summary><strong>1. Real-Time Messaging, Typing, Watermarks &amp; Presence (Socket.IO 4.8)</strong></summary>
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Alice as Alice (Client A)
     actor Bob as Bob (Client B)
-    participant API as Orvexa API Server
-    participant Socket as Socket.io Server
-    participant SFU as LiveKit SFU (WebRTC)
-    participant DB as PostgreSQL 16 (Prisma)
+    participant API as Express REST API
+    participant Socket as Socket.IO Hub
+    participant DB as PostgreSQL 16+
 
-    Note over Alice, Bob: 1. Bi-directional Chat & Presence Flow
-    Alice->>Socket: Connect (JWT in Cookie)
-    Socket->>DB: Validate Session & Set User Presence (ONLINE)
-    Socket-->>Bob: Broadcast "user:presence" (Alice is Online)
-    Alice->>API: POST /api/chat/messages (Idempotent payload)
-    API->>DB: Persist Message (BigInt ID, timestamp UTC)
-    API->>Socket: Emit "chat:message:created"
-    Socket-->>Bob: Deliver message in real-time
-    Bob-->>Socket: Emit "chat:seen" (Read receipt)
-    Socket-->>Alice: Update receipt status in UI (Optimistic sync)
+    Alice->>Socket: Connect (Bearer JWT verified + passwordChangedAt check)
+    Socket->>Socket: Join personal room user:{id} & track presence
+    Socket-->>Bob: Broadcast "presence:state" (isOnline: true, status: ACTIVE)
 
-    Note over Alice, Bob: 2. WebRTC Video Conference (Meet) Flow
-    Alice->>API: POST /api/meet/rooms (Create Room xxx-yyyy-zzz)
-    API->>DB: Create Room record & Bind Host Permissions
-    API-->>Alice: Return Room Details & JWT LiveKit Token
-    Alice->>SFU: Connect via WebRTC (LiveKit Client with Token)
-    SFU-->>Alice: Media Session Established (Publish Tracks)
-    Bob->>API: POST /api/meet/rooms/:code/join
-    API-->>Bob: Return Join Access JWT LiveKit Token
-    Bob->>SFU: Join Room & Subscribe to Alice's Video/Audio Tracks
-    SFU-->>Bob: Stream Alice's Video/Audio (Sub-100ms SFU Routing)
-    Bob->>SFU: Publish Bob's Video/Audio / Screen Share
-    SFU-->>Alice: Stream Bob's Track to Alice's Screen
+    Alice->>Socket: Emit "chat:join" { conversationId }
+    Socket->>DB: Verify ConversationParticipant membership
+    Socket->>Socket: Join room conversation:{conversationId}
+
+    Alice->>Socket: Emit "typing:start" { conversationId }
+    Socket-->>Bob: Emit "typing:user_typing" { conversationId, userId, isTyping: true }
+
+    Alice->>Socket: Emit "chat:send" { conversationId, content, clientMessageId }
+    Socket->>DB: Idempotent insert into chat_messages (BigInt ID, UTC)
+    Socket-->>Bob: Emit "message:received" (formatted message payload)
+    Socket-->>Alice: Ack { success: true, data: message }
+
+    Bob->>Socket: Emit "message:read" { conversationId, messageId }
+    Socket->>DB: Advance watermark (lastReadMessageId, lastReadAt)
+    Socket-->>Alice: Emit "message:read_receipt" { conversationId, userId, messageId, readAt }
 ```
 
 </details>
 
 <details>
-<summary><b>Click to view: Decoupled DAM & Exclusive Arc Storage Pipeline</b></summary>
+<summary><strong>2. LiveKit WebRTC Conferencing &amp; Host Knock-to-Join Waiting Room</strong></summary>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Host as Host
+    actor Guest as Participant
+    participant API as Meet REST API
+    participant Socket as Socket.IO Hub
+    participant SFU as LiveKit SFU
+    participant DB as PostgreSQL 16+
+
+    Host->>API: POST /api/meet (Create Meeting)
+    API->>DB: Persist Meeting with crypto xxx-yyyy-zzz code
+    API-->>Host: Return Meeting Metadata
+
+    Host->>Socket: Emit "meet:join_room" { meetingCode }
+    Socket->>Socket: Join meet:{code} and meet:{code}:host
+
+    Host->>API: POST /api/meet/:code/token
+    API-->>Host: Return Scoped LiveKit JWT
+    Host->>SFU: Connect WebRTC Session & Publish Tracks
+
+    Guest->>Socket: Emit "meet:knock" { meetingCode, displayName }
+    Socket->>DB: Upsert MeetingParticipant (PENDING)
+    Socket-->>Host: Emit "meet:knock_received" { userId, displayName, avatarUrl }
+
+    Host->>Socket: Emit "meet:admit" { meetingCode, userId }
+    Socket->>DB: Update invitationStatus = ACCEPTED
+    Socket-->>Guest: Emit "meet:admitted" { meetingCode }
+
+    Guest->>API: POST /api/meet/:code/token
+    API-->>Guest: Return Participant LiveKit JWT
+    Guest->>SFU: Connect WebRTC & Subscribe/Publish Sub-100ms Media
+
+    Guest->>Socket: Emit "meet:send_chat" { meetingCode, content }
+    Socket->>DB: Persist MeetingMessage
+    Socket-->>Host: Emit "meet:chat_message"
+```
+
+</details>
+
+<details>
+<summary><strong>3. Hybrid Asset &amp; Pluggable Blob Storage Pipeline (Drive + DAM)</strong></summary>
 
 ```mermaid
 flowchart LR
     subgraph Client["Browser Client"]
-        Uploader["File / Attachment Upload\n(Direct / Multipart)"]
-        Downloader["Zip Archive Request\n(Multi-selection or Folder)"]
+        DriveUp["Drive Upload\n(Multipart or Resumable Chunks)"]
+        AssetUp["Avatar / Chat / Mail Upload\n(Multipart Buffer)"]
+        ZipReq["Multi-Select / Folder Export\n(POST /api/drive/download-zip)"]
     end
 
-    subgraph API["Orvexa API Engine"]
-        Multer["Multer Streaming Buffer"]
-        Sharp["Sharp Image Transformer\n(WebP / Resize / Optimization)"]
-        Archiver["Archiver Streaming Engine\n(Zero-Disk In-Flight ZIP)"]
-        PermEngine["Exclusive Arc Permission Guard\n(XOR Drive Check: File XOR Folder)"]
+    subgraph API["Orvexa API Pipeline"]
+        UploadInit["Resumable Session Manager\n(/upload/init -> PATCH /chunk -> /complete)"]
+        LocalFS["LocalStorageProvider\n(Path-Traversal Guard + SHA-256 + Stitching)"]
+        Sharp["Sharp Transformer\n(On-Demand WebP Thumbnails)"]
+        Archiver["Archiver Streamer\n(Recursive CTE -> Zero-Buffer ZIP)"]
+        CldSvc["Cloudinary Upload Streamer"]
     end
 
-    subgraph Cloud["External DAM"]
-        CloudinaryCDN["Cloudinary Asset Storage\n(Original, Thumbnails, Secure URL)"]
+    subgraph Store["Persistence & CDN"]
+        PG[("PostgreSQL file_assets\n(storageBackend, storagePath, sha256, secureUrl)")]
+        Disk[("Blob & Chunk Store\n(storage/blobs & storage/chunks)")]
+        CDN["Cloudinary CDN"]
     end
 
-    subgraph DB["PostgreSQL 16"]
-        AssetsTable[("file_assets Table\n(id BigInt, public_id, cdn_url,\nmime_type, byte_size, width, height)")]
-        DomainTables[("Domain Entities\n(drive_files, chat_attachments,\nmail_attachments, user_avatars)")]
-    end
+    DriveUp --> UploadInit --> LocalFS --> Disk
+    LocalFS --> PG
+    DriveUp --> Sharp
 
-    Uploader --> Multer --> Sharp
-    Sharp --> CloudinaryCDN
-    Sharp --> AssetsTable
-    AssetsTable -. "Foreign Key Reference" .-> DomainTables
+    AssetUp --> CldSvc --> CDN
+    CldSvc --> PG
 
-    Downloader --> PermEngine
-    PermEngine --> Archiver
-    CloudinaryCDN --> Archiver
-    Archiver ==> |"Piped HTTP Streaming Response"| Client
+    ZipReq --> Archiver
+    Disk --> Archiver --> |"Streaming application/zip"| Client
 ```
 
 </details>
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
-| Layer | Technology | Key Highlights |
-| :--- | :--- | :--- |
-| **Monorepo** | pnpm Workspaces | Efficient dependency sharing across `@orvexa/web`, `@orvexa/api`, and packages |
-| **Frontend Framework** | React 19 + TypeScript | Modern concurrent rendering, strict types, Vite build tooling |
-| **Styling & UI** | Tailwind CSS v4, Lucide Icons | Next-gen CSS engine, responsive layouts, Radix UI slot primitives |
-| **Client State & Cache** | TanStack Query v5, Zustand | Server-state caching, optimistic updates, lightweight client state |
-| **Virtualization** | `@tanstack/react-virtual` | 60 FPS DOM recycling for message feeds and large datasets |
-| **Backend Runtime** | Node.js 22+, Express 5 | Asynchronous REST microservices, ES Modules with TSX runtime |
-| **Database & ORM** | PostgreSQL 16+, Prisma ORM | 3NF normalized schema, multi-file Prisma schema, BigInt surrogate keys |
-| **Real-Time WebSockets**| Socket.io 4.x | Event-driven architecture, distributed user presence tracking |
-| **WebRTC Video/Audio** | LiveKit SFU | Room tokens, multi-peer video/audio feeds, screen sharing |
-| **Asset Storage** | Cloudinary & Multer | Digital Asset Management (DAM), Sharp image optimization |
-| **Security & Auth** | Argon2id, JWT, Helmet | HTTP-only cookies, CORS policy, timing-attack protection |
-
----
-
-## 🔬 Deep-Dive Domain Modules
-
-Explore the architectural implementation, real-time protocols, and engineering guarantees behind each subsystem:
-
-<details open>
-<summary><b>💬 1. Real-Time Chat & Spaces Engine</b></summary>
-
-The Chat engine powers high-velocity bi-directional messaging across direct 1:1 threads and group spaces:
-
-- **60 FPS DOM Recycling**: Rendered using `@tanstack/react-virtual` to recycle DOM elements dynamically. Handles channels containing 100,000+ messages while maintaining locked 60 FPS scrolling and negligible memory overhead.
-- **Idempotent 1-on-1 Invariant**: Direct conversations enforce a mathematical uniqueness guarantee at the database layer via `UNIQUE (LEAST(user_a, user_b), GREATEST(user_a, user_b))`, eliminating race conditions and duplicate threads.
-- **Bi-directional WebSockets**: Built on **Socket.io 4.x** with custom room namespaces (`chat:conversation:<id>`). Provides real-time typing indicators, read receipts (`seen_at`), message editing, soft deletions, and reaction counters.
-- **Rich Media & Attachments**: Integrated with the DAM engine. Files, voice clips, and images are processed asynchronously via Cloudinary with responsive previews and secure signed delivery URLs.
-
-| Protocol / Event | Description | Direction |
-| :--- | :--- | :--- |
-| `chat:message:send` | Dispatch message with optimistic client ID | Client ➔ Server |
-| `chat:message:created` | Broadcast persistent message payload | Server ➔ Clients |
-| `chat:typing` | User started / stopped typing indicator | Bi-directional |
-| `chat:seen` | Read receipt acknowledgment | Client ➔ Server |
-| `chat:reaction:toggle` | Add / remove emoji reaction on message | Bi-directional |
-
-</details>
-
-<details>
-<summary><b>📹 2. Meet (WebRTC Video Conferencing)</b></summary>
-
-Orvexa Meet delivers zero-install, enterprise-grade video and audio collaboration built on the **LiveKit SFU** architecture:
-
-- **Sub-100ms Latency SFU**: Uses a Selective Forwarding Unit to distribute media tracks directly between participants, drastically reducing client bandwidth and CPU consumption compared to mesh WebRTC.
-- **Human-Readable Meeting Codes**: Instant meeting generation producing structured codes in the format `xxx-yyyy-zzz` with cryptographically secure validation and database mapping.
-- **Token-Based Room Security**: Meeting access is governed by short-lived, cryptographically signed LiveKit JWTs granting scoped publish/subscribe permissions based on user identity.
-- **Comprehensive Room Controls**: Dynamic speaker grid, active speaker highlighting, screen sharing with system audio, participant mute/kick moderation, device selector modal (camera, mic, speaker), and an in-call chat panel.
-- **Dedicated Route Architecture**: Isolated full-screen meeting experience (`/meet/:code`) decoupled from the standard application layout, with a post-meeting exit lounge (`/meet/:code/left`).
-
-</details>
-
-<details>
-<summary><b>📁 3. Drive (Cloud File & Document Management)</b></summary>
-
-Orvexa Drive provides a scalable, enterprise-grade cloud file system with mathematical access control:
-
-- **Zero-Blob PostgreSQL Architecture**: Binary files are never stored in PostgreSQL. Uploads pass through Multer and Sharp image pipelines directly into Cloudinary CDN. The database maintains pure metadata pointers via the central `file_assets` table.
-- **Exclusive-Arc (XOR) Access Control**: Folder and file sharing bypasses fragile polymorphic anti-patterns. Permissions utilize PostgreSQL `CHECK` constraints ensuring a permission record points to **either** a folder **or** a file, never both or neither.
-- **In-Flight Batch ZIP Streaming**: Multi-file selections or entire nested folder hierarchies can be downloaded as a single compressed `.zip` archive on-the-fly via Node.js `archiver` streams, eliminating server disk buffering.
-- **Version History & Rollbacks**: Every file modification increments a revision sequence with historical records preserved in `drive_file_versions`, enabling instant rollbacks to previous states.
-- **Background Trash Auto-Purge Worker**: Soft-deleted files are held in a recycle bin and automatically purged after 30 days by a background worker (`drive.worker.ts`).
-- **External Sharing Tokens**: Secure anonymous link sharing via cryptographic tokens (`/drive/s/:token`) with viewer permissions and access request approval flows (`/drive/request-access`).
-
-</details>
-
-<details>
-<summary><b>✉️ 4. Mail (Enterprise Webmail Suite)</b></summary>
-
-A responsive, full-featured webmail client built for transactional reliability and high-speed search:
-
-- **Threaded Conversation Aggregation**: Incoming and outgoing emails are automatically grouped into conversation threads with unread indicators and participant tracking.
-- **Multi-Folder Organization**: Complete folder support including Inbox, Sent, Drafts, Starred, and Trash with instant message triage and bulk actions.
-- **Rich-Text Composer**: Full-featured WYSIWYG editor supporting To, CC, and BCC recipient distribution lists, file attachments, and background draft auto-saving.
-- **Resend & SMTP Delivery Engine**: Transaction-safe mail dispatching with dual support for the **Resend API** and custom corporate SMTP servers.
-- **Decoupled DAM Attachments**: Attachments are stored as digital assets and served via CDN URLs, ensuring lightning-fast email payloads.
-
-</details>
-
-<details>
-<summary><b>📅 5. Calendar & Intelligent Scheduling</b></summary>
-
-A business calendar and event coordination engine engineered for temporal accuracy:
-
-- **Flexible Multi-View Layouts**: Interactive Day, Week, and Month scheduling grids with drag-to-create event interactions.
-- **RFC-Compliant Recurrence Engine**: Comprehensive support for recurring events (daily, weekly, monthly, yearly) with customizable intervals, recurrence end rules, and exception overrides.
-- **Database-Level Temporal Invariants**: PostgreSQL `CHECK` constraints guarantee that `start_time < end_time` at the schema level, eliminating impossible temporal states.
-- **1-Click Meet Room Binding**: Create an Orvexa Meet room and attach its secure join link to any calendar event with a single toggle.
-- **Timezone Localization**: Microsecond-precision timestamps stored strictly in UTC (`TIMESTAMPTZ(6)`) and dynamically localized to each user's configured timezone.
-
-</details>
-
-<details>
-<summary><b>🔐 6. Identity, Authentication & Profile Security</b></summary>
-
-Zero-trust enterprise identity and access management built with modern cryptographic standards:
-
-- **Argon2id Password Hashing**: Utilizes the memory-hard, GPU-resistant Argon2id hashing algorithm to protect against offline brute-force and dictionary attacks.
-- **Dual-Token Session Architecture**:
-  - **Access Token**: Short-lived (15 minutes) JWT verified statelessly.
-  - **Refresh Token**: Long-lived (7 days) rotating token stored in a hardened, `SameSite=Strict`, `HttpOnly`, `Secure` cookie.
-- **Constant-Time Verification**: Prevents user enumeration and timing attacks through constant-time dummy hash verification when non-existent usernames/emails are queried.
-- **Active Session Management**: Real-time auditing of active user sessions with IP addresses, user agents, and remote session termination capabilities.
-- **User Profile Customization**: Avatar image cropping and optimization via Cloudinary, personalized theme toggling, and notification preferences.
-
-</details>
+| Layer | Technology | Version | Role in Orvexa |
+| :--- | :--- | :--- | :--- |
+| **Monorepo** | pnpm Workspaces | `9+` | Workspace dependency linking (`@orvexa/web`, `@orvexa/api`, `packages/*`) |
+| **Language** | TypeScript | `~6.0.3` | End-to-end static typing across frontend, backend, and tests |
+| **Frontend Core** | React &amp; React DOM | `^19.3.1` | Concurrent UI rendering with code-split lazy routes |
+| **Build &amp; Dev** | Vite | `^8.3.6` | Fast HMR development server and optimized production bundling |
+| **Styling** | Tailwind CSS | `^4.3.4` | Utility-first styling (`@tailwindcss/vite`), theme tokens, CVA variants |
+| **Routing &amp; Forms** | React Router DOM &amp; RHF | `^7.18.5` / `^7.91.0` | Protected/Admin/Public route guards and Zod-validated forms |
+| **State &amp; Cache** | TanStack Query &amp; Zustand | `^5.106.1` / `^5.0.16` | Server-state caching, optimistic mutations, and reactive auth/socket stores |
+| **Virtualization** | `@tanstack/react-virtual` | `^3.14.26` | 60 FPS DOM recycling for large chat histories |
+| **Backend Runtime** | Node.js &amp; Express | `22+` / `^5.3.0` | Modular async REST API with centralized error and audit middleware |
+| **Database &amp; ORM** | PostgreSQL &amp; Prisma | `16+` / `^7.10.1` | Native `@prisma/adapter-pg` driver, 12 modular `.prisma` files, 51 models |
+| **Real-Time** | Socket.IO | `^4.8.4` | Authenticated WebSocket rooms, typing, presence, chat, and meet lobby |
+| **WebRTC SFU** | LiveKit SDK &amp; Components | `^2.19.2` / `^2.23.0` | Room token signing, webhook verification, and React media components |
+| **Media &amp; Archives** | Cloudinary, Sharp &amp; Archiver | `^2.11` / `^0.35` / `^8.0` | DAM CDN uploads, on-demand WebP thumbnails, and streamed ZIP exports |
+| **Security &amp; Validation** | Argon2, JWT, Helmet, Zod | `^0.45` / `^9.0` / `^8.3` / `^4.6` | Password hashing, token signing, security headers, and strict request schemas |
+| **Testing &amp; Linting** | `tsx --test` &amp; ESLint | `^4.23.15` / `^10.14.0` | Native Node test runner via `tsx` (48 suites) and ESLint 10 rulesets |
 
 ---
 
-## 💎 Core Engineering Highlights
+## Engineering Highlights
 
-Orvexa is engineered to solve the complex distributed systems and data consistency challenges inherent in enterprise communication suites:
+### 1. Lossless 64-Bit Integer (`BigInt`) Identifiers
 
-### 1. 64-Bit Integer (`BigInt`) Architecture Everywhere
-In high-throughput enterprise collaboration suites, 32-bit integer identifiers cap out at 2,147,483,647 ($2^{31} - 1$), causing catastrophic database overflow failures when message, notification, or audit logs exceed standard ranges.
-- **Database Layer**: Every primary surrogate key and foreign key is defined as PostgreSQL `BIGINT` (`BIGSERIAL` / `int8`), guaranteeing an address space up to $9.22 \times 10^{18}$.
-- **IEEE 754 Lossless Serialization**: JavaScript's native `Number` type experiences precision truncation for integers exceeding $2^{53} - 1$ (`9,007,199,254,740,991`). To prevent silent ID corruption, the backend runtime monkey-patches `BigInt.prototype.toJSON`:
+All primary surrogate keys and foreign keys use PostgreSQL `BIGINT` (`BIGSERIAL`) to prevent 32-bit integer exhaustion ($2^{31} - 1$) across high-volume chat logs, notifications, and audit records. Because JavaScript's `Number` silently truncates integers above `Number.MAX_SAFE_INTEGER` ($2^{53} - 1$), the API runtime standardizes lossless string serialization at process startup:
 
 ```typescript
 // apps/api/src/common/utils/bigint.ts
@@ -457,505 +413,461 @@ BigInt.prototype.toJSON = function (): string {
   return this.toString();
 };
 ```
-All entity identifiers serialize as strings over REST and WebSocket channels, maintaining 100% precision across client runtimes.
 
----
+### 2. Exclusive-Arc (XOR) Foreign Keys &amp; Partial Unique Indexes
 
-### 2. Exclusive Arc (XOR) Foreign Key Constraints
-Polymorphic associations (e.g., generic `target_type` + `target_id` strings) are a common database anti-pattern that disable relational foreign key constraints, break query optimizers, and permit orphaned records.
-
-Orvexa solves this using **Exclusive Arc Foreign Keys** with PostgreSQL `CHECK` constraints and partial unique indexes for Drive permissions, favorites, and recent items:
+Polymorphic string associations (`entity_type` + `entity_id`) bypass foreign-key enforcement and invite orphaned rows. For Drive permissions, favorites, and recent items, Orvexa enforces **Exclusive-Arc (XOR) Foreign Keys** in PostgreSQL so every record references **exactly one** of `file_id` or `folder_id` with full `ON DELETE CASCADE` integrity:
 
 ```sql
--- Database-enforced Exclusive Arc check constraint
-ALTER TABLE "drive_permissions"
-ADD CONSTRAINT "drive_permissions_target_check"
-CHECK (
-  ("file_id" IS NOT NULL AND "folder_id" IS NULL) OR
-  ("file_id" IS NULL AND "folder_id" IS NOT NULL)
-);
+-- apps/api/prisma/migrations/20261107160344_init_cloudinary_schema/migration.sql
+ALTER TABLE "drive_permissions" ADD CONSTRAINT "drive_permissions_exactly_one_target_check"
+  CHECK (
+    ("file_id" IS NOT NULL AND "folder_id" IS NULL)
+    OR
+    ("file_id" IS NULL AND "folder_id" IS NOT NULL)
+  );
 
--- Partial unique indexes preventing duplicate permissions
-CREATE UNIQUE INDEX "drive_permissions_file_user_uidx" 
-  ON "drive_permissions" ("file_id", "user_id") 
-  WHERE "file_id" IS NOT NULL;
+CREATE UNIQUE INDEX "drive_permissions_file_user_uidx"
+  ON "drive_permissions" ("file_id", "user_id") WHERE "file_id" IS NOT NULL;
 
-CREATE UNIQUE INDEX "drive_permissions_folder_user_uidx" 
-  ON "drive_permissions" ("folder_id", "user_id") 
-  WHERE "folder_id" IS NOT NULL;
+CREATE UNIQUE INDEX "drive_permissions_folder_user_uidx"
+  ON "drive_permissions" ("folder_id", "user_id") WHERE "folder_id" IS NOT NULL;
 ```
-**Benefits**:
-- 100% database-enforced referential integrity.
-- Automatic cascading deletes via native foreign keys.
-- Optimal B-Tree index scan performance.
 
----
+The identical XOR pattern + partial unique index guarantee protects both `drive_favorites` and `drive_recent_items`.
 
-### 3. Decoupled Digital Asset Management (DAM) & Zero-Blob PostgreSQL
-No binary BLOBs or Base64 payloads ever touch the PostgreSQL database.
-- **Central Asset Abstraction**: Binary uploads pass through Multer and Sharp image pipelines straight into **Cloudinary CDN**, generating a record in the central `file_assets` table.
-- **Domain Independence**: Chat attachments, webmail files, drive documents, and user avatars simply store a foreign key pointer (`file_asset_id`) to `file_assets`.
-- **Automated Lifecycle**: When an asset is orphaned or permanently deleted, a background worker triggers the Cloudinary Admin API to purge remote files, preventing cloud storage bloat.
+### 3. Database-Enforced Domain Invariants
 
----
+Critical domain guarantees live inside PostgreSQL `CHECK` constraints and unique indexes rather than application memory alone:
 
-### 4. Mathematical Guarantees via Database Invariants
-Business logic invariants are enforced directly at the schema layer rather than relying solely on ephemeral application code:
-
-#### Canonical 1-on-1 Direct Conversation Pairing
-To eliminate race conditions where two simultaneous users both initiate a direct chat resulting in duplicate conversation records, direct pairs are sorted deterministically and enforced by a compound unique constraint:
 ```sql
--- Enforced canonical order invariant
-ALTER TABLE "conversations"
-ADD CONSTRAINT "conversations_direct_user_order_check"
-CHECK (
-  ("type" = 'DIRECT' AND "direct_user_low_id" < "direct_user_high_id") OR
-  ("type" != 'DIRECT' AND "direct_user_low_id" IS NULL AND "direct_user_high_id" IS NULL)
-);
+-- Canonical 1:1 Direct Conversation Deduplication (prevents concurrent duplicate DM rooms)
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_direct_users_check"
+  CHECK (
+    ("type" = 'DIRECT' AND "direct_user_low_id" IS NOT NULL AND "direct_user_high_id" IS NOT NULL AND "direct_user_low_id" < "direct_user_high_id")
+    OR
+    ("type" <> 'DIRECT' AND "direct_user_low_id" IS NULL AND "direct_user_high_id" IS NULL)
+  );
 
--- Compound unique index guaranteeing single conversation pair
-CREATE UNIQUE INDEX "conversations_direct_users_uidx"
-  ON "conversations" ("direct_user_low_id", "direct_user_high_id")
-  WHERE "type" = 'DIRECT';
+CREATE UNIQUE INDEX "conversations_direct_user_low_id_direct_user_high_id_key"
+  ON "conversations"("direct_user_low_id", "direct_user_high_id");
+
+-- Channel visibility allowed exclusively on CHANNEL conversations
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_channel_visibility_check"
+  CHECK (
+    ("type" = 'CHANNEL' AND "visibility" IS NOT NULL)
+    OR
+    ("type" <> 'CHANNEL' AND "visibility" IS NULL)
+  );
+
+-- Physical time-arrow integrity on calendar events
+ALTER TABLE "calendar_events" ADD CONSTRAINT "calendar_events_start_before_end_check"
+  CHECK ("start_time" < "end_time");
 ```
 
-#### Temporal Consistency
-Calendar start and end times enforce a physical time-arrow constraint:
-```sql
-ALTER TABLE "calendar_events"
-ADD CONSTRAINT "calendar_events_start_before_end_check"
-CHECK ("start_time" < "end_time");
-```
+### 4. Recursive CTE Folder Traversal &amp; Cycle Prevention
+
+In `apps/api/src/modules/drive/drive.permission.ts` and `drive.service.ts`, hierarchical operations execute single-roundtrip PostgreSQL `WITH RECURSIVE` Common Table Expressions to:
+
+- **Inherit Permissions** up the ancestor chain (`OWNER` &gt; `MANAGER` &gt; `EDITOR` &gt; `COMMENTER` &gt; `VIEWER`).
+- **Reject Circular Folder Moves** by verifying a target parent folder is neither the moved folder itself nor any descendant.
+- **Stream Entire Subtrees** into zero-buffer `.zip` downloads preserving nested relative paths.
+- **Cascade Permanent Deletions** across arbitrarily deep directory hierarchies and reclaim underlying storage blobs.
+
+### 5. Watermark Read Cursors vs. Partitioned Mail States
+
+- **Chat (`conversation_participants`)**: Tracks `last_read_message_id` and `last_read_at` per participant instead of creating $O(N \times M)$ per-message read rows, enabling fast watermark updates and unread evaluation.
+- **Mail (`mail_user_states`)**: Because email triage is independent per recipient, each participant maintains an isolated state row (`is_read`, `is_starred`, `is_archived`, `is_trashed`) plus personal `mail_folders` and `mail_labels`.
+
+### 6. Fault-Isolated Home Aggregation &amp; `⌘K` Federated Search
+
+`HomeService.getOverview` (`GET /api/home/overview`) fans out across 7 domain services (`mail`, `chat`, `calendar`, `meet`, `drive`, `tasks`, `activity`) using `Promise.allSettled`, returning independent `{ status: "success" | "error" }` slices so individual module degradations never block the dashboard. `GET /api/home/search` fans out in parallel across Mail, Chat, Calendar, and Drive for instant `⌘K` command-palette navigation.
 
 ---
 
-### 5. Watermark Cursor Read Tracking vs. Per-User State
-- **Chat**: Rather than creating millions of message-user status records, conversations maintain a watermark cursor (`conversation_participants.last_read_message_id`). Messages with `id > last_read_message_id` are dynamically evaluated as unread in $O(1)$ time complexity.
-- **Mail**: Because email triage is non-linear, `mail_user_states` stores independent, partitioned per-user states (`is_read`, `is_starred`, `folder`) so actions by recipient A never mutate recipient B's mailbox.
+## Domain Modules and API Reference
+
+<details>
+<summary><strong>REST API Surface</strong> &mdash; Express 5 modular routes mounted under <code>/api</code></summary>
+
+| Mount Path | Module | Key Capabilities &amp; Endpoints |
+| :--- | :--- | :--- |
+| `/health`, `/health/cloudinary` | System | Liveness, `PROJECT_VERSION`, UTC timestamp, and Cloudinary connectivity ping |
+| `/api/auth` | Identity &amp; Auth | `POST /`, `/refresh`, `/logout`, `/forgot-password`, `/reset-password`, `/change-password`, `GET /`, `GET/DELETE /sessions` |
+| `/api/profile` | User Profile | `GET/PATCH /`, `GET /username-availability`, `PATCH /preferences`, `POST/DELETE /photo` |
+| `/api/home` | Command Center | `GET /overview`, per-widget slices (`/mail`, `/chat`, `/calendar`, `/meet`, `/drive`, `/tasks`, `/activity`), `GET /search`, `GET/PUT /preferences` |
+| `/api/mail` | Workspace Mail | `POST /send`, `POST/DELETE /attachments`, `GET /inbox`, `/starred`, `/sent`, `/drafts`, `/snoozed`, `/trash`, `/counts`, `/threads/:threadId`, `PATCH /messages/:id/state`, `POST /messages/batch-state` |
+| `/api/chat` | Chat &amp; Spaces | `GET /presence`, `/users`, `/search`, `/spaces/discover`, `GET/POST /conversations`, `POST /direct`, participant management, messages CRUD, `/read`, `/reactions`, `/pin`, `/pins`, `/attachments` |
+| `/api/calendar` | Calendar &amp; Tasks | CRUD `/events`, `PATCH /events/:id/rsvp`, CRUD `/calendars`, CRUD `/tasks`, `GET/PATCH /settings` |
+| `/api/meet` | LiveKit Meet | `POST /webhook`, CRUD `/`, `GET /:code`, `POST /:code/token`, `PATCH /:code/settings`, `POST /:code/admit`, `/:code/deny`, `/:code/end`, `GET/POST /:code/messages` |
+| `/api/drive` | Cloud Drive | `GET /storage`, `POST /upload`, resumable `/upload/init`, `PATCH /upload/:sessionId/chunk`, `/complete`, `/abort`, `POST /download-zip`, folders/files CRUD, `/download`, `/stream`, `/preview`, `/thumbnail`, `/move`, `/copy`, `/star`, permissions &amp; `/link`, `/s/:token`, `/access-requests`, `/shortcuts`, `/search`, `/recent`, `/starred`, `/activities`, `/files/:id/versions`, `/trash/empty`, `/trash/purge`, `/save-asset` |
+
+</details>
+
+<details>
+<summary><strong>Socket.IO Real-Time Protocol Contract</strong> &mdash; Verified from <code>apps/api/src/sockets/socket.types.ts</code></summary>
+
+| Direction | Event Name | Payload / Purpose |
+| :--- | :--- | :--- |
+| **Client &rarr; Server** | `chat:join` / `chat:leave` | Join or leave `conversation:{conversationId}` after membership check |
+| **Client &rarr; Server** | `chat:send` | Send message (`conversationId`, `content`, `clientMessageId`, `messageType`, `parentMessageId`, `attachmentIds`) with sliding-window rate guard (15 msgs / 3s) |
+| **Client &rarr; Server** | `typing:start` / `typing:stop` | Broadcast ephemeral typing status to conversation room |
+| **Client &rarr; Server** | `message:read` | Advance participant read watermark to `messageId` |
+| **Client &rarr; Server** | `presence:update` | Set user status (`ACTIVE` \| `AWAY` \| `DND`) |
+| **Client &rarr; Server** | `meet:join_room` / `meet:leave_room` | Enter or leave `meet:{code}` (and `meet:{code}:host` for hosts) |
+| **Client &rarr; Server** | `meet:knock` / `meet:cancel_knock` | Request admission or cancel waiting room knock |
+| **Client &rarr; Server** | `meet:admit` / `meet:deny` / `meet:admit_all` | Host waiting-room admission controls |
+| **Client &rarr; Server** | `meet:send_chat` | Persist and broadcast in-meeting chat message |
+| **Server &rarr; Client** | `message:received` / `message:updated` / `message:deleted` | Real-time message lifecycle updates |
+| **Server &rarr; Client** | `typing:user_typing` | Typing state for `conversationId` and `userId` |
+| **Server &rarr; Client** | `message:read_receipt` / `message:reaction_updated` / `message:pinned_updated` | Read watermarks, emoji reactions, and pinned state |
+| **Server &rarr; Client** | `presence:state` | Online/offline status (`ACTIVE`, `AWAY`, `DND`, `lastSeen`) |
+| **Server &rarr; Client** | `meet:knock_received` / `meet:knock_cancelled` | Host lobby notifications for waiting participants |
+| **Server &rarr; Client** | `meet:admitted` / `meet:denied` / `meet:ended` | Participant admission decision or host room termination |
+| **Server &rarr; Client** | `meet:chat_message` / `meet:settings_updated` | In-call chat broadcast and live host policy updates |
+
+</details>
+
+<details>
+<summary><strong>Frontend Route Architecture</strong> &mdash; Verified from <code>apps/web/src/App.tsx</code></summary>
+
+| Route Pattern | Access Guard | Layout | View |
+| :--- | :--- | :--- | :--- |
+| `/` | Public | Standalone | Product Landing Page (`Landing.tsx`) |
+| `/authenticate` | `PublicRoute` (Guest-only) | Standalone | Sign In &amp; Password Flows (`AuthPage.tsx`) |
+| `/home` | `ProtectedRoute` | `AppLayout` | Customizable Widget Command Center (`Home.tsx`) |
+| `/mail` | `ProtectedRoute` | `AppLayout` | Threaded Enterprise Webmail (`Mail.tsx`) |
+| `/chat` | `ProtectedRoute` | `AppLayout` | Virtualized Chat &amp; Spaces (`Chat.tsx`) |
+| `/calendar` | `ProtectedRoute` | `AppLayout` | Multi-View Calendar, RRULE &amp; Tasks (`Calendar.tsx`) |
+| `/drive`, `/drive/folders/:id`, `/drive/shared`, `/drive/recent`, `/drive/starred`, `/drive/trash` | `ProtectedRoute` | `AppLayout` | Cloud File Explorer (`DrivePage.tsx`) |
+| `/drive/s/:token`, `/drive/request-access` | `ProtectedRoute` | Full-Screen | Share Link Resolution &amp; Access Requests |
+| `/meet` | `ProtectedRoute` | `AppLayout` | Meeting Launcher &amp; Code Entry (`MeetLandingPage.tsx`) |
+| `/meet/:code`, `/meet/:code/left` | `ProtectedRoute` | Full-Screen | Immersive LiveKit Conference Room &amp; Exit Lounge |
+| `/profile` | `ProtectedRoute` | `AppLayout` | Profile, Avatar, Security &amp; Sessions (`Profile.tsx`) |
+| `/admin` | `ProtectedRoute` + `AdminRoute` | `AppLayout` | Admin Workspace Console (`AdministrationPage.tsx`) |
+
+</details>
 
 ---
 
-### 6. Zero-Knowledge Cryptography & Timing-Attack Defense
-- **Argon2id Hashing**: Passwords are encrypted using memory-hard Argon2id (resistant against GPU and ASIC cracking rigs).
-- **Constant-Time Verification**: Prevents username enumeration through timing analysis. When an invalid user attempts authentication, the server runs a dummy Argon2 hash verification against a constant mock string, equalizing execution latency across valid and invalid user queries.
-- **Dual-Token Session Architecture**: Short-lived (15 min) JWT Access Tokens paired with rotating Refresh Tokens stored exclusively in hardened `SameSite=Strict`, `HttpOnly`, `Secure` cookies.
+## Monorepo and Database Topology
 
----
-
-## 📂 Monorepo Directory Structure
+### Repository Directory Map
 
 ```text
-orvexa/
+Orvexa/
 ├── apps/
-│   ├── api/                              # Backend Express 5 REST & WebSocket service
+│   ├── api/                              # Backend Express 5 REST, WebSocket & Worker service (@orvexa/api)
 │   │   ├── prisma/
-│   │   │   ├── schema/                   # Modular multi-file Prisma schemas:
-│   │   │   │   ├── schema.prisma         # Generator & PostgreSQL datasource
-│   │   │   │   ├── enums.prisma          # Shared schema enumerations
-│   │   │   │   ├── auth.prisma           # Users, sessions, credentials, preferences
-│   │   │   │   ├── chat.prisma           # Conversations, messages, reactions, pins
-│   │   │   │   ├── meet.prisma           # WebRTC LiveKit meetings, roles, attendance
-│   │   │   │   ├── drive.prisma          # Folders, files, versions, XOR permissions
-│   │   │   │   ├── mail.prisma           # Email threads, messages, per-user state
-│   │   │   │   ├── calendar.prisma       # Events, recurrences, participants, reminders
-│   │   │   │   ├── storage.prisma        # Cloudinary digital asset management (file_assets)
-│   │   │   │   ├── notification.prisma   # User in-app notifications
-│   │   │   │   └── audit.prisma          # System security and audit trail logs
-│   │   │   ├── migrations/               # PostgreSQL schema migrations
-│   │   │   └── seed.ts                   # Initial database seeds (Admin user, etc.)
+│   │   │   ├── schema/                   # 12 modular Prisma schema files (51 models, 16 enums)
+│   │   │   ├── migrations/               # 10 PostgreSQL migrations + custom SQL invariants
+│   │   │   ├── seeds/                    # Modular seeders (user.seed.ts, mail.seed.ts, calendar.seed.ts)
+│   │   │   └── seed.ts                   # Database seed orchestrator
 │   │   ├── src/
-│   │   │   ├── common/                   # BigInt lossless serializer, error types
-│   │   │   ├── config/                   # Zod environment parsing, CORS, Cloudinary
-│   │   │   ├── infrastructure/           # Database, LiveKit, Cloudinary, Redis, Storage
-│   │   │   ├── middleware/               # Logger, auth guards, centralized error handler
-│   │   │   ├── modules/                  # Domain feature modules:
-│   │   │   │   ├── auth/                 # Authentication, Argon2, JWT cookies, sessions
-│   │   │   │   ├── calendar/             # Events, recurrence rules, holiday engine
-│   │   │   │   ├── chat/                 # Conversations, messages, repository, service
-│   │   │   │   ├── drive/                # Files, folders, trash purge worker, permissions
-│   │   │   │   ├── mail/                 # Threads, drafts, attachments, mail service
-│   │   │   │   └── meet/                 # LiveKit tokens, rooms, meeting codes
-│   │   │   ├── routes/                   # Consolidated Express route tree
-│   │   │   ├── sockets/                  # Socket.io connection & presence server
-│   │   │   ├── app.ts                    # Express app configuration & middleware
-│   │   │   └── server.ts                 # Server entrypoint & graceful shutdown
-│   │   └── tests/                        # 35+ Unit, Integration, and E2E test suites
-│   │       ├── unit/                     # Business logic and validation tests
-│   │       ├── integration/              # Database and API endpoint integration tests
-│   │       └── e2e/                      # End-to-end full scenario tests
+│   │   │   ├── common/                   # AppError, BigInt toJSON, cookies, hash, jwt, password, roles
+│   │   │   ├── config/                   # Env validation, CORS policy, Cloudinary SDK, Prisma singleton
+│   │   │   ├── infrastructure/           # Prisma PG adapter, Cloudinary uploader, LocalStorageProvider
+│   │   │   ├── middleware/               # Auth, RBAC authorize, Zod validate, Multer uploads, rate limit, audit logger
+│   │   │   ├── modules/                  # auth, calendar, chat, drive (+ trash worker), home, mail, meet, profile
+│   │   │   ├── routes/                   # Consolidated /api router
+│   │   │   ├── sockets/                  # Socket.IO server, JWT handshake guard, presence, chat & meet handlers
+│   │   │   ├── app.ts                    # Express 5 application pipeline & health checks
+│   │   │   └── server.ts                 # HTTP/WS bootstrap, trash worker start & graceful shutdown
+│   │   ├── storage/                      # Local blob & resumable chunk storage (blobs/, chunks/)
+│   │   ├── tests/                        # 48 test suites (unit/, integration/, e2e/) + schema-verification.ts
+│   │   └── prisma.config.ts              # Prisma 7 multi-file schema & seed configuration
 │   │
-│   └── web/                              # Frontend React 19 single-page app
-│       ├── public/                       # Favicons, vector logos, and manifest
+│   └── web/                              # Frontend React 19 SPA (@orvexa/web)
+│       ├── public/images/                # Brand SVGs, WebP logos & webmanifest favicons
 │       └── src/
-│           ├── common/                   # Global components, AppLayout, route guards
-│           ├── lib/                      # Utilities, classnames helper, axios client
-│           └── modules/                  # Domain UI modules:
-│               ├── auth/                 # Sign In / Register forms, AuthStore
-│               ├── calendar/             # Calendar views (Day/Week/Month), event modals
-│               ├── chat/                 # Virtualized message stream, spaces sidebar
-│               ├── drive/                # File explorer, breadcrumbs, sharing modals
-│               ├── home/                 # Unified dashboard and recent activities
-│               ├── landing/              # Public product landing page
-│               ├── mail/                 # Email inbox, rich text composer, threads
-│               ├── meet/                 # Video conference room, lobby, media controls
-│               └── profile/              # User settings, security, and preferences
+│           ├── app/                      # QueryClient & global Providers
+│           ├── common/                   # AppLayout, Navbar, AppSwitcher, Route guards, ThemeProvider, API client
+│           ├── components/ui/            # Reusable base UI primitives
+│           ├── lib/                      # Classname & shared helpers
+│           └── modules/                  # admin, auth, calendar, chat, drive, home, landing, mail, meet, profile
 │
-├── docs/                                 # Architectural specifications & ERDs
-│   ├── api/                              # REST API specifications
-│   ├── architecture/                     # System design documentation
-│   └── database/                         # Database design specification & schema docs
-│       ├── database-design.md            # Comprehensive database technical specification
-│       └── database-erd.md               # Visual Crow's Foot ERD models
-├── infrastructure/                       # Deployment and container orchestration
-├── packages/                             # Shared monorepo libraries (TypeScript, ESLint)
-├── pnpm-workspace.yaml                   # Monorepo workspace configuration
-├── vercel.json                           # Vercel multi-service routing config
-└── package.json                          # Root scripts & dev orchestrations
+├── docs/
+│   ├── database/
+│   │   ├── database-design.md            # Core relational design principles & schema documentation
+│   │   └── database-erd.md               # Visual Crow's Foot entity-relationship diagrams
+│   ├── api/                              # Reserved for REST OpenAPI / endpoint specs
+│   ├── architecture/                     # Reserved for system ADR documents
+│   └── development/                      # Reserved for contributor guides
+│
+├── infrastructure/
+│   └── docker/                           # Reserved for container & compose manifests
+├── packages/                             # Reserved shared workspace packages (eslint-config, shared, typescript-config, validators)
+├── LICENSE                               # MIT License
+├── package.json                          # Root monorepo scripts
+├── pnpm-workspace.yaml                   # Workspace & Prisma engine build configuration
+└── vercel.json                           # Multi-service routing (/api/* -> api, /* -> web)
 ```
 
+### Modular Prisma Schema (`51` Models &middot; `16` Enums)
+
+<details>
+<summary><strong>Inspect all 12 Prisma schema modules</strong> in <code>apps/api/prisma/schema/</code></summary>
+
+| Schema File | Scope | Key Models |
+| :--- | :--- | :--- |
+| `schema.prisma` | Generator &amp; DB | `prisma-client` generator (`src/generated/prisma`), `postgresql` datasource |
+| `enums.prisma` | Shared Enums | 16 enums (`UserRole`, `ConversationType`, `DriveAccessLevel`, `MeetingStatus`, `NotificationType`, etc.) |
+| `auth.prisma` | Identity &amp; Access | `User`, `Credentials`, `UserSession`, `PasswordResetToken`, `UserPreference` |
+| `storage.prisma` | Asset Registry | `FileAsset` (bridges `CLOUDINARY` and `LOCAL` backends with `sha256` &amp; metadata) |
+| `drive.prisma` | Cloud DMS | `DriveFolder`, `DriveFile`, `DriveFileVersion`, `DrivePermission`, `DriveFavorite`, `DriveRecentItem`, `DriveComment`, `DriveShareLink`, `DriveAccessRequest`, `DriveActivity`, `DriveShortcut`, `DriveUploadSession` |
+| `chat.prisma` | Chat &amp; Spaces | `Conversation`, `ConversationParticipant`, `ChatMessage`, `ChatAttachment`, `ChatReaction`, `ChatPinnedMessage`, `ChatMention` |
+| `mail.prisma` | Workspace Webmail | `MailMessage`, `MailRecipient`, `MailUserState`, `MailAttachment`, `MailDraft`, `MailDraftRecipient`, `MailDraftAttachment`, `MailFolder`, `MailFolderMessage`, `MailLabel`, `MailMessageLabel` |
+| `calendar.prisma` | Calendar &amp; Tasks | `CalendarEvent`, `CalendarParticipant`, `CalendarReminder`, `CalendarShare`, `UserCalendar`, `CalendarTask`, `CalendarSetting`, `CalendarEventAttachment` |
+| `meeting.prisma` | Video Meetings | `Meeting`, `MeetingParticipant`, `MeetingRecording`, `MeetingMessage` |
+| `dashboard.prisma` | Command Center | `UserDashboardPreference` |
+| `notification.prisma` | Notifications | `Notification` |
+| `audit.prisma` | Compliance Logs | `AuditLog` |
+
+</details>
+
 ---
 
-## ⚙️ Prerequisites
+## Getting Started
 
-Before setting up Orvexa locally, ensure your machine satisfies the following runtime and database requirements:
+### Prerequisites
 
-| Component | Minimum Version | Recommended Version | Verification Command | Notes |
+| Requirement | Minimum | Recommended | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **Node.js** | `v20.12.0` | `v22.x LTS` | `node -v` | Active Node.js runtime |
-| **pnpm** | `v9.0.0` | `v9.15.0+` | `pnpm -v` | Corepack: `corepack enable && corepack prepare pnpm@latest --activate` |
-| **PostgreSQL** | `16.0` | `16.4+` | `psql --version` | Relational database with BigInt and Partial Index support |
-| **LiveKit Server** | `v1.7.0` | Latest | `livekit-server --version` | Required for WebRTC video conferencing (`livekit-server --dev`) |
-| **Cloudinary** | Cloud Account | Free / Paid Tier | N/A | DAM media asset storage and transformations |
+| **Node.js** | `20.12.0` | `22.x` LTS | `node -v` | Required for ESM + modern native APIs |
+| **pnpm** | `9.0.0` | `9.15+` | `pnpm -v` | `corepack enable && corepack prepare pnpm@latest --activate` |
+| **PostgreSQL** | `16.0` | `16.4+` | `psql --version` | Required for partial unique indexes &amp; `CHECK` constraints |
+| **LiveKit Server** | `1.7+` | Latest | `livekit-server --version` | Local dev mode via `livekit-server --dev` for Meet video/audio |
+| **Cloudinary** | Active Account | Free / Paid | &mdash; | Used for profile photos, chat attachments, and mail attachments |
 
----
-
-## 🏁 Getting Started
-
-Follow these steps to configure, migrate, and run Orvexa in a local development environment:
-
-### 1. Clone & Install Dependencies
-
-Clone the monorepo and install dependencies across all workspace packages:
+### 1. Clone &amp; Install
 
 ```bash
 git clone https://github.com/VishnuThangaraj/Orvexa.git
 cd Orvexa
-
-# Install all monorepo dependencies via pnpm
 pnpm install
 ```
 
----
-
 ### 2. Environment Configuration
 
-The monorepo requires environment configurations for both the API backend and the Web frontend.
+Create `apps/api/.env` and `apps/web/.env`.
 
-#### ⚙️ Backend Environment (`apps/api/.env`)
-Create `apps/api/.env` (or copy from the template below):
+<details open>
+<summary><strong>Backend Environment (<code>apps/api/.env</code>)</strong></summary>
 
 ```env
-# Server & Application Identity
-PROJECT_VERSION=1.0.0
-NODE_ENV=development
+# Application Identity & Networking
+PROJECT_VERSION="1.0.0"
+NODE_ENV="development"
 PORT=6970
-CLIENT_ORIGIN=http://localhost:5173
+CLIENT_ORIGIN="http://localhost:5173"
 
-# PostgreSQL Database Connection Strings
+# PostgreSQL Connections
 DATABASE_URL="postgresql://postgres:password@localhost:5432/orvexa?schema=public"
 CLOUD_DATABASE_URL="postgresql://postgres:password@localhost:5432/orvexa?schema=public"
 
 # Default Administrator Seed Credentials
 ADMIN_NAME="Administrator"
 ADMIN_EMAIL="admin@orvexa.local"
-ADMIN_PASSWORD="SuperSecretPassword123!"
 ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="ChangeThisStrongPassword123!"
 
-# JWT Authentication & Cookie Security (Min 32 characters)
-JWT_SECRET="your-ultra-secure-jwt-secret-key-min-32-chars-long"
+# JWT Authentication & Cookies
+JWT_SECRET="replace-with-a-random-32-plus-char-secret"
 JWT_EXPIRES_IN="15m"
-JWT_REFRESH_SECRET="your-ultra-secure-jwt-refresh-secret-key-min-32-chars"
+JWT_REFRESH_SECRET="replace-with-a-different-32-plus-char-secret"
 JWT_REFRESH_EXPIRES_IN="7d"
 
-# Cloudinary (Digital Asset Management & CDN)
+# Cloudinary Digital Asset Management
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
 
-# LiveKit WebRTC SFU Server
+# LiveKit WebRTC SFU (optional overrides; defaults shown)
 LIVEKIT_URL="ws://localhost:7880"
 LIVEKIT_API_KEY="devkey"
 LIVEKIT_API_SECRET="secret"
+LIVEKIT_WEBHOOK_SECRET="secret"
 
-# Transactional Webmail & SMTP (Resend or Custom SMTP)
-SMTP_HOST="smtp.resend.com"
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER="resend"
-SMTP_PASS="re_your_resend_api_key"
-EMAIL_FROM="no-reply@orvexa.local"
+# Optional Drive & Storage Tuning (defaults shown)
+# STORAGE_BACKEND="local"
+# STORAGE_LOCAL_DIR="./storage/blobs"
+# STORAGE_CHUNK_DIR="./storage/chunks"
+# DRIVE_TOTAL_QUOTA_BYTES="16106127360"
+# TRASH_RETENTION_DAYS="30"
+# TRASH_PURGE_INTERVAL_MS="86400000"
 ```
 
-#### 🌐 Frontend Environment (`apps/web/.env`)
-Create `apps/web/.env` and point to your local API server:
+</details>
+
+<details open>
+<summary><strong>Frontend Environment (<code>apps/web/.env</code>)</strong></summary>
 
 ```env
 VITE_SERVER_URL="http://localhost:6970"
 ```
 
----
+</details>
 
-### 3. Database Setup & Migrations
-
-Orvexa utilizes Prisma with modular multi-file schemas. Execute migrations and seed administrative credentials:
+### 3. Database Provisioning &amp; Seeding
 
 ```bash
-# 1. Generate Prisma Client bindings from multi-file schemas
+# 1. Generate Prisma Client into apps/api/src/generated/prisma
 pnpm --filter @orvexa/api db:generate
 
-# 2. Execute database migrations
+# 2. Apply PostgreSQL migrations & custom SQL invariants
 pnpm --filter @orvexa/api db:migrate
 
-# 3. Seed default administrative credentials
+# 3. Seed admin account, 20 workspace members, sample mail threads & calendars
 pnpm --filter @orvexa/api db:seed
 ```
 
 > [!TIP]
-> **Default Admin Account:**
-> - **Username:** `admin` (or `admin@orvexa.local`)
-> - **Password:** `SuperSecretPassword123!`
->
-> You can visually inspect database tables, records, and relations at any time with **Prisma Studio**:
-> ```bash
-> pnpm --filter @orvexa/api db:studio
-> ```
-> *Prisma Studio will launch at [http://localhost:5555](http://localhost:5555).*
+> Seeding creates your configured `ADMIN_USERNAME` / `ADMIN_EMAIL` administrator alongside 20 pre-populated workspace members (default dev password `orvexa@123` defined in `apps/api/prisma/seeds/user.seed.ts`), sample threaded mail conversations, and default calendars. Launch Prisma Studio at `http://localhost:5555` anytime with `pnpm --filter @orvexa/api db:studio`.
 
----
+### 4. Start Development Services
 
-### 4. Running Development Servers
+Start LiveKit locally in a separate terminal if testing WebRTC rooms:
 
-Launch both the backend API and frontend React client concurrently:
+```bash
+livekit-server --dev
+```
+
+Then run both workspace applications concurrently:
 
 ```bash
 pnpm dev
 ```
 
-| Service | Address | Description |
+| Service | Local URL | Purpose |
 | :--- | :--- | :--- |
-| **Frontend Web** | [http://localhost:5173](http://localhost:5173) | React 19 Client with Tailwind v4 & Vite HMR |
-| **Backend API** | [http://localhost:6970](http://localhost:6970) | Node.js Express 5 REST & Socket.io Server |
-| **API Health** | [http://localhost:6970/health](http://localhost:6970/health) | System health and version endpoint |
+| **Web Client** | [http://localhost:5173](http://localhost:5173) | React 19 + Vite 8 + Tailwind v4 SPA |
+| **API &amp; WebSockets** | [http://localhost:6970](http://localhost:6970) | Express 5 REST API &amp; Socket.IO server |
+| **Health Endpoint** | [http://localhost:6970/health](http://localhost:6970/health) | Service status &amp; version check |
+| **Cloudinary Ping** | [http://localhost:6970/health/cloudinary](http://localhost:6970/health/cloudinary) | DAM credential &amp; network verification |
 | **LiveKit SFU** | `ws://localhost:7880` | WebRTC Selective Forwarding Unit |
-| **Prisma Studio** | [http://localhost:5555](http://localhost:5555) | Visual relational database explorer |
+| **Prisma Studio** | [http://localhost:5555](http://localhost:5555) | Visual database explorer (when started) |
 
-To run services independently:
+### 5. Production Build &amp; Deployment
+
+Orvexa ships with a root [`vercel.json`](vercel.json) multi-service routing configuration that directs `/api/*` requests to `@orvexa/api` (`express`) and all SPA navigation routes (`/*`) to `@orvexa/web` (`vite`):
+
 ```bash
-pnpm dev:api   # Runs only Express API server with tsx watch
-pnpm dev:web   # Runs only Vite frontend dev server
-```
-
----
-
-### 5. Production Build & Deployment
-
-Orvexa is architected for frictionless production deployments. The workspace root contains a unified [`vercel.json`](file:///workspace/Projects/Orvexa/vercel.json) configuration that maps incoming requests seamlessly across both services:
-
-- All `/api/*` traffic is routed to the `@orvexa/api` Express service.
-- All other web traffic `/*` is routed to the `@orvexa/web` Vite SPA.
-
-```json
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "api": { "root": "apps/api", "framework": "express" },
-    "web": { "root": "apps/web", "framework": "vite" }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": { "service": "api" } },
-    { "source": "/(.*)", "destination": { "service": "web" } }
-  ]
-}
-```
-
-To compile all applications for production:
-```bash
-# Typecheck and build all workspace packages
+# Generate Prisma client, type-check, and compile all workspace packages
 pnpm build
 ```
 
----
+For production database migrations in CI/CD pipelines, run:
 
-## 📜 Available Scripts & Tooling
-
-### Root Workspace Commands
-
-| Command | Description |
-| :--- | :--- |
-| `pnpm dev` | Runs both `@orvexa/web` and `@orvexa/api` concurrently in development mode |
-| `pnpm dev:api` | Starts only the Express API server with TSX hot-reloading (`tsx watch`) |
-| `pnpm dev:web` | Starts only the Vite React frontend development server |
-| `pnpm build` | Compiles all packages and applications across the workspace for production |
-
-### Backend API Commands (`@orvexa/api`)
-
-| Command | Description |
-| :--- | :--- |
-| `pnpm --filter @orvexa/api test` | Executes unit, integration, and E2E test suites with node runner |
-| `pnpm --filter @orvexa/api db:generate` | Generates type-safe Prisma Client from multi-file schema |
-| `pnpm --filter @orvexa/api db:migrate` | Applies pending PostgreSQL database migrations in development |
-| `pnpm --filter @orvexa/api db:deploy` | Applies pending migrations in production / CI environments |
-| `pnpm --filter @orvexa/api db:seed` | Populates database with default administrator seed account |
-| `pnpm --filter @orvexa/api db:studio` | Launches visual Prisma Studio GUI on `http://localhost:5555` |
-
-### Frontend Web Commands (`@orvexa/web`)
-
-| Command | Description |
-| :--- | :--- |
-| `pnpm --filter @orvexa/web dev` | Starts Vite development server with HMR on port 5173 |
-| `pnpm --filter @orvexa/web build` | Type-checks (`tsc -b`) and bundles web application with Vite |
-| `pnpm --filter @orvexa/web lint` | Runs ESLint 9 checks across frontend source files |
-| `pnpm --filter @orvexa/web preview` | Locally previews the production build output |
-
----
-
-## 🧪 Test Suite Coverage
-
-Orvexa maintains an exhaustive automated test pyramid with over **35 specialized test suites** covering domain repositories, services, HTTP endpoints, WebSocket events, and end-to-end user workflows.
-
-<details open>
-<summary><b>Click to expand / collapse complete test catalog</b></summary>
-
-| Test Tier | Domain / Module | Target File | Verification Scope |
-| :--- | :--- | :--- | :--- |
-| **E2E** | Chat | `chat-e2e.test.ts` | Multi-user conversation creation, message send, receipt confirmation |
-| **E2E** | Auth & Session | `session-e2e.test.ts` | Login, token issuance, cookie persistence, refresh rotation, logout |
-| **Integration** | Auth | `auth.routes.test.ts` | HTTP endpoint authentication, payload rejection, cookie headers |
-| **Integration** | Auth | `auth.service.test.ts` | Argon2id verification, session revocation, token creation |
-| **Integration** | Auth | `auth.security.test.ts` | Timing attack resistance, dummy hash verification benchmarks |
-| **Integration** | Auth | `auth.lockout.test.ts` | Rate-limiting and consecutive failure lockouts |
-| **Integration** | Chat | `chat.routes.test.ts` | REST API routes, pagination cursors, authorization guards |
-| **Integration** | Chat | `chat.messages.test.ts` | Idempotent message deduplication, database foreign keys |
-| **Integration** | Chat | `chat.spaces.test.ts` | Public/private channel creation, participant memberships |
-| **Integration** | Chat | `chat.seen-receipt.test.ts` | Watermark cursor updating and unread count aggregation |
-| **Integration** | Chat | `chat.interactions.test.ts` | Emoji reactions toggling, message pinning, mentions |
-| **Integration** | Chat | `chat.attachments.test.ts` | Attachment metadata binding via DAM `file_assets` |
-| **Integration** | Meet | `meet.api.test.ts` | Room code generation (`xxx-yyyy-zzz`), LiveKit JWT token signing |
-| **Integration** | Drive | `drive.crud.test.ts` | Folder nesting, file upload records, metadata updates |
-| **Integration** | Drive | `drive.sharing.test.ts` | Exclusive-Arc (XOR) permissions, share tokens, access requests |
-| **Integration** | Drive | `drive.download.test.ts` | In-flight streaming ZIP archive bundling via Archiver |
-| **Integration** | Mail | `mail.thread.test.ts` | Thread clustering, multi-recipient To/CC/BCC, user states |
-| **Integration** | Calendar | `calendar.api.test.ts` | Event CRUD, temporal invariant validation, recurrence expansion |
-| **Integration** | Sockets | `socket.connection.test.ts`| WebSocket handshake, presence broadcasting, room routing |
-| **Unit** | Drive | `drive.schema.test.ts` | Exclusive Arc XOR database constraint assertions |
-| **Unit** | Storage | `storage.provider.test.ts` | Cloudinary asset management, signed URL generators |
-| **Unit** | Calendar | `calendar.recurrence.test.ts` | RFC-compliant recurrence pattern generator |
-| **Unit** | Meet | `meet.code.test.ts` | Human-readable room code format validation |
-| **Unit** | Security | `hash.test.ts` | Argon2id memory-hardness and parameter consistency |
-
-To run the complete test suite:
 ```bash
-pnpm --filter @orvexa/api test
+pnpm --filter @orvexa/api db:deploy
 ```
+
+---
+
+## Scripts and Automated Testing
+
+### Workspace Commands
+
+| Scope | Command | Description |
+| :--- | :--- | :--- |
+| **Root** | `pnpm dev` | Runs `@orvexa/web` and `@orvexa/api` concurrently in dev mode |
+| **Root** | `pnpm dev:api` | Runs Express API + Socket.IO with `tsx watch` |
+| **Root** | `pnpm dev:web` | Runs Vite frontend dev server |
+| **Root** | `pnpm build` | Builds all packages across the monorepo (`pnpm -r build`) |
+| **API** | `pnpm --filter @orvexa/api start` | Starts compiled API server (`node dist/server.js`) |
+| **API** | `pnpm --filter @orvexa/api test` | Runs all 48 unit, integration &amp; E2E suites sequentially (`tsx --test --test-concurrency=1`) |
+| **API** | `pnpm --filter @orvexa/api db:generate` | Generates Prisma Client bindings |
+| **API** | `pnpm --filter @orvexa/api db:migrate` | Runs interactive Prisma development migrations |
+| **API** | `pnpm --filter @orvexa/api db:deploy` | Applies pending migrations in CI/production |
+| **API** | `pnpm --filter @orvexa/api db:seed` | Executes `prisma/seed.ts` |
+| **API** | `pnpm --filter @orvexa/api db:studio` | Opens Prisma Studio |
+| **Web** | `pnpm --filter @orvexa/web lint` | Runs ESLint 10 static analysis across frontend source |
+| **Web** | `pnpm --filter @orvexa/web preview` | Previews built Vite production bundle locally |
+
+### Verification Pyramid (`48` Suites + Schema Verifier)
+
+`pnpm --filter @orvexa/api test` executes **2 End-to-End**, **31 Integration**, and **15 Unit** test suites via `tsx --test --test-concurrency=1`, backed by `apps/api/tests/schema-verification.ts` for constraint verification.
+
+<details>
+<summary><strong>Complete Automated Test Catalog</strong> &mdash; All 48 test files in <code>apps/api/tests/</code></summary>
+
+| Tier | Domain | Test Suite |
+| :--- | :--- | :--- |
+| **E2E (2)** | Chat, Auth | `tests/e2e/chat-e2e.test.ts`, `tests/e2e/session-e2e.test.ts` |
+| **Integration (6)** | Auth &amp; Security | `auth.lockout.test.ts`, `auth.password.test.ts`, `auth.repository.test.ts`, `auth.routes.test.ts`, `auth.security.test.ts`, `auth.service.test.ts` |
+| **Integration (11)** | Chat &amp; Spaces | `chat.attachments.test.ts`, `chat.idempotency.test.ts`, `chat.interactions.test.ts`, `chat.mentions.test.ts`, `chat.messages.test.ts`, `chat.preferences-presence.test.ts`, `chat.routes.test.ts`, `chat.search.test.ts`, `chat.seen-receipt.test.ts`, `chat.spaces.test.ts`, `chat.threads.test.ts` |
+| **Integration (8)** | Drive DMS | `drive.crud.test.ts`, `drive.download.test.ts`, `drive.permission.test.ts`, `drive.phase5.test.ts`, `drive.phase6.test.ts`, `drive.phase7.test.ts`, `drive.sharing.test.ts`, `drive.upload.test.ts` |
+| **Integration (6)** | Core Domains &amp; WS | `calendar.api.test.ts`, `home.api.test.ts`, `mail.thread.test.ts`, `meet.api.test.ts`, `profile.api.test.ts`, `socket.connection.test.ts` |
+| **Unit (15)** | Validators &amp; Utils | `auth.validation.test.ts`, `calendar.recurrence.test.ts`, `chat.attachment.validation.test.ts`, `chat.interactions.test.ts`, `chat.message.validation.test.ts`, `chat.validation.test.ts`, `drive.schema.test.ts`, `hash.test.ts`, `mail.validation.test.ts`, `meet.code.test.ts`, `middleware.test.ts`, `profile.validation.test.ts`, `socket.auth.test.ts`, `storage.provider.test.ts`, `upload.middleware.test.ts` |
+| **Schema Check** | PostgreSQL | `tests/schema-verification.ts` |
 
 </details>
 
 ---
 
-## 🔒 Security & Audit Standards
-
-Orvexa is designed from the ground up for strict enterprise security, regulatory compliance, and auditability:
+## Security Architecture
 
 ```mermaid
 flowchart LR
-    Request["Incoming Client Request"] --> Helmet["Helmet Security Headers\n(CSP, HSTS, Frameguard)"]
-    Helmet --> CookieGuard["Cookie & Session Guard\n(HttpOnly, SameSite=Strict)"]
-    CookieGuard --> ZodGuard["Zod Payload Validator\n(Strict Schema Filtering)"]
-    ZodGuard --> AppLogic["Domain Service Logic\n(Argon2id / Business Rules)"]
-    AppLogic --> DB["PostgreSQL 16\n(Exclusive Arc & Constraints)"]
-    AppLogic --> AuditLogger["Audit Logging Interceptor\n(IP, Latency, Status, Agent)"]
+    Req["Incoming HTTP / WS Request"] --> Headers["Helmet + Strict CORS\n(allowlist CLIENT_ORIGIN + credentials)"]
+    Headers --> Limiter["Sliding-Window Auth Limiter\n(100 req / 15 min per IP + Retry-After)"]
+    Limiter --> AuthN["JWT + Cookie Guard\n(HttpOnly, SameSite=Strict, iat > passwordChangedAt)"]
+    AuthN --> AuthZ["RBAC & XOR Checks\n(ADMIN/MEMBER + Drive Exclusive-Arc)"]
+    AuthZ --> Zod["Strict Zod Schema Validation"]
+    Zod --> Crypto["Argon2id + SHA-256 Token Rotation\n(5-Attempt 15m Lockout + Timing Defense)"]
+    Crypto --> Audit["Sanitized AuditLog Persistence\n(Redacts password, token, secret)"]
 ```
 
-- **Cryptographic Credential Storage**: Passwords are protected using **Argon2id** (memory-hard, GPU-resistant). Constant-time dummy verification ensures consistent latency during failed authentication attempts, neutralizing user enumeration and timing attacks.
-- **Dual-Token Cookie Isolation**: Sensitive tokens are never stored in `localStorage` or `sessionStorage`. Short-lived Access Tokens and rotating Refresh Tokens are isolated inside **HTTP-only, Secure, SameSite=Strict** cookies, immune to client-side XSS exfiltration.
-- **Strict Payload Validation**: All incoming requests are validated against strict **Zod** schemas before reaching route controllers, preventing SQL injection, mass assignment, and type confusion vulnerabilities.
-- **Hardened HTTP Headers**: **Helmet** enforces strict Content Security Policies (CSP), HTTP Strict Transport Security (HSTS), X-Content-Type-Options (`nosniff`), and X-Frame-Options (`DENY`).
-- **Comprehensive Audit Trail**: Incoming requests are intercepted by an asynchronous audit logger that captures client IP addresses, HTTP methods, route paths, response status codes, latencies, and user agents.
-- **Exclusive-Arc Data Protection**: Access permissions use database-level XOR foreign keys and check constraints, preventing orphaned access grants or unauthorized permission escalation.
+- **Memory-Hard Credential Hashing**: Passwords are hashed with **Argon2id** (`memoryCost: 19456`, `timeCost: 2`, `parallelism: 1`). Missing users and null hashes trigger constant-time `DUMMY_PASSWORD_HASH` verification to mitigate timing enumeration.
+- **Brute-Force &amp; IP Rate Defense**: 5 consecutive failed logins trigger a 15-minute account lock (`HTTP 423 Locked`), reinforced by `authRateLimiter` (100 requests per 15-minute window per IP).
+- **Hardened Dual-Token Rotation**: Refresh tokens are `SHA-256` hashed before persistence in `user_sessions`, delivered exclusively via `HttpOnly`, `SameSite=Strict`, `Secure` (production), `Path=/api/auth` cookies, rotated on refresh with reuse detection, and invalidated globally on password reset or change (`passwordChangedAt` vs. JWT `iat`).
+- **Transport, Input &amp; Storage Hardening**: `helmet()` headers, strict `CLIENT_ORIGIN` CORS allowlisting, Zod payload validation, path-traversal / zip-slip checks in `LocalStorageProvider`, and async `AuditLog` persistence that automatically masks sensitive request keys.
 
 ---
 
-## 🗺 Roadmap & Verification Status
+## Roadmap
 
-### ✅ Production-Ready Core Capabilities
+### Implemented &amp; Verified
 
-- [x] **Real-Time Chat & Spaces**:
-  - [x] Bi-directional messaging via Socket.io with optimistic dispatch.
-  - [x] 60 FPS DOM recycling over 100,000+ items via `@tanstack/react-virtual`.
-  - [x] Canonical 1-on-1 deduplicated conversation invariant (`LEAST/GREATEST`).
-  - [x] Emoji reactions, mentions, file attachments, and watermark read cursors.
-- [x] **Meet (WebRTC Video Conferencing)**:
-  - [x] Sub-100ms multi-party audio/video conferencing powered by LiveKit SFU.
-  - [x] Structured room codes (`xxx-yyyy-zzz`) and cryptographic JWT room tokens.
-  - [x] Audio/video muting, screen sharing with audio, tile layouts, and in-call chat.
-  - [x] Dedicated full-screen meeting room route (`/meet/:code`) and exit lounge.
-- [x] **Drive (Cloud File & Document Management)**:
-  - [x] Zero-blob database architecture backed by Cloudinary DAM.
-  - [x] Exclusive Arc (XOR) referential integrity for files and folders.
-  - [x] In-flight batch ZIP archive streaming via `archiver`.
-  - [x] File version history and instant revision rollbacks.
-  - [x] 30-day soft-delete recycle bin with background auto-purge worker.
-- [x] **Mail (Enterprise Webmail)**:
-  - [x] Threaded conversation clustering with unread tracking.
-  - [x] Rich-text composer with multi-recipient routing (To, CC, BCC) and drafts.
-  - [x] Transaction-safe delivery via SMTP and Resend API.
-- [x] **Calendar & Scheduling**:
-  - [x] Day, Week, and Month interactive calendar grids.
-  - [x] RFC-compliant RRULE recurrence engine (daily, weekly, monthly, yearly).
-  - [x] Database-enforced temporal check constraint (`start_time < end_time`).
-  - [x] 1-click Orvexa Meet room creation and event binding.
-- [x] **Identity & Session Security**:
-  - [x] Memory-hard Argon2id hashing + constant-time dummy verification.
-  - [x] Dual-token session rotation in HTTP-only SameSite cookies.
-  - [x] Real-time session monitoring and remote session revocation.
+- [x] **Home Command Center**: Fault-isolated 7-widget aggregation, user layout customization, and federated `⌘K` search across Mail, Chat, Calendar, and Drive.
+- [x] **Chat &amp; Spaces**: Socket.IO 4.8 messaging, `@tanstack/react-virtual` 60 FPS feed, canonical `1:1` DM deduplication, threaded replies, mentions, reactions, pins, idempotency, watermark read cursors, and presence states.
+- [x] **Meet (LiveKit WebRTC)**: `xxx-yyyy-zzz` room codes, LiveKit SFU JWTs, knock-to-join waiting rooms, host room moderation, webhooks, and persistent in-call chat.
+- [x] **Drive (Cloud DMS)**: Recursive CTE folder trees, Exclusive-Arc XOR RBAC with ancestor inheritance, resumable chunked uploads, HTTP `Range` streaming, Sharp WebP thumbnails, versioning &amp; rollbacks, share links &amp; access requests, shortcuts, streamed ZIP exports, and 30-day auto-purge worker.
+- [x] **Mail**: Threaded workspace conversations, `TO`/`CC`/`BCC` routing, drafts, snooze, archive, trash, custom folders/labels, batch triage, and Cloudinary DAM attachments.
+- [x] **Calendar &amp; Tasks**: Multi-calendar Day/Week/Month views, RFC `RRULE` recurrence expansion, public holiday engine, RSVP tracking, `CalendarTask` checklists, `start_time < end_time` SQL checks, and 1-click Meet room binding.
+- [x] **Identity, Profile &amp; Audit**: Argon2id auth, rotating refresh sessions, remote session revocation, Cloudinary avatar management, and sanitized request audit logs.
 
-### 🚀 Upcoming Milestones & Enterprise Horizon
+### Next-Phase Milestones
 
-- [ ] **End-to-End Encryption (E2EE)**: Client-side cryptographic ratchet (Olm/Megolm) for zero-trust 1:1 chat channels.
-- [ ] **Federated Full-Text Search**: Cross-subsystem unified search indexing Mail, Drive, and Chat with PostgreSQL `tsvector` and `pg_trgm`.
-- [ ] **Native Mobile Clients**: Dedicated iOS and Android applications built with React Native / Flutter.
-- [ ] **Enterprise SSO & Directory Sync**: SAML 2.0, OIDC, and SCIM directory synchronization (Okta, Azure AD, Google Workspace).
-- [ ] **Server-Side Call Recording**: Direct-to-cloud audio/video session recording with automated transcription export.
+- [ ] **PostgreSQL Full-Text GIN Indexing**: Upgrade `drive_files.searchable_content` and `⌘K` search queries with `tsvector` + `pg_trgm` ranking.
+- [ ] **Outbound SMTP / Resend Relay**: Wire external internet email delivery via `resend` / SMTP alongside internal `@orvexa.com` workspace routing.
+- [ ] **Full Admin Governance Console**: Expand `/admin` UI for user provisioning, audit log inspection, and workspace quota policies.
+- [ ] **LiveKit Egress Cloud Recording**: Automated server-side meeting recording pipeline linked to `meeting_recordings` and `file_assets`.
+- [ ] **Shared Workspace Packages &amp; Docker Compose**: Populate `packages/shared`, `packages/validators`, and one-command orchestration manifests in `infrastructure/docker`.
+- [ ] **Enterprise SSO &amp; E2EE**: SAML 2.0 / OIDC directory federation and client-side end-to-end encrypted direct messaging.
 
 ---
 
-## 🤝 Contributing & Architecture Specifications
+## Contributing and Documentation
 
-We welcome contributions to the Orvexa platform! To ensure high architectural rigor, please review our foundational design documents before submitting pull requests:
+Before proposing schema or architectural changes, review the database specifications included in the repository:
 
-### Technical Specifications
-- 📘 **[Database Design Specification](file:///workspace/Projects/Orvexa/docs/database/database-design.md)** — Comprehensive documentation of the 27 physical relational models, BigInt key standards, XOR foreign key constraints, and performance indexes.
-- 📐 **[Entity-Relationship Diagram (ERD)](file:///workspace/Projects/Orvexa/docs/database/database-erd.md)** — Visual Crow's Foot ERD models for every subsystem.
+- [Database Design Specification](docs/database/database-design.md) &mdash; Core relational architecture, 3NF baseline, `BigInt` standards, Exclusive-Arc XOR constraints, and index strategies.
+- [Entity-Relationship Diagrams](docs/database/database-erd.md) &mdash; Visual Crow's Foot domain models.
 
 ### Contribution Workflow
-1. **Fork & Branch**: Create a feature branch from `main` (`git checkout -b feat/your-feature-name`).
-2. **Code Standards**: Ensure code adheres to strict TypeScript and ESLint standards (`pnpm --filter @orvexa/web lint`).
-3. **Database Changes**: If modifying database schemas, add models to `apps/api/prisma/schema/*.prisma`, generate migrations with `pnpm --filter @orvexa/api db:migrate`, and add corresponding tests.
-4. **Verification**: Run the full test suite across the monorepo:
-   ```bash
-   pnpm --filter @orvexa/api test
-   ```
-5. **Pull Request**: Open a detailed PR with test coverage metrics and architecture notes.
+
+1. Branch from `main` (`git checkout -b feat/your-change`).
+2. Follow TypeScript strictness and frontend lint rules (`pnpm --filter @orvexa/web lint`).
+3. Keep modular Prisma schemas organized inside `apps/api/prisma/schema/*.prisma` and generate migrations via `pnpm --filter @orvexa/api db:migrate`.
+4. Verify your changes pass the full test suite and workspace build before opening a pull request:
+
+```bash
+pnpm --filter @orvexa/api test && pnpm --filter @orvexa/web lint && pnpm build
+```
 
 ---
 
-## 📄 License & Open Standards
+## License
 
-This project is licensed under the **[ISC License](LICENSE)**.
-
-### Ecosystem Acknowledgments
-- **[React](https://react.dev/)** & **[Vite](https://vitejs.dev/)** — Frontend rendering and lightning-fast developer experience.
-- **[Express](https://expressjs.com/)** & **[Prisma ORM](https://www.prisma.io/)** — Robust backend REST routing and type-safe database access.
-- **[LiveKit](https://livekit.io/)** — Next-generation WebRTC SFU infrastructure.
-- **[Socket.io](https://socket.io/)** — Distributed bi-directional WebSocket communication.
-- **[Tailwind CSS v4](https://tailwindcss.com/)** — Next-generation CSS styling engine.
+Licensed under the **[MIT License](LICENSE)** &copy; 2026 Vishnu Thangaraj.
