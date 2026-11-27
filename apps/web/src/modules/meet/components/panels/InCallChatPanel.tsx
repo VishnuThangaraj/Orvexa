@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { X, Send, Lock, HardDrive } from "lucide-react";
 import { useMeetStore } from "../../store/meet.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { socketService } from "@/modules/chat/services/socket.service";
 import { DrivePickerModal, type DriveFileItem } from "@/modules/drive";
 
 interface InCallChatPanelProps {
@@ -31,6 +32,16 @@ export const InCallChatPanel: React.FC<InCallChatPanelProps> = ({
 
   useEffect(() => {
     fetchMessages(meetingCode).catch(console.warn);
+
+    // Poll in-call messages periodically when WebSocket is disconnected (e.g. Vercel serverless)
+    const interval = setInterval(() => {
+      const socket = socketService.getSocket();
+      if (!socket?.connected && document.visibilityState === "visible") {
+        fetchMessages(meetingCode).catch(() => {});
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
   }, [meetingCode, fetchMessages]);
 
   useEffect(() => {
@@ -47,8 +58,9 @@ export const InCallChatPanel: React.FC<InCallChatPanelProps> = ({
 
   const handleDrivePickerSelect = (files: DriveFileItem[]) => {
     if (!canChat || files.length === 0) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const links = files
-      .map((f) => `Shared from Drive: [${f.name}](http://localhost:5155/drive?preview=${f.id})`)
+      .map((f) => `Shared from Drive: [${f.name}](${origin}/drive?preview=${f.id})`)
       .join("\n");
     onSendMessage(links);
   };

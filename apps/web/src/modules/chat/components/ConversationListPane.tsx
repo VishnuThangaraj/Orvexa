@@ -16,6 +16,7 @@ import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { CHAT_QUERY_KEYS, useConversations } from "../hooks/use-conversations";
 import { chatApi } from "../api/chat.api";
+import { isConversationUnread, resolvePresenceInfo } from "../utils/chat.utils";
 import { cn } from "@/lib/utils";
 import type {
   ChatSearchMessageResult,
@@ -44,7 +45,7 @@ export const ConversationListPane: React.FC = () => {
 
   const [, setSearchParams] = useSearchParams();
   const currentUser = useAuthStore((state) => state.user);
-  const onlineUsers = useSocketStore((state) => state.onlineUsers);
+  const { onlineUsers, presenceStatuses } = useSocketStore();
   const queryClient = useQueryClient();
 
   const isSearching = searchQuery.trim().length > 0;
@@ -87,11 +88,7 @@ export const ConversationListPane: React.FC = () => {
     }
 
     if (unreadOnly || homeFilter === "UNREAD") {
-      const lastMsg = conv.messages?.[0];
-      if (!lastMsg) return false;
-      if (String(lastMsg.senderId) === String(currentUser?.id)) return false;
-      if (!userParticipant?.lastReadAt) return true;
-      return new Date(lastMsg.createdAt) > new Date(userParticipant.lastReadAt);
+      return isConversationUnread(conv, currentUser?.id);
     }
 
     return true;
@@ -152,7 +149,7 @@ export const ConversationListPane: React.FC = () => {
         isGroup: true,
         initials,
         avatarUrl: conv.image?.secureUrl,
-        isOnline: false,
+        presence: resolvePresenceInfo(null, onlineUsers, presenceStatuses),
       };
     }
 
@@ -160,16 +157,12 @@ export const ConversationListPane: React.FC = () => {
       (p) => String(p.userId) !== String(currentUser?.id),
     )?.user;
 
-    const isOnline = other?.id
-      ? Boolean(onlineUsers[String(other.id)])
-      : false;
-
     return {
       title: other?.fullName || "Direct Message",
       isGroup: false,
       initials: other?.fullName?.charAt(0) || "U",
       avatarUrl: other?.profileImage?.secureUrl,
-      isOnline,
+      presence: resolvePresenceInfo(other?.id, onlineUsers, presenceStatuses),
     };
   };
 
@@ -499,7 +492,7 @@ export const ConversationListPane: React.FC = () => {
           </div>
         ) : (
           sortedConversations.map((conv) => {
-            const { title, isGroup, initials, avatarUrl, isOnline } =
+            const { title, isGroup, initials, avatarUrl, presence } =
               getDisplayDetails(conv);
             const isSelected = activeConversationId === conv.id;
             const lastMessage = conv.messages?.[0];
@@ -512,13 +505,7 @@ export const ConversationListPane: React.FC = () => {
             );
             const isPinned = userParticipant?.isPinned;
 
-            // Check if unread
-            const isUnread =
-              lastMessage &&
-              String(lastMessage.senderId) !== String(currentUser?.id) &&
-              (!userParticipant?.lastReadAt ||
-                new Date(lastMessage.createdAt) >
-                  new Date(userParticipant.lastReadAt));
+            const isUnread = isConversationUnread(conv, currentUser?.id);
 
             return (
               <div
@@ -549,8 +536,14 @@ export const ConversationListPane: React.FC = () => {
                     </div>
                   )}
 
-                  {!isGroup && isOnline && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#137333] ring-2 ring-white dark:ring-slate-900" />
+                  {!isGroup && presence.isOnline && (
+                    <span
+                      title={presence.label}
+                      className={cn(
+                        "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-slate-900",
+                        presence.dotClass,
+                      )}
+                    />
                   )}
                 </div>
 

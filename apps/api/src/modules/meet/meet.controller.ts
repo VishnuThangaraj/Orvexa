@@ -116,6 +116,72 @@ export class MeetController {
     }
   };
 
+  knockMeeting = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const codeParam = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+      const result = await this.meetService.knockMeeting(BigInt(userId), codeParam);
+      return sendResponse(res, 200, "Knock request recorded", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  cancelKnock = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const codeParam = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+      const result = await this.meetService.cancelKnock(BigInt(userId), codeParam);
+      return sendResponse(res, 200, "Knock request cancelled", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  leaveMeeting = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const codeParam = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+      const result = await this.meetService.leaveMeeting(BigInt(userId), codeParam);
+      return sendResponse(res, 200, "Left meeting successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  postSignal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const codeParam = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+      const signal = await this.meetService.postSignal(BigInt(userId), codeParam, req.body);
+      return sendResponse(res, 201, "Signal posted", signal);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getSignals = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const codeParam = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+      const afterId = typeof req.query.afterId === "string" ? req.query.afterId : undefined;
+      const data = await this.meetService.getSignals(BigInt(userId), codeParam, afterId);
+      return sendResponse(res, 200, "Signals retrieved", data);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   sendMessage = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.id;

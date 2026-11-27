@@ -777,13 +777,24 @@ export class ChatService {
     const readAtIso = updated.lastReadAt
       ? updated.lastReadAt.toISOString()
       : new Date().toISOString();
+    const resolvedMessageId = String(updated.lastReadMessageId ?? messageId);
 
     try {
+      const conversation =
+        await this.chatRepository.getConversationById(conversationId);
       const io = getIO();
-      io.to(`conversation:${conversationId}`).emit("message:read_receipt", {
+      let emitter = io.to(`conversation:${conversationId}`);
+      if (conversation?.participants) {
+        for (const p of conversation.participants) {
+          if (p.leftAt === null) {
+            emitter = emitter.to(`user:${p.userId}`);
+          }
+        }
+      }
+      emitter.emit("message:read_receipt", {
         conversationId: String(conversationId),
         userId: String(userId),
-        messageId: String(messageId),
+        messageId: resolvedMessageId,
         readAt: readAtIso,
       });
     } catch {

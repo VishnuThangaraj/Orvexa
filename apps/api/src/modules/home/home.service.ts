@@ -3,6 +3,7 @@ import ChatService from "../chat/chat.service.js";
 import CalendarService from "../calendar/calendar.service.js";
 import MeetService from "../meet/meet.service.js";
 import driveService from "../drive/drive.service.js";
+import presenceService from "../../sockets/presence.service.js";
 import HomeRepository from "./home.repository.js";
 import type {
   HomeOverviewResult,
@@ -76,9 +77,10 @@ export class HomeService {
 
   // --- 2. Chat Overview Slice ---
   async getChatSummary(userId: bigint): Promise<HomeChatData> {
-    const [unreadTotal, convResult] = await Promise.all([
+    const [unreadTotal, convResult, presenceMap] = await Promise.all([
       this.chatService.getUnreadCount(userId),
       this.chatService.getUserConversations(userId, { limit: 5 }),
+      presenceService.getHydratedPresenceMap(),
     ]);
 
     const conversations = convResult.conversations.map((c: any) => {
@@ -97,7 +99,13 @@ export class HomeService {
 
       let isUnread = false;
       if (lastMsg && lastMsg.senderId !== userId) {
-        if (!myParticipant?.lastReadAt) {
+        if (
+          myParticipant?.lastReadMessageId !== null &&
+          myParticipant?.lastReadMessageId !== undefined &&
+          lastMsg.id !== undefined
+        ) {
+          isUnread = BigInt(myParticipant.lastReadMessageId) < BigInt(lastMsg.id);
+        } else if (!myParticipant?.lastReadAt) {
           isUnread = true;
         } else {
           isUnread = new Date(lastMsg.createdAt) > new Date(myParticipant.lastReadAt);
@@ -108,6 +116,11 @@ export class HomeService {
         c.type === "DIRECT"
           ? otherParticipant?.user?.profileImage?.secureUrl || null
           : c.image?.secureUrl || null;
+
+      const presenceStatus =
+        c.type === "DIRECT" && otherParticipant?.userId
+          ? presenceMap[String(otherParticipant.userId)]?.status
+          : undefined;
 
       return {
         id: String(c.id),
@@ -124,6 +137,7 @@ export class HomeService {
           : null,
         unreadCount: isUnread ? 1 : 0,
         avatarUrl,
+        presenceStatus,
         updatedAt: c.lastMessageAt?.toISOString() || c.createdAt?.toISOString(),
       };
     });

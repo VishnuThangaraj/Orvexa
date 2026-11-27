@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useMeetStore } from "../store/meet.store";
+import meetApi from "../api/meet.api";
 import { useMediaStream } from "../hooks/useMediaStream";
 import { useMeetSocket } from "../hooks/useMeetSocket";
 import { DeviceSettingsModal } from "./DeviceSettingsModal";
@@ -72,6 +73,33 @@ export const PreJoinScreen: React.FC<PreJoinScreenProps> = ({
       onJoin(displayName);
     },
   });
+
+  // HTTP fallback polling while waiting for host approval when Socket.IO is unavailable
+  const setWaitingState = useMeetStore((state) => state.setWaitingState);
+  useEffect(() => {
+    if (waitingState !== "knocking") return;
+
+    let cancelled = false;
+    const interval = setInterval(async () => {
+      try {
+        const updated = await meetApi.getMeetingByCode(meetingCode);
+        if (cancelled) return;
+        if (updated.myStatus === "ACCEPTED" || !updated.requireApproval) {
+          setWaitingState("admitted");
+          onJoin(displayName);
+        } else if (updated.myStatus === "DECLINED") {
+          setWaitingState("denied");
+        }
+      } catch {
+        // ignore transient poll errors
+      }
+    }, 2000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [waitingState, meetingCode, displayName, onJoin, setWaitingState]);
 
   const handleCopyLink = () => {
     const fullUrl = `${window.location.origin}/meet/${meetingCode}`;

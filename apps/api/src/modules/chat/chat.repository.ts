@@ -1,3 +1,4 @@
+import AppError from "../../common/errors/AppError.js";
 import prisma from "../../infrastructure/database/prisma.js";
 import type {
   CreateGroupOrChannelDto,
@@ -662,6 +663,27 @@ export class ChatRepository {
     userId: bigint,
     messageId: bigint,
   ) {
+    const existing = await prisma.conversationParticipant.findUnique({
+      where: {
+        conversationId_userId: {
+          conversationId,
+          userId,
+        },
+      },
+    });
+
+    if (!existing || existing.leftAt !== null) {
+      throw new AppError("You are not a participant in this conversation", 403);
+    }
+
+    // Never move the read cursor backwards if an older message ID arrives
+    if (
+      existing.lastReadMessageId !== null &&
+      existing.lastReadMessageId >= messageId
+    ) {
+      return existing;
+    }
+
     return prisma.conversationParticipant.update({
       where: {
         conversationId_userId: {
@@ -948,13 +970,15 @@ export class ChatRepository {
         },
       },
       select: {
+        lastReadMessageId: true,
         lastReadAt: true,
         conversation: {
           select: {
             messages: {
               take: 1,
-              orderBy: { createdAt: "desc" },
+              orderBy: [{ createdAt: "desc" }, { id: "desc" }],
               select: {
+                id: true,
                 senderId: true,
                 createdAt: true,
               },
@@ -969,6 +993,9 @@ export class ChatRepository {
       const lastMsg = p.conversation.messages[0];
       if (!lastMsg) continue;
       if (lastMsg.senderId === userId) continue;
+      if (p.lastReadMessageId !== null && p.lastReadMessageId >= lastMsg.id) {
+        continue;
+      }
       if (!p.lastReadAt || lastMsg.createdAt > p.lastReadAt) {
         count++;
       }

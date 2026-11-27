@@ -13,6 +13,7 @@ import { useChatStore } from "../store/chat.store";
 import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useConversations } from "../hooks/use-conversations";
+import { isConversationUnread as checkConversationUnread, resolvePresenceInfo } from "../utils/chat.utils";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "../types/chat.types";
 
@@ -27,7 +28,7 @@ export const ChatNavigationSidebar: React.FC = () => {
   } = useChatStore();
 
   const currentUser = useAuthStore((state) => state.user);
-  const onlineUsers = useSocketStore((state) => state.onlineUsers);
+  const { onlineUsers, presenceStatuses } = useSocketStore();
 
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(true);
   const [isDmsOpen, setIsDmsOpen] = useState(true);
@@ -54,16 +55,8 @@ export const ChatNavigationSidebar: React.FC = () => {
   };
 
   // Check if conversation has unread messages for current user
-  const isConversationUnread = (conv: Conversation) => {
-    const userParticipant = conv.participants.find(
-      (p) => String(p.userId) === String(currentUser?.id),
-    );
-    const lastMsg = conv.messages?.[0];
-    if (!lastMsg) return false;
-    if (String(lastMsg.senderId) === String(currentUser?.id)) return false;
-    if (!userParticipant?.lastReadAt) return true;
-    return new Date(lastMsg.createdAt) > new Date(userParticipant.lastReadAt);
-  };
+  const isConversationUnread = (conv: Conversation) =>
+    checkConversationUnread(conv, currentUser?.id);
 
   const unreadDirectCount = directConversations.filter(isConversationUnread).length;
   const unreadSpacesCount = spaceConversations.filter(isConversationUnread).length;
@@ -295,9 +288,11 @@ export const ChatNavigationSidebar: React.FC = () => {
             <div className="mt-1 space-y-0.5">
               {visibleDms.map((conv) => {
                 const other = getOtherParticipant(conv);
-                const isOnline = other?.id
-                  ? Boolean(onlineUsers[String(other.id)])
-                  : false;
+                const presence = resolvePresenceInfo(
+                  other?.id,
+                  onlineUsers,
+                  presenceStatuses,
+                );
                 const isSelected = activeConversationId === conv.id;
                 const isUnread = isConversationUnread(conv);
 
@@ -328,8 +323,14 @@ export const ChatNavigationSidebar: React.FC = () => {
                           {other?.fullName?.charAt(0) || "U"}
                         </div>
                       )}
-                      {isOnline && (
-                        <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#137333] ring-2 ring-white dark:ring-slate-950" />
+                      {presence.isOnline && (
+                        <span
+                          title={presence.label}
+                          className={cn(
+                            "absolute bottom-0 right-0 w-2 h-2 rounded-full ring-2 ring-white dark:ring-slate-950",
+                            presence.dotClass,
+                          )}
+                        />
                       )}
                     </div>
 

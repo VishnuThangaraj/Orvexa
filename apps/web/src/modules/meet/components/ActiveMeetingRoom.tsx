@@ -49,11 +49,13 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
     onMeetingEnded: handleEjectedOrEnded,
   });
 
-  // Connect to LiveKit room for real-time audio/video
+  // Connect to LiveKit room (or automatic WebRTC P2P fallback when LiveKit is unavailable)
   const {
     connectionState,
     localParticipant,
     remoteParticipants,
+    localFallbackTile,
+    remoteFallbackPeers,
     activeSpeakers,
     pinnedParticipantId,
     reactions,
@@ -71,6 +73,9 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
   } = useMeetingRoom({
     url: liveKitData?.url,
     token: liveKitData?.token,
+    mode: liveKitData?.mode,
+    meetingCode,
+    onMeetingEnded: handleEjectedOrEnded,
     onDisconnected: (reason) => {
       // Only navigate away if explicitly kicked or room terminated
       if (
@@ -134,8 +139,9 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
     navigate(`/meet/${meetingCode}/left`);
   };
 
-  const totalParticipantsCount =
-    (localParticipant ? 1 : 1) + remoteParticipants.length;
+  const totalParticipantsCount = localParticipant
+    ? 1 + remoteParticipants.length
+    : 1 + remoteFallbackPeers.length;
 
   return (
     <div className="min-h-screen w-full bg-[#202124] text-white flex flex-col font-sans select-none overflow-hidden">
@@ -174,6 +180,8 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
           layoutMode={layoutMode}
           localParticipant={localParticipant}
           remoteParticipants={remoteParticipants}
+          localFallbackTile={localFallbackTile}
+          remoteFallbackPeers={remoteFallbackPeers}
           activeSpeakers={activeSpeakers}
           pinnedParticipantId={pinnedParticipantId}
           onTogglePin={(id) =>
@@ -181,6 +189,7 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
           }
           raisedHands={raisedHands}
           reactions={reactions}
+          fallbackStream={localFallbackTile?.stream ?? null}
           fallbackUser={currentUser}
         />
 
@@ -190,6 +199,8 @@ export const ActiveMeetingRoom: React.FC<ActiveMeetingRoomProps> = ({
             isHost={isHost}
             localParticipant={localParticipant}
             remoteParticipants={remoteParticipants}
+            localFallbackTile={localFallbackTile}
+            remoteFallbackPeers={remoteFallbackPeers}
             onAdmit={admit}
             onDeny={deny}
             onAdmitAll={admitAll}

@@ -53,6 +53,13 @@ interface MeetState {
   }) => void;
   removeWaitingParticipant: (userId: string) => void;
   clearWaitingParticipants: () => void;
+  setWaitingParticipants: (
+    participants: Array<{
+      userId: string;
+      displayName: string;
+      avatarUrl?: string;
+    }>,
+  ) => void;
   addMessage: (message: MeetingMessage) => void;
   toggleMic: () => void;
   toggleCamera: () => void;
@@ -175,7 +182,12 @@ export const useMeetStore = create<MeetState>((set, get) => ({
 
   sendMessage: async (code, content) => {
     const msg = await meetApi.sendMessage(code, content);
-    set((state) => ({ messages: [...state.messages, msg] }));
+    set((state) => {
+      if (state.messages.some((m) => m.id === msg.id)) {
+        return state;
+      }
+      return { messages: [...state.messages, msg] };
+    });
   },
 
   fetchMessages: async (code) => {
@@ -200,8 +212,14 @@ export const useMeetStore = create<MeetState>((set, get) => ({
       waitingParticipants: state.waitingParticipants.filter((p) => p.userId !== userId),
     })),
   clearWaitingParticipants: () => set({ waitingParticipants: [] }),
+  setWaitingParticipants: (waitingParticipants) => set({ waitingParticipants }),
   addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
+    set((state) => {
+      if (state.messages.some((m) => m.id === message.id)) {
+        return state;
+      }
+      return { messages: [...state.messages, message] };
+    }),
   toggleMic: () => set((state) => ({ isMicEnabled: !state.isMicEnabled })),
   toggleCamera: () => set((state) => ({ isCameraEnabled: !state.isCameraEnabled })),
   setMicEnabled: (isMicEnabled) => set({ isMicEnabled }),

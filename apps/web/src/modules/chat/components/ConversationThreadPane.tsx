@@ -1,11 +1,18 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Pin, UploadCloud } from "lucide-react";
 import { useChatStore } from "../store/chat.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useSocket } from "../hooks/use-socket";
-import { useConversationDetails } from "../hooks/use-conversations";
+import { CHAT_QUERY_KEYS, useConversationDetails } from "../hooks/use-conversations";
 import { useMessages, usePinnedMessages } from "../hooks/use-messages";
+import { chatApi } from "../api/chat.api";
+import {
+  applyReadReceiptToConversation,
+  applyReadReceiptToConversationsResult,
+} from "../utils/chat.utils";
+import type { Conversation, FetchConversationsResult } from "../types/chat.types";
 import ThreadHeader from "./ThreadHeader";
 import MessageBubble from "./MessageBubble";
 import MessageInput, { type MessageInputHandle } from "./MessageInput";
@@ -35,13 +42,15 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
   } = useChatStore();
   const typingUsers = useChatStore((state) => state.typingUsers);
   const currentUser = useAuthStore((state) => state.user);
-  const { emit } = useSocket();
+  const queryClient = useQueryClient();
+  const { emit, isConnected } = useSocket();
   const [searchParams] = useSearchParams();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const unreadDividerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<MessageInputHandle>(null);
   const shouldAutoScrollRef = useRef(true);
   const hasScrolledToInitialRef = useRef<string | null>(null);
+  const lastMarkedReadRef = useRef<{ conversationId: string; messageId: string } | null>(null);
 
   // Task 4.1: Drag-and-drop file upload handling (hooks declared at top level)
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -172,25 +181,23 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
     }
   }, [messages, firstUnreadMessageId, currentUser?.id]);
 
-  // Mandatory Fix 2: Mark incoming messages read only when viewport is actively viewed in focused tab
+  // Mark incoming messages read when conversation is opened/viewed in a visible tab
   useEffect(() => {
-    if (!activeConversationId || !conversation || !messages.length) return;
+    if (!activeConversationId || !conversation || !messages.length || !currentUser?.id) {
+      return;
+    }
 
     const markVisibleIncomingAsRead = () => {
-      if (
-        typeof document === "undefined" ||
-        document.visibilityState !== "visible" ||
-        !document.hasFocus()
-      ) {
+      if (typeof document === "undefined" || document.visibilityState !== "visible") {
         return;
       }
 
       const myPart = conversation.participants.find(
-        (p) => String(p.userId) === String(currentUser?.id),
+        (p) => String(p.userId) === String(currentUser.id),
       );
       const incomingMessages = messages.filter(
         (m) =>
-          String(m.senderId) !== String(currentUser?.id) &&
+          String(m.senderId) !== String(currentUser.id) &&
           parseNumericId(m.id) !== null,
       );
       if (!incomingMessages.length) return;
@@ -199,11 +206,54 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
       const latestId = parseNumericId(latestIncoming.id);
       const readCursor = parseNumericId(myPart?.lastReadMessageId) ?? BigInt(0);
 
-      if (latestId !== null && latestId > readCursor) {
+      if (latestId === null || latestId <= readCursor) {
+        return;
+      }
+
+      const lastSent = lastMarkedReadRef.current;
+      if (
+        lastSent &&
+        lastSent.conversationId === activeConversationId &&
+        lastSent.messageId === String(latestIncoming.id)
+      ) {
+        return;
+      }
+      lastMarkedReadRef.current = {
+        conversationId: activeConversationId,
+        messageId: String(latestIncoming.id),
+      };
+
+      const readAtIso = new Date().toISOString();
+      const myUserIdStr = String(currentUser.id);
+      const msgIdStr = String(latestIncoming.id);
+
+      // Optimistically clear unread state across conversation details and list
+      queryClient.setQueryData<Conversation>(
+        CHAT_QUERY_KEYS.conversation(activeConversationId),
+        (old) =>
+          old
+            ? applyReadReceiptToConversation(old, myUserIdStr, msgIdStr, readAtIso)
+            : old,
+      );
+      queryClient.setQueriesData<FetchConversationsResult>(
+        { queryKey: CHAT_QUERY_KEYS.conversations },
+        (old) =>
+          applyReadReceiptToConversationsResult(
+            old,
+            activeConversationId,
+            myUserIdStr,
+            msgIdStr,
+            readAtIso,
+          ),
+      );
+
+      if (isConnected) {
         emit("message:read", {
           conversationId: activeConversationId,
-          messageId: latestIncoming.id,
+          messageId: msgIdStr,
         });
+      } else {
+        chatApi.markAsRead(activeConversationId, msgIdStr).catch(() => {});
       }
     };
 
@@ -216,7 +266,7 @@ export const ConversationThreadPane: React.FC<ConversationThreadPaneProps> = ({
       window.removeEventListener("focus", markVisibleIncomingAsRead);
       document.removeEventListener("visibilitychange", markVisibleIncomingAsRead);
     };
-  }, [activeConversationId, conversation, messages, currentUser?.id, emit]);
+  }, [activeConversationId, conversation, messages, currentUser?.id, isConnected, emit, queryClient]);
 
   // Date Label Helper for date separators matching Orvexa Chat
   const getDateLabel = (dateStr: string) => {

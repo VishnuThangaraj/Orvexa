@@ -16,6 +16,7 @@ import { GlobalSearchModal } from "@/modules/home/components/GlobalSearchModal";
 import { useAuth, useLogout } from "@/modules/auth/hooks/use-auth.hooks";
 import { useSocketStore } from "@/modules/chat/store/socket.store";
 import { useSocket } from "@/modules/chat/hooks/use-socket";
+import { chatApi } from "@/modules/chat/api/chat.api";
 import { cn } from "@/lib/utils";
 
 export interface NavbarProps {
@@ -26,8 +27,8 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const logoutMutation = useLogout();
-  const { myPresenceStatus, setMyPresenceStatus } = useSocketStore();
-  const { emit } = useSocket();
+  const { myPresenceStatus, setMyPresenceStatus, addOnlineUser } = useSocketStore();
+  const { emit, isConnected } = useSocket();
 
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
@@ -71,9 +72,37 @@ export const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
 
   const handleSelectStatus = (status: "ACTIVE" | "AWAY" | "DND") => {
     setMyPresenceStatus(status);
-    emit("presence:update", { status });
+    if (user?.id) {
+      addOnlineUser(String(user.id), status);
+    }
+    if (isConnected) {
+      emit("presence:update", { status });
+    }
+    chatApi.updatePresence(status).catch(() => {});
     setIsStatusDropdownOpen(false);
   };
+
+  // Keep presence hydrated in DB when socket is unavailable (e.g., serverless deployments)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const sendHeartbeat = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      const status = useSocketStore.getState().myPresenceStatus;
+      chatApi.updatePresence(status).catch(() => {});
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(() => {
+      if (!isConnected) {
+        sendHeartbeat();
+      }
+    }, 45_000);
+
+    return () => clearInterval(interval);
+  }, [user?.id, isConnected]);
 
   const firstName = user?.fullName?.split(" ")[0] || user?.username || "there";
   const workspaceEmail = user?.username ? `${user.username}@orvexa.com` : user?.email;

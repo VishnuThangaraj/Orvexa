@@ -23,6 +23,7 @@ import {
   attachmentIdParamSchema,
   discoverSpacesQuerySchema,
   globalSearchQuerySchema,
+  updatePresenceSchema,
 } from "./chat.validation.js";
 
 const router: Router = Router();
@@ -30,8 +31,13 @@ const chatController = new ChatController();
 
 router.use(authenticate, authorize("ADMIN", "MEMBER"));
 
-// Online presence list
+// Online presence list & updates
 router.get("/presence", chatController.getOnlinePresence);
+router.post(
+  "/presence",
+  validate(updatePresenceSchema),
+  chatController.updateOnlinePresence,
+);
 
 // Search users in workspace
 router.get("/users", chatController.searchUsers);

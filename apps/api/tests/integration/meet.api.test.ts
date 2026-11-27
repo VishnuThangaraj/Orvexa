@@ -13,6 +13,28 @@ test("Meet REST API & LiveKit Token Issuance Integration Tests", async (t) => {
 
   const port = (server.address() as AddressInfo).port;
   const baseUrl = `http://127.0.0.1:${port}/api/meet`;
+  const cleanupMeetingIds: bigint[] = [];
+
+  t.after(async () => {
+    if (cleanupMeetingIds.length > 0) {
+      await prisma.auditLog.deleteMany({
+        where: {
+          entityType: "MEET_SIGNAL",
+          entityId: { in: cleanupMeetingIds },
+        },
+      });
+      await prisma.meetingMessage.deleteMany({
+        where: { meetingId: { in: cleanupMeetingIds } },
+      });
+      await prisma.meetingParticipant.deleteMany({
+        where: { meetingId: { in: cleanupMeetingIds } },
+      });
+      await prisma.meeting.deleteMany({
+        where: { id: { in: cleanupMeetingIds } },
+      });
+    }
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
 
   const adminUser = await prisma.user.findUnique({
     where: { email: env.ADMIN_EMAIL },
@@ -32,23 +54,6 @@ test("Meet REST API & LiveKit Token Issuance Integration Tests", async (t) => {
   const memberToken = generateAccessToken({
     id: memberUser.id,
     role: memberUser.role,
-  });
-
-  const cleanupMeetingIds: bigint[] = [];
-
-  t.after(async () => {
-    if (cleanupMeetingIds.length > 0) {
-      await prisma.meetingMessage.deleteMany({
-        where: { meetingId: { in: cleanupMeetingIds } },
-      });
-      await prisma.meetingParticipant.deleteMany({
-        where: { meetingId: { in: cleanupMeetingIds } },
-      });
-      await prisma.meeting.deleteMany({
-        where: { id: { in: cleanupMeetingIds } },
-      });
-    }
-    await new Promise<void>((resolve) => server.close(() => resolve()));
   });
 
   let createdCode = "";
@@ -122,6 +127,10 @@ test("Meet REST API & LiveKit Token Issuance Integration Tests", async (t) => {
     const json = await res.json();
     assert.equal(json.success, true);
     assert.ok(json.data.token, "LiveKit JWT token must be returned");
+    assert.ok(
+      json.data.mode === "livekit" || json.data.mode === "webrtc",
+      "Token response must declare media mode (livekit or webrtc)",
+    );
     assert.equal(json.data.meetingCode, createdCode);
     assert.equal(json.data.role, "HOST");
     assert.equal(json.data.participantId, String(adminUser.id));
@@ -137,6 +146,32 @@ test("Meet REST API & LiveKit Token Issuance Integration Tests", async (t) => {
     });
 
     assert.equal(resRejected.status, 403);
+
+    // Member knocks via HTTP waiting-room fallback -> PENDING
+    const resKnock = await fetch(`${baseUrl}/${createdCode}/knock`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${memberToken}`,
+      },
+      body: JSON.stringify({ displayName: memberUser.fullName }),
+    });
+    assert.equal(resKnock.status, 200);
+    const knockJson = await resKnock.json();
+    assert.equal(knockJson.data.status, "PENDING");
+
+    // Host polls signals/roster and sees member in waitingParticipants
+    const resHostSignals = await fetch(`${baseUrl}/${createdCode}/signals`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.equal(resHostSignals.status, 200);
+    const hostSignalsJson = await resHostSignals.json();
+    assert.ok(
+      hostSignalsJson.data.waitingParticipants.some(
+        (p: any) => p.userId === String(memberUser.id),
+      ),
+      "Waiting participant should appear in host signals response",
+    );
 
     // Host admits member
     const resAdmit = await fetch(`${baseUrl}/${createdCode}/admit`, {
@@ -193,6 +228,62 @@ test("Meet REST API & LiveKit Token Issuance Integration Tests", async (t) => {
     assert.ok(Array.isArray(listJson.data));
     assert.equal(listJson.data.length, 1);
     assert.equal(listJson.data[0].content, "Hello everyone in the meeting!");
+  });
+
+  await t.test("6b. WebRTC Signaling: Post offer, poll with afterId cursor, and leave", async () => {
+    // Member sends WebRTC SDP offer targeted to host
+    const resOffer = await fetch(`${baseUrl}/${createdCode}/signal`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${memberToken}`,
+      },
+      body: JSON.stringify({
+        toUserId: String(adminUser.id),
+        kind: "offer",
+        payload: { sdp: { type: "offer", sdp: "v=0\r\no=- 123 2 IN IP4 127.0.0.1\r\n" } },
+      }),
+    });
+    assert.equal(resOffer.status, 201);
+    const offerJson = await resOffer.json();
+    assert.equal(offerJson.data.kind, "offer");
+    assert.equal(offerJson.data.fromUserId, String(memberUser.id));
+
+    // Host polls signals and sees offer + both active participants
+    const resPoll = await fetch(`${baseUrl}/${createdCode}/signals`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.equal(resPoll.status, 200);
+    const pollJson = await resPoll.json();
+    assert.ok(pollJson.data.signals.some((s: any) => s.kind === "offer" && s.fromUserId === String(memberUser.id)));
+    assert.ok(pollJson.data.activeParticipants.some((p: any) => p.userId === String(adminUser.id)));
+    assert.ok(pollJson.data.activeParticipants.some((p: any) => p.userId === String(memberUser.id)));
+    assert.ok(pollJson.data.latestId);
+
+    // Polling again with afterId excludes already-seen signals
+    const resPoll2 = await fetch(
+      `${baseUrl}/${createdCode}/signals?afterId=${encodeURIComponent(pollJson.data.latestId)}`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    assert.equal(resPoll2.status, 200);
+    const pollJson2 = await resPoll2.json();
+    assert.equal(pollJson2.data.signals.length, 0);
+
+    // Member leaves meeting -> emits leave signal and updates activeParticipants
+    const resLeave = await fetch(`${baseUrl}/${createdCode}/leave`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${memberToken}` },
+    });
+    assert.equal(resLeave.status, 200);
+
+    const resPoll3 = await fetch(
+      `${baseUrl}/${createdCode}/signals?afterId=${encodeURIComponent(pollJson.data.latestId)}`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    assert.equal(resPoll3.status, 200);
+    const pollJson3 = await resPoll3.json();
+    assert.ok(pollJson3.data.signals.some((s: any) => s.kind === "leave" && s.fromUserId === String(memberUser.id)));
+    assert.ok(!pollJson3.data.activeParticipants.some((p: any) => p.userId === String(memberUser.id)));
   });
 
   await t.test("7. Host controls & End meeting for everyone", async () => {

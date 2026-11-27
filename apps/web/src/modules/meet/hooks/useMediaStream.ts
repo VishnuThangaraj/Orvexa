@@ -34,6 +34,16 @@ export function useMediaStream(options: UseMediaStreamOptions = { autoStart: tru
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const isMicEnabledRef = useRef<boolean>(isMicEnabled);
+  const isCameraEnabledRef = useRef<boolean>(isCameraEnabled);
+
+  useEffect(() => {
+    isMicEnabledRef.current = isMicEnabled;
+  }, [isMicEnabled]);
+
+  useEffect(() => {
+    isCameraEnabledRef.current = isCameraEnabled;
+  }, [isCameraEnabled]);
 
   // Stop all active tracks
   const stopStream = useCallback(() => {
@@ -135,6 +145,17 @@ export function useMediaStream(options: UseMediaStreamOptions = { autoStart: tru
         const error = err as Error;
         if (error.name === "OverconstrainedError" || error.name === "ConstraintNotSatisfiedError") {
           mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        } else if (
+          error.name === "NotFoundError" ||
+          error.name === "DevicesNotFoundError" ||
+          error.name === "NotReadableError"
+        ) {
+          // Fallback to audio-only or video-only if one device is missing/busy
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          } catch {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+          }
         } else {
           throw err;
         }
@@ -144,10 +165,10 @@ export function useMediaStream(options: UseMediaStreamOptions = { autoStart: tru
       setStream(mediaStream);
 
       mediaStream.getVideoTracks().forEach((track) => {
-        track.enabled = isCameraEnabled;
+        track.enabled = isCameraEnabledRef.current;
       });
       mediaStream.getAudioTracks().forEach((track) => {
-        track.enabled = isMicEnabled;
+        track.enabled = isMicEnabledRef.current;
       });
 
       setupAudioAnalyzer(mediaStream);
@@ -166,8 +187,6 @@ export function useMediaStream(options: UseMediaStreamOptions = { autoStart: tru
   }, [
     selectedAudioInputId,
     selectedVideoInputId,
-    isCameraEnabled,
-    isMicEnabled,
     stopStream,
     setupAudioAnalyzer,
   ]);

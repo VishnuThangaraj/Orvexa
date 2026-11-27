@@ -134,13 +134,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                   {/* Presence dot for Direct Chats */}
                   {conv.type === "DIRECT" && (
                     <span
+                      title={
+                        conv.presenceStatus === "ACTIVE"
+                          ? "Active now"
+                          : conv.presenceStatus === "AWAY"
+                            ? "Away"
+                            : conv.presenceStatus === "DND"
+                              ? "Do not disturb"
+                              : "Offline"
+                      }
                       className={cn(
                         "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-slate-900",
                         conv.presenceStatus === "ACTIVE"
-                          ? "bg-[#0f9d58]"
+                          ? "bg-[#137333]"
                           : conv.presenceStatus === "AWAY"
-                          ? "bg-[#f9ab00]"
-                          : "bg-slate-300 dark:bg-slate-600"
+                            ? "bg-[#ea8600]"
+                            : conv.presenceStatus === "DND"
+                              ? "bg-[#d93025]"
+                              : "bg-slate-300 dark:bg-slate-600"
                       )}
                     />
                   )}

@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { X, Search, Shield, UserCheck, UserX, MicOff } from "lucide-react";
 import { useMeetStore } from "../../store/meet.store";
 import type { RemoteParticipant, LocalParticipant } from "livekit-client";
+import type { FallbackParticipantTileData } from "../../types/meet.types";
 
 interface PeoplePanelProps {
   isHost: boolean;
   localParticipant: LocalParticipant | null;
   remoteParticipants: RemoteParticipant[];
+  localFallbackTile?: FallbackParticipantTileData | null;
+  remoteFallbackPeers?: FallbackParticipantTileData[];
   onAdmit: (userId: string) => void;
   onDeny: (userId: string) => void;
   onAdmitAll: () => void;
@@ -17,6 +20,8 @@ export const PeoplePanel: React.FC<PeoplePanelProps> = ({
   isHost,
   localParticipant,
   remoteParticipants,
+  localFallbackTile,
+  remoteFallbackPeers = [],
   onAdmit,
   onDeny,
   onAdmitAll,
@@ -44,33 +49,55 @@ export const PeoplePanel: React.FC<PeoplePanelProps> = ({
       isMuted: !localParticipant.isMicrophoneEnabled,
       isHost: isHost,
     });
+  } else if (localFallbackTile) {
+    inCallList.push({
+      id: localFallbackTile.id,
+      name: localFallbackTile.name || liveKitData?.participantName || "You",
+      avatarUrl: localFallbackTile.avatarUrl,
+      isLocal: true,
+      isMuted: !localFallbackTile.isMicEnabled,
+      isHost: isHost,
+    });
   }
 
-  remoteParticipants.forEach((p) => {
-    let fullName: string | null = null;
-    let avatar: string | null = null;
-    let role: string | null = null;
-    try {
-      const parsed = JSON.parse(p.metadata || "{}") as {
-        fullName?: string;
-        avatar?: string;
-        role?: string;
-      };
-      fullName = parsed.fullName || null;
-      avatar = parsed.avatar || null;
-      role = parsed.role || null;
-    } catch {
-      // ignore
-    }
-    inCallList.push({
-      id: p.identity,
-      name: fullName || p.name || "Participant",
-      avatarUrl: avatar,
-      isLocal: false,
-      isMuted: !p.isMicrophoneEnabled,
-      isHost: role === "HOST",
+  if (remoteParticipants.length > 0) {
+    remoteParticipants.forEach((p) => {
+      let fullName: string | null = null;
+      let avatar: string | null = null;
+      let role: string | null = null;
+      try {
+        const parsed = JSON.parse(p.metadata || "{}") as {
+          fullName?: string;
+          avatar?: string;
+          role?: string;
+        };
+        fullName = parsed.fullName || null;
+        avatar = parsed.avatar || null;
+        role = parsed.role || null;
+      } catch {
+        // ignore
+      }
+      inCallList.push({
+        id: p.identity,
+        name: fullName || p.name || "Participant",
+        avatarUrl: avatar,
+        isLocal: false,
+        isMuted: !p.isMicrophoneEnabled,
+        isHost: role === "HOST",
+      });
     });
-  });
+  } else {
+    remoteFallbackPeers.forEach((p) => {
+      inCallList.push({
+        id: p.id,
+        name: p.name,
+        avatarUrl: p.avatarUrl,
+        isLocal: false,
+        isMuted: !p.isMicEnabled,
+        isHost: p.role === "HOST",
+      });
+    });
+  }
 
   const filteredInCall = inCallList.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())

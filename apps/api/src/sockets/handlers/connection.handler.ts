@@ -14,11 +14,15 @@ export const registerConnectionHandlers = (
 
     // Track presence
     presenceService.addUserSocket(user.id, socket.id);
+    presenceService
+      .persistUserPresence(user.id, presenceService.getUserStatus(user.id))
+      .catch(() => {});
 
     // Listen to client-driven presence updates (e.g. idle AWAY, active, DND)
     socket.on("presence:update", (data, callback) => {
       if (data?.status) {
         presenceService.setUserStatus(user.id, data.status);
+        presenceService.persistUserPresence(user.id, data.status).catch(() => {});
         callback?.({ success: true });
       }
     });
@@ -31,6 +35,9 @@ export const registerConnectionHandlers = (
   socket.on("disconnect", (reason) => {
     if (user?.id) {
       presenceService.removeUserSocket(user.id, socket.id);
+      if (!presenceService.isUserOnline(user.id)) {
+        presenceService.persistUserPresence(user.id, "OFFLINE").catch(() => {});
+      }
     }
     console.log(
       `[SOCKET] User ${user?.id || "unknown"} disconnected from socket ${socket.id}. Reason: ${reason}`,

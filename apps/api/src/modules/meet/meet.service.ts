@@ -13,6 +13,9 @@ import type {
   LiveKitTokenResponse,
   MeetingRole,
   InvitationStatus,
+  PostMeetSignalDto,
+  MeetSignalItem,
+  MeetSignalsPollResponse,
 } from "./meet.types.js";
 
 export class MeetService {
@@ -299,7 +302,8 @@ export class MeetService {
 
     return {
       token,
-      url: env.LIVEKIT_URL,
+      url: env.isLiveKitConfigured ? env.LIVEKIT_URL : "",
+      mode: env.isLiveKitConfigured ? "livekit" : "webrtc",
       roomName: meeting.roomName,
       meetingCode: meeting.meetingCode,
       participantId: String(user.id),
@@ -348,6 +352,15 @@ export class MeetService {
       invitationStatus: "ACCEPTED",
     });
 
+    try {
+      const io = getIO();
+      io.to(`user:${String(targetUserId)}`).emit("meet:admitted", {
+        meetingCode: code,
+      });
+    } catch {
+      // Socket.IO unavailable on serverless runtimes
+    }
+
     return { success: true, message: "Participant admitted" };
   }
 
@@ -370,6 +383,15 @@ export class MeetService {
     await this.meetRepository.upsertParticipant(meeting.id, targetUserId, {
       invitationStatus: "DECLINED",
     });
+
+    try {
+      const io = getIO();
+      io.to(`user:${String(targetUserId)}`).emit("meet:denied", {
+        meetingCode: code,
+      });
+    } catch {
+      // Socket.IO unavailable on serverless runtimes
+    }
 
     return { success: true, message: "Participant denied" };
   }
@@ -399,14 +421,320 @@ export class MeetService {
       console.warn("[SOCKET] Failed to emit meet:ended:", err);
     }
 
-    // Attempt to delete room from LiveKit server
-    try {
-      await this.roomService.deleteRoom(meeting.roomName);
-    } catch (err) {
-      console.warn("[LIVEKIT] deleteRoom error (may already be empty):", err);
+    // Attempt to delete room from LiveKit server when configured
+    if (env.isLiveKitConfigured) {
+      try {
+        await this.roomService.deleteRoom(meeting.roomName);
+      } catch (err) {
+        console.warn("[LIVEKIT] deleteRoom error (may already be empty):", err);
+      }
     }
 
     return this.formatMeeting(updated, hostId);
+  }
+
+  // HTTP fallback: Waiting room knock
+  async knockMeeting(userId: bigint, rawCode: string) {
+    const code = normalizeMeetingCode(rawCode);
+    if (!code) throw new AppError("Invalid meeting code format", 400);
+
+    const meeting = await this.meetRepository.findByCode(code);
+    if (!meeting) throw new AppError("Meeting not found", 404);
+
+    if (meeting.status === "ENDED" || meeting.status === "CANCELLED") {
+      throw new AppError("This meeting has already ended", 410);
+    }
+
+    if (meeting.isLocked && meeting.hostId !== userId) {
+      throw new AppError("This meeting is locked by the host", 423);
+    }
+
+    const existing = meeting.participants.find((p: any) => p.userId === userId);
+    if (
+      meeting.hostId === userId ||
+      !meeting.requireApproval ||
+      existing?.invitationStatus === "ACCEPTED"
+    ) {
+      return { status: "ACCEPTED" as const };
+    }
+
+    const participant = await this.meetRepository.upsertParticipant(
+      meeting.id,
+      userId,
+      { invitationStatus: "PENDING" },
+    );
+
+    try {
+      const io = getIO();
+      io.to(`meet:${code}:host`).emit("meet:knock_received", {
+        meetingCode: code,
+        userId: String(userId),
+        displayName: participant.user?.fullName || "Participant",
+        avatarUrl: participant.user?.profileImage?.secureUrl || undefined,
+      });
+    } catch {
+      // Socket.IO unavailable on serverless runtimes
+    }
+
+    return { status: "PENDING" as const };
+  }
+
+  // HTTP fallback: Cancel waiting room knock
+  async cancelKnock(userId: bigint, rawCode: string) {
+    const code = normalizeMeetingCode(rawCode);
+    if (!code) throw new AppError("Invalid meeting code format", 400);
+
+    const meeting = await this.meetRepository.findByCode(code);
+    if (!meeting) throw new AppError("Meeting not found", 404);
+
+    const existing = meeting.participants.find((p: any) => p.userId === userId);
+    if (existing && existing.invitationStatus === "PENDING") {
+      await this.meetRepository.deleteParticipant(meeting.id, userId);
+    }
+
+    try {
+      const io = getIO();
+      io.to(`meet:${code}:host`).emit("meet:knock_cancelled", {
+        meetingCode: code,
+        userId: String(userId),
+      });
+    } catch {
+      // Socket.IO unavailable on serverless runtimes
+    }
+
+    return { success: true };
+  }
+
+  // Record participant exit and broadcast leave signal for WebRTC peers
+  async leaveMeeting(userId: bigint, rawCode: string) {
+    const code = normalizeMeetingCode(rawCode);
+    if (!code) throw new AppError("Invalid meeting code format", 400);
+
+    const meeting = await this.meetRepository.findByCode(code);
+    if (!meeting) throw new AppError("Meeting not found", 404);
+
+    await this.meetRepository.recordParticipantLeave(meeting.id, userId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true, profileImage: { select: { secureUrl: true } } },
+    });
+
+    const leaveRow = await prisma.auditLog.create({
+      data: {
+        userId,
+        action: "leave",
+        entityType: "MEET_SIGNAL",
+        entityId: meeting.id,
+        details: {
+          toUserId: null,
+          fromUserId: String(userId),
+          fromName: user?.fullName || "Participant",
+          avatarUrl: user?.profileImage?.secureUrl || null,
+          payload: {},
+        },
+      },
+    });
+
+    try {
+      const io = getIO();
+      io.to(`meet:${code}`).emit("meet:signal", {
+        id: String(leaveRow.id),
+        fromUserId: String(userId),
+        fromName: user?.fullName || "Participant",
+        avatarUrl: user?.profileImage?.secureUrl || null,
+        toUserId: null,
+        kind: "leave",
+        payload: {},
+        createdAt: leaveRow.createdAt.toISOString(),
+      });
+    } catch {
+      // Socket.IO unavailable on serverless runtimes
+    }
+
+    return { success: true };
+  }
+
+  // Post WebRTC SDP/ICE or in-call state signal (stored in audit_logs, no extra schema migration needed)
+  async postSignal(
+    userId: bigint,
+    rawCode: string,
+    dto: PostMeetSignalDto,
+  ): Promise<MeetSignalItem> {
+    const code = normalizeMeetingCode(rawCode);
+    if (!code) throw new AppError("Invalid meeting code format", 400);
+
+    const meeting = await this.meetRepository.findByCode(code);
+    if (!meeting) throw new AppError("Meeting not found", 404);
+
+    if (meeting.status === "ENDED" || meeting.status === "CANCELLED") {
+      throw new AppError("Meeting has ended", 410);
+    }
+
+    const isHost = meeting.hostId === userId;
+    const participant = meeting.participants.find((p: any) => p.userId === userId);
+    if (meeting.isLocked && !isHost) {
+      throw new AppError("This meeting is locked by the host", 423);
+    }
+    if (meeting.requireApproval && !isHost) {
+      if (!participant || participant.invitationStatus !== "ACCEPTED") {
+        throw new AppError("You must be admitted before signaling", 403);
+      }
+    }
+
+    let fromName = participant?.user?.fullName;
+    let avatarUrl: string | null = participant?.user?.profileImage?.secureUrl || null;
+    if (!fromName) {
+      const u = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, profileImage: { select: { secureUrl: true } } },
+      });
+      fromName = u?.fullName || "Participant";
+      avatarUrl = u?.profileImage?.secureUrl || null;
+    }
+
+    const toUserIdStr = dto.toUserId ? String(dto.toUserId) : null;
+    const row = await prisma.auditLog.create({
+      data: {
+        userId,
+        action: dto.kind,
+        entityType: "MEET_SIGNAL",
+        entityId: meeting.id,
+        details: {
+          toUserId: toUserIdStr,
+          fromUserId: String(userId),
+          fromName,
+          avatarUrl,
+          payload: (dto.payload || {}) as any,
+        },
+      },
+    });
+
+    // Opportunistically prune old transient signals (> 5 minutes) for this meeting
+    const cutoff = new Date(Date.now() - 5 * 60 * 1000);
+    prisma.auditLog
+      .deleteMany({
+        where: {
+          entityType: "MEET_SIGNAL",
+          entityId: meeting.id,
+          createdAt: { lt: cutoff },
+        },
+      })
+      .catch(() => {});
+
+    const item: MeetSignalItem = {
+      id: String(row.id),
+      fromUserId: String(userId),
+      fromName,
+      avatarUrl,
+      toUserId: toUserIdStr,
+      kind: dto.kind,
+      payload: (dto.payload || {}) as Record<string, unknown>,
+      createdAt: row.createdAt.toISOString(),
+    };
+
+    try {
+      const io = getIO();
+      io.to(`meet:${code}`).emit("meet:signal", item);
+    } catch {
+      // Socket.IO unavailable on serverless runtimes
+    }
+
+    return item;
+  }
+
+  // Poll pending WebRTC signals + active/waiting participant roster
+  async getSignals(
+    userId: bigint,
+    rawCode: string,
+    afterId?: string,
+  ): Promise<MeetSignalsPollResponse> {
+    const code = normalizeMeetingCode(rawCode);
+    if (!code) throw new AppError("Invalid meeting code format", 400);
+
+    const meeting = await this.meetRepository.findByCode(code);
+    if (!meeting) throw new AppError("Meeting not found", 404);
+
+    const isHost = meeting.hostId === userId;
+    const participant = meeting.participants.find((p: any) => p.userId === userId);
+    if (meeting.requireApproval && !isHost) {
+      if (!participant || participant.invitationStatus !== "ACCEPTED") {
+        throw new AppError("You must be admitted before reading signals", 403);
+      }
+    }
+
+    let afterBigInt: bigint | undefined;
+    if (afterId && /^\d+$/.test(afterId)) {
+      afterBigInt = BigInt(afterId);
+    }
+
+    const recentCutoff = new Date(Date.now() - 2 * 60 * 1000);
+    const rows = await prisma.auditLog.findMany({
+      where: {
+        entityType: "MEET_SIGNAL",
+        entityId: meeting.id,
+        createdAt: { gte: recentCutoff },
+        ...(afterBigInt ? { id: { gt: afterBigInt } } : {}),
+      },
+      orderBy: { id: "asc" },
+      take: 150,
+    });
+
+    const userIdStr = String(userId);
+    let latestId = afterId && /^\d+$/.test(afterId) ? afterId : null;
+    const signals: MeetSignalItem[] = [];
+
+    for (const row of rows) {
+      latestId = String(row.id);
+      if (row.userId === userId) continue;
+
+      const details = (row.details || {}) as Record<string, any>;
+      const toUserId = details.toUserId ? String(details.toUserId) : null;
+      if (toUserId !== null && toUserId !== userIdStr) continue;
+
+      signals.push({
+        id: String(row.id),
+        fromUserId: details.fromUserId ? String(details.fromUserId) : String(row.userId),
+        fromName: String(details.fromName || "Participant"),
+        avatarUrl: details.avatarUrl ? String(details.avatarUrl) : null,
+        toUserId,
+        kind: row.action as any,
+        payload: (details.payload || {}) as Record<string, unknown>,
+        createdAt: row.createdAt.toISOString(),
+      });
+    }
+
+    const activeParticipants = meeting.participants
+      .filter(
+        (p: any) =>
+          p.invitationStatus === "ACCEPTED" &&
+          p.joinedAt !== null &&
+          p.leftAt === null,
+      )
+      .map((p: any) => ({
+        userId: String(p.userId),
+        fullName: p.user?.fullName || "Participant",
+        avatarUrl: p.user?.profileImage?.secureUrl || null,
+        role: p.meetingRole as MeetingRole,
+      }));
+
+    const waitingParticipants = isHost
+      ? meeting.participants
+          .filter((p: any) => p.invitationStatus === "PENDING")
+          .map((p: any) => ({
+            userId: String(p.userId),
+            displayName: p.user?.fullName || "Participant",
+            avatarUrl: p.user?.profileImage?.secureUrl || undefined,
+          }))
+      : [];
+
+    return {
+      latestId,
+      signals,
+      activeParticipants,
+      waitingParticipants,
+      meetingStatus: meeting.status,
+    };
   }
 
   // In-call messages
@@ -437,7 +765,7 @@ export class MeetService {
       content: content.trim(),
     });
 
-    return {
+    const payload = {
       id: String(msg.id),
       meetingId: String(msg.meetingId),
       senderId: msg.senderId ? String(msg.senderId) : null,
@@ -445,6 +773,15 @@ export class MeetService {
       content: msg.content,
       createdAt: msg.createdAt.toISOString(),
     };
+
+    try {
+      const io = getIO();
+      io.to(`meet:${code}`).emit("meet:chat_message", payload);
+    } catch {
+      // Socket.IO unavailable on serverless runtimes
+    }
+
+    return payload;
   }
 
   async getMessages(

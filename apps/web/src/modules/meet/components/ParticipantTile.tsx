@@ -13,9 +13,11 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+import type { FallbackParticipantTileData } from "../types/meet.types";
 
 interface ParticipantTileProps {
   participant?: Participant | null;
+  fallbackPeer?: FallbackParticipantTileData | null;
   isLocal?: boolean;
   isPinned?: boolean;
   onTogglePin?: (id: string) => void;
@@ -27,6 +29,7 @@ interface ParticipantTileProps {
 
 export const ParticipantTile: React.FC<ParticipantTileProps> = ({
   participant,
+  fallbackPeer,
   isLocal = false,
   isPinned = false,
   onTogglePin,
@@ -76,9 +79,10 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
   const displayName =
     metadata.fullName ||
     participant?.name ||
+    fallbackPeer?.name ||
     fallbackUser?.fullName ||
     (isLocal ? "You" : "Participant");
-  const avatarUrl = metadata.avatar || null;
+  const avatarUrl = metadata.avatar || fallbackPeer?.avatarUrl || null;
 
   // Track publications
   const cameraPub = participant?.getTrackPublication?.(Track.Source.Camera);
@@ -86,12 +90,23 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
   const audioPub = participant?.getTrackPublication?.(Track.Source.Microphone);
 
   const videoTrack = screenPub?.track || cameraPub?.track;
-  const isVideoMuted = !videoTrack || videoTrack.isMuted;
-  const isAudioMuted =
-    !participant || !audioPub?.track || audioPub.isMuted || !participant.isMicrophoneEnabled;
+  const effectiveFallbackStream = fallbackPeer?.stream ?? (isLocal ? fallbackStream : null);
+  const hasLiveFallbackVideo = Boolean(
+    effectiveFallbackStream?.getVideoTracks().some((t) => t.readyState === "live" && t.enabled),
+  );
+  const isFallbackCameraActive = fallbackPeer
+    ? fallbackPeer.isCameraEnabled && hasLiveFallbackVideo
+    : Boolean(isLocal && fallbackStream && hasLiveFallbackVideo);
+
+  const isVideoMuted = participant ? !videoTrack || videoTrack.isMuted : !isFallbackCameraActive;
+  const isAudioMuted = participant
+    ? !audioPub?.track || audioPub.isMuted || !participant.isMicrophoneEnabled
+    : fallbackPeer
+    ? !fallbackPeer.isMicEnabled
+    : true;
   const isSpeaking = participant?.isSpeaking || false;
 
-  // Attach video track or local fallback
+  // Attach video track or fallback MediaStream
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl) return;
@@ -101,29 +116,43 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
       return () => {
         videoTrack.detach(videoEl);
       };
-    } else if (isLocal && fallbackStream) {
-      videoEl.srcObject = fallbackStream;
+    } else if (effectiveFallbackStream && !isVideoMuted) {
+      videoEl.srcObject = effectiveFallbackStream;
       return () => {
         videoEl.srcObject = null;
       };
     }
-  }, [videoTrack, isLocal, fallbackStream]);
+  }, [videoTrack, effectiveFallbackStream, isVideoMuted]);
 
-  // Attach audio track for remote participants
+  // Attach audio track for remote participants (LiveKit or WebRTC fallback)
   useEffect(() => {
     const audioEl = audioRef.current;
-    if (!audioEl || isLocal || !audioPub?.track) return;
+    if (!audioEl || isLocal) return;
 
-    const aTrack = audioPub.track;
-    aTrack.attach(audioEl);
-    return () => {
-      aTrack.detach(audioEl);
-    };
-  }, [audioPub?.track, isLocal]);
+    if (audioPub?.track) {
+      const aTrack = audioPub.track;
+      aTrack.attach(audioEl);
+      return () => {
+        aTrack.detach(audioEl);
+      };
+    } else if (fallbackPeer?.stream) {
+      audioEl.srcObject = fallbackPeer.stream;
+      return () => {
+        audioEl.srcObject = null;
+      };
+    }
+  }, [audioPub?.track, fallbackPeer?.stream, isLocal]);
 
   // Quality indicator
   const renderQuality = () => {
     if (!participant) {
+      if (fallbackPeer) {
+        return (
+          <span title="Peer-to-peer connected">
+            <Wifi className="w-3.5 h-3.5 text-emerald-400 opacity-80" />
+          </span>
+        );
+      }
       return (
         <span title="Connecting...">
           <Wifi className="w-3.5 h-3.5 text-neutral-400 opacity-60" />
@@ -147,9 +176,13 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
 
   const hasActiveVideo =
     (!isVideoMuted && Boolean(videoTrack)) ||
-    (isLocal && Boolean(fallbackStream) && !isVideoMuted);
+    (!participant && !isVideoMuted && Boolean(effectiveFallbackStream));
 
-  const tileIdentity = participant?.identity || (isLocal ? "local-user" : "participant");
+  const tileIdentity =
+    participant?.identity || fallbackPeer?.id || (isLocal ? "local-user" : "participant");
+
+  const shouldMirrorLocalVideo =
+    isLocal && !screenPub && !(fallbackPeer?.isScreenSharing ?? false);
 
   return (
     <div
@@ -168,9 +201,9 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
           ref={videoRef}
           autoPlay
           playsInline
-          muted={isLocal}
+          muted={isLocal || Boolean(fallbackPeer)}
           className={`w-full h-full object-cover ${
-            isLocal && !screenPub ? "-scale-x-100" : ""
+            shouldMirrorLocalVideo ? "-scale-x-100" : ""
           }`}
         />
       ) : (

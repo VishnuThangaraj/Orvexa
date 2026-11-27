@@ -8,7 +8,10 @@ import {
   ConnectionState,
   DisconnectReason,
 } from "livekit-client";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useMeetStore } from "../store/meet.store";
+import { useWebRtcMesh } from "./useWebRtcMesh";
+import type { FallbackParticipantTileData } from "../types/meet.types";
 
 export interface ReactionItem {
   id: string;
@@ -26,7 +29,10 @@ export interface HandRaiseItem {
 export interface UseMeetingRoomOptions {
   url?: string;
   token?: string;
+  mode?: "livekit" | "webrtc";
+  meetingCode?: string;
   onDisconnected?: (reason?: DisconnectReason) => void;
+  onMeetingEnded?: () => void;
 }
 
 export interface UseMeetingRoomReturn {
@@ -34,6 +40,9 @@ export interface UseMeetingRoomReturn {
   connectionState: ConnectionState;
   localParticipant: LocalParticipant | null;
   remoteParticipants: RemoteParticipant[];
+  localFallbackTile: FallbackParticipantTileData | null;
+  remoteFallbackPeers: FallbackParticipantTileData[];
+  isFallbackMode: boolean;
   activeSpeakers: Participant[];
   pinnedParticipantId: string | null;
   isMicEnabled: boolean;
@@ -54,33 +63,28 @@ export interface UseMeetingRoomReturn {
   reconnect: () => Promise<void>;
 }
 
-function resolveLiveKitUrl(inputUrl?: string): string {
-  if (typeof window === "undefined") return inputUrl || "ws://localhost:7880";
+function resolveLiveKitUrl(inputUrl?: string): string | null {
+  if (!inputUrl || !inputUrl.trim()) return null;
+  if (typeof window === "undefined") return inputUrl;
   const currentHost = window.location.hostname;
   const isHttps = window.location.protocol === "https:";
-  const defaultWsProtocol = isHttps ? "wss:" : "ws:";
-
-  if (!inputUrl) {
-    return `${defaultWsProtocol}//${currentHost}:7880`;
-  }
 
   try {
     const parsed = new URL(inputUrl);
-    // If server configured localhost/127.0.0.1 but client is visiting via IP or custom domain,
-    // point to the current browser host
-    if (
-      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") &&
-      currentHost !== "localhost" &&
-      currentHost !== "127.0.0.1"
-    ) {
-      parsed.hostname = currentHost;
+    const pointsToLocal =
+      parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    const isBrowserLocal =
+      currentHost === "localhost" || currentHost === "127.0.0.1";
+    // Never rewrite a localhost URL onto a remote deployment host (e.g. Vercel :7880)
+    if (pointsToLocal && !isBrowserLocal) {
+      return null;
     }
     if (isHttps && parsed.protocol === "ws:") {
       parsed.protocol = "wss:";
     }
     return parsed.toString().replace(/\/$/, "");
   } catch {
-    return inputUrl;
+    return null;
   }
 }
 
@@ -89,6 +93,7 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
   const roomRef = useRef<Room | null>(null);
 
   const liveKitData = useMeetStore((state) => state.liveKitData);
+  const currentUser = useAuthStore((state) => state.user);
   const isMicEnabled = useMeetStore((state) => state.isMicEnabled);
   const isCameraEnabled = useMeetStore((state) => state.isCameraEnabled);
   const isScreenSharing = useMeetStore((state) => state.isScreenSharing);
@@ -104,14 +109,17 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
   const [reactions, setReactions] = useState<ReactionItem[]>([]);
   const [raisedHands, setRaisedHands] = useState<HandRaiseItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fallbackToWebRtc, setFallbackToWebRtc] = useState<boolean>(false);
 
   const onDisconnectedRef = useRef(options.onDisconnected);
+  const onMeetingEndedRef = useRef(options.onMeetingEnded);
   const isMicEnabledRef = useRef(isMicEnabled);
   const isCameraEnabledRef = useRef(isCameraEnabled);
 
   useEffect(() => {
     onDisconnectedRef.current = options.onDisconnected;
-  }, [options.onDisconnected]);
+    onMeetingEndedRef.current = options.onMeetingEnded;
+  }, [options.onDisconnected, options.onMeetingEnded]);
 
   useEffect(() => {
     isMicEnabledRef.current = isMicEnabled;
@@ -122,8 +130,44 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
   }, [isCameraEnabled]);
 
   const token = options.token || liveKitData?.token;
-  const rawUrl = options.url || liveKitData?.url;
+  const rawUrl = options.url ?? liveKitData?.url;
+  const configuredMode = options.mode || liveKitData?.mode;
+  const effectiveMeetingCode = options.meetingCode || liveKitData?.meetingCode;
   const resolvedUrl = useMemo(() => resolveLiveKitUrl(rawUrl), [rawUrl]);
+  const isFallbackMode =
+    configuredMode === "webrtc" || !resolvedUrl || fallbackToWebRtc;
+
+  const {
+    localFallbackTile,
+    remoteFallbackPeers,
+    sendWebRtcReaction,
+    sendWebRtcHandRaise,
+    toggleWebRtcScreenShare,
+    leaveWebRtc,
+  } = useWebRtcMesh({
+    enabled: Boolean(isFallbackMode && (token || effectiveMeetingCode)),
+    meetingCode: effectiveMeetingCode,
+    myUserId: liveKitData?.participantId || (currentUser?.id ? String(currentUser.id) : undefined),
+    myName: liveKitData?.participantName || currentUser?.fullName || "You",
+    myAvatarUrl: currentUser?.profileImage?.secureUrl || null,
+    myRole: liveKitData?.role,
+    onReaction: (reactionItem) => {
+      setReactions((prev) => [...prev, reactionItem]);
+    },
+    onHandRaiseUpdate: (data) => {
+      setRaisedHands((prev) => {
+        if (data.isRaised) {
+          if (prev.some((h) => h.participantId === data.participantId)) return prev;
+          return [
+            ...prev,
+            { participantId: data.participantId, senderName: data.senderName, raisedAt: Date.now() },
+          ];
+        }
+        return prev.filter((h) => h.participantId !== data.participantId);
+      });
+    },
+    onMeetingEnded: () => onMeetingEndedRef.current?.(),
+  });
 
   // Update participant lists from room
   const updateParticipants = useCallback((activeRoom: Room) => {
@@ -134,7 +178,7 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
   // Send a reaction data message to all participants
   const sendReaction = useCallback((emoji: string) => {
     const activeRoom = roomRef.current;
-    const senderName = liveKitData?.participantName || "Participant";
+    const senderName = liveKitData?.participantName || currentUser?.fullName || "Participant";
     const reactionItem: ReactionItem = {
       id: `${Date.now()}-${Math.random()}`,
       emoji,
@@ -156,14 +200,17 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
       } catch (e) {
         console.warn("Failed to publish reaction:", e);
       }
+    } else if (isFallbackMode) {
+      void sendWebRtcReaction(emoji);
     }
-  }, [liveKitData?.participantName]);
+  }, [liveKitData?.participantName, currentUser?.fullName, isFallbackMode, sendWebRtcReaction]);
 
   // Raise or lower hand
   const toggleHandRaise = useCallback(() => {
     const activeRoom = roomRef.current;
-    const participantId = liveKitData?.participantId || "me";
-    const senderName = liveKitData?.participantName || "Me";
+    const participantId =
+      liveKitData?.participantId || (currentUser?.id ? String(currentUser.id) : "me");
+    const senderName = liveKitData?.participantName || currentUser?.fullName || "Me";
 
     setRaisedHands((prev) => {
       const alreadyRaised = prev.some((h) => h.participantId === participantId);
@@ -184,18 +231,29 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
         } catch (e) {
           console.warn("Failed to publish hand raise:", e);
         }
+      } else if (isFallbackMode) {
+        void sendWebRtcHandRaise(!alreadyRaised);
       }
 
       return updated;
     });
-  }, [liveKitData?.participantId, liveKitData?.participantName]);
+  }, [
+    liveKitData?.participantId,
+    liveKitData?.participantName,
+    currentUser?.id,
+    currentUser?.fullName,
+    isFallbackMode,
+    sendWebRtcHandRaise,
+  ]);
 
   const lowerHand = useCallback((participantId: string) => {
     setRaisedHands((prev) => prev.filter((h) => h.participantId !== participantId));
   }, []);
 
   const isHandRaised = raisedHands.some(
-    (h) => h.participantId === (liveKitData?.participantId || "me")
+    (h) =>
+      h.participantId ===
+      (liveKitData?.participantId || (currentUser?.id ? String(currentUser.id) : "me"))
   );
 
   // Toggle mic
@@ -227,6 +285,10 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
   // Toggle screen share
   const toggleScreenShare = useCallback(async () => {
     const nextState = !isScreenSharing;
+    if (isFallbackMode) {
+      await toggleWebRtcScreenShare();
+      return;
+    }
     try {
       if (roomRef.current && roomRef.current.state === ConnectionState.Connected) {
         await roomRef.current.localParticipant.setScreenShareEnabled(nextState);
@@ -236,10 +298,15 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
       console.warn("Failed to toggle screen share:", err);
       setIsScreenSharing(false);
     }
-  }, [isScreenSharing, setIsScreenSharing]);
+  }, [isFallbackMode, isScreenSharing, setIsScreenSharing, toggleWebRtcScreenShare]);
 
   // Manual reconnect handler
   const reconnect = useCallback(async () => {
+    if (isFallbackMode) {
+      setError(null);
+      setConnectionState(ConnectionState.Connected);
+      return;
+    }
     if (!token || !resolvedUrl) return;
     setError(null);
     setConnectionState(ConnectionState.Connecting);
@@ -267,13 +334,19 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
     } catch (err: unknown) {
       const msg = (err as Error).message || "Failed to reconnect to video server";
       console.warn("LiveKit manual reconnect error:", msg);
-      setError(msg);
-      setConnectionState(ConnectionState.Disconnected);
+      setError(null);
+      setFallbackToWebRtc(true);
+      setConnectionState(ConnectionState.Connected);
     }
-  }, [token, resolvedUrl, updateParticipants]);
+  }, [isFallbackMode, token, resolvedUrl, updateParticipants]);
 
-  // Connect and handle Room lifecycle
+  // Connect and handle Room lifecycle (LiveKit when configured; immediate WebRTC P2P when not)
   useEffect(() => {
+    if (isFallbackMode) {
+      setError(null);
+      setConnectionState(ConnectionState.Connected);
+      return;
+    }
     if (!token || !resolvedUrl) return;
 
     let isSubscribed = true;
@@ -436,8 +509,8 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
         const msg = (err as Error).message || "Failed to connect to video server";
         console.warn("LiveKit connection attempt failed:", msg);
 
-        // Auto retry up to 2 times with 1.5s delay
-        if (attempt < 2 && isSubscribed) {
+        // Switch to WebRTC P2P fallback if LiveKit server is unreachable
+        if (attempt < 1 && isSubscribed) {
           console.log(`[LIVEKIT] Retrying connection attempt ${attempt + 1}...`);
           setTimeout(() => {
             if (isSubscribed && newRoom.state !== ConnectionState.Connected) {
@@ -447,8 +520,10 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
           return;
         }
 
-        setError(msg);
-        setConnectionState(ConnectionState.Disconnected);
+        console.warn("[LIVEKIT] Falling back to WebRTC peer-to-peer mode after signal failure:", msg);
+        setError(null);
+        setFallbackToWebRtc(true);
+        setConnectionState(ConnectionState.Connected);
       }
     };
 
@@ -467,7 +542,7 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
       }
       setRoom(null);
     };
-  }, [token, resolvedUrl, updateParticipants]);
+  }, [isFallbackMode, token, resolvedUrl, updateParticipants]);
 
   // Clean old reactions after 4 seconds
   useEffect(() => {
@@ -483,13 +558,19 @@ export function useMeetingRoom(options: UseMeetingRoomOptions = {}): UseMeetingR
     if (roomRef.current) {
       roomRef.current.disconnect();
     }
-  }, []);
+    if (isFallbackMode) {
+      leaveWebRtc();
+    }
+  }, [isFallbackMode, leaveWebRtc]);
 
   return {
     room,
     connectionState,
     localParticipant,
     remoteParticipants,
+    localFallbackTile,
+    remoteFallbackPeers,
+    isFallbackMode,
     activeSpeakers,
     pinnedParticipantId,
     isMicEnabled,

@@ -8,6 +8,8 @@ import {
   meetingCodeParamSchema,
   sendMessageSchema,
   participantActionSchema,
+  knockMeetingSchema,
+  postSignalSchema,
 } from "./meet.validation.js";
 
 const router: Router = Router();
@@ -75,6 +77,43 @@ router.post(
   authenticate,
   validate(meetingCodeParamSchema, "params"),
   meetController.endMeeting,
+);
+
+router.post(
+  "/:code/knock",
+  authenticate,
+  validate(meetingCodeParamSchema, "params"),
+  validate(knockMeetingSchema, "body"),
+  meetController.knockMeeting,
+);
+
+router.delete(
+  "/:code/knock",
+  authenticate,
+  validate(meetingCodeParamSchema, "params"),
+  meetController.cancelKnock,
+);
+
+router.post(
+  "/:code/leave",
+  authenticate,
+  validate(meetingCodeParamSchema, "params"),
+  meetController.leaveMeeting,
+);
+
+router.post(
+  "/:code/signal",
+  authenticate,
+  validate(meetingCodeParamSchema, "params"),
+  validate(postSignalSchema, "body"),
+  meetController.postSignal,
+);
+
+router.get(
+  "/:code/signals",
+  authenticate,
+  validate(meetingCodeParamSchema, "params"),
+  meetController.getSignals,
 );
 
 // In-call messages

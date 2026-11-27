@@ -211,11 +211,33 @@ export const chatApi = {
     return res.data.data!;
   },
 
-  getOnlinePresence: async (): Promise<string[]> => {
-    const res = await api.get<ApiResponse<{ onlineUserIds: string[] }>>(
-      "/chat/presence",
-    );
-    return res.data.data!.onlineUserIds;
+  getOnlinePresence: async (): Promise<{
+    onlineUserIds: string[];
+    presenceMap: Record<
+      string,
+      { isOnline: boolean; status: "ACTIVE" | "AWAY" | "DND" }
+    >;
+  }> => {
+    const res = await api.get<
+      ApiResponse<{
+        onlineUserIds: string[];
+        presenceMap?: Record<
+          string,
+          { isOnline: boolean; status: "ACTIVE" | "AWAY" | "DND" }
+        >;
+      }>
+    >("/chat/presence");
+    const data = res.data.data;
+    return {
+      onlineUserIds: data?.onlineUserIds || [],
+      presenceMap: data?.presenceMap || {},
+    };
+  },
+
+  updatePresence: async (
+    status: "ACTIVE" | "AWAY" | "DND" | "OFFLINE",
+  ): Promise<void> => {
+    await api.post("/chat/presence", { status });
   },
 
   searchUsers: async (query?: string): Promise<ChatUser[]> => {

@@ -158,3 +158,7 @@ export const globalSearchQuerySchema = z.object({
   type: z.enum(["ALL", "MESSAGES", "PEOPLE", "SPACES"]).default("ALL").optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20).optional(),
 });
+
+export const updatePresenceSchema = z.object({
+  status: z.enum(["ACTIVE", "AWAY", "DND", "OFFLINE"]).default("ACTIVE"),
+});

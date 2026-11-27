@@ -6,6 +6,9 @@ import type {
   LiveKitTokenData,
   CreateMeetingInput,
   UpdateMeetingSettingsInput,
+  MeetSignalKind,
+  MeetSignalItem,
+  MeetSignalsPollResponse,
 } from "../types/meet.types";
 
 export const meetApi = {
@@ -73,6 +76,49 @@ export const meetApi = {
 
   getMessages: async (code: string): Promise<MeetingMessage[]> => {
     const res = await api.get<ApiResponse<MeetingMessage[]>>(`/meet/${code}/messages`);
+    return res.data.data;
+  },
+
+  knockMeeting: async (
+    code: string,
+    displayName?: string,
+  ): Promise<{ status: "ACCEPTED" | "PENDING" }> => {
+    const res = await api.post<ApiResponse<{ status: "ACCEPTED" | "PENDING" }>>(
+      `/meet/${code}/knock`,
+      { displayName },
+    );
+    return res.data.data;
+  },
+
+  cancelKnock: async (code: string): Promise<{ success: boolean }> => {
+    const res = await api.delete<ApiResponse<{ success: boolean }>>(`/meet/${code}/knock`);
+    return res.data.data;
+  },
+
+  leaveMeeting: async (code: string): Promise<{ success: boolean }> => {
+    const res = await api.post<ApiResponse<{ success: boolean }>>(`/meet/${code}/leave`);
+    return res.data.data;
+  },
+
+  postSignal: async (
+    code: string,
+    data: {
+      toUserId?: string | null;
+      kind: MeetSignalKind;
+      payload?: Record<string, unknown>;
+    },
+  ): Promise<MeetSignalItem> => {
+    const res = await api.post<ApiResponse<MeetSignalItem>>(`/meet/${code}/signal`, data);
+    return res.data.data;
+  },
+
+  getSignals: async (
+    code: string,
+    afterId?: string | null,
+  ): Promise<MeetSignalsPollResponse> => {
+    const res = await api.get<ApiResponse<MeetSignalsPollResponse>>(`/meet/${code}/signals`, {
+      params: afterId ? { afterId } : undefined,
+    });
     return res.data.data;
   },
 };

@@ -32,3 +32,21 @@ export const sendMessageSchema = z.object({
 export const participantActionSchema = z.object({
   userId: z.union([z.string(), z.number(), z.bigint()]),
 });
+
+export const knockMeetingSchema = z.object({
+  displayName: z.string().trim().max(120).optional(),
+});
+
+export const postSignalSchema = z.object({
+  toUserId: z.union([z.string(), z.number(), z.bigint()]).optional().nullable(),
+  kind: z.enum([
+    "offer",
+    "answer",
+    "ice",
+    "media_state",
+    "reaction",
+    "hand_raise",
+    "leave",
+  ]),
+  payload: z.record(z.string(), z.unknown()).optional().default({}),
+});

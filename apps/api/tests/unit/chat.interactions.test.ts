@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   reactionSchema,
   markReadSchema,
+  updatePresenceSchema,
 } from "../../src/modules/chat/chat.validation.js";
 import presenceService from "../../src/sockets/presence.service.js";
 
@@ -54,5 +55,30 @@ test("Chat Interactions & Presence Unit Tests", async (t) => {
     presenceService.removeUserSocket(userId, socketId2);
     assert.equal(presenceService.isUserOnline(userId), false);
     assert.deepEqual(presenceService.getOnlineUserIds(), []);
+  });
+
+  await t.test("presenceService tracks ACTIVE, AWAY, and DND statuses in presenceMap", () => {
+    presenceService.clear();
+
+    const userId = "99";
+    presenceService.addUserSocket(userId, "sock-1");
+    assert.equal(presenceService.getUserStatus(userId), "ACTIVE");
+
+    presenceService.setUserStatus(userId, "DND");
+    assert.equal(presenceService.getPresenceMap()[userId]?.status, "DND");
+
+    presenceService.setUserStatus(userId, "AWAY");
+    assert.equal(presenceService.getPresenceMap()[userId]?.status, "AWAY");
+
+    presenceService.removeUserSocket(userId, "sock-1");
+    assert.equal(presenceService.getPresenceMap()[userId], undefined);
+  });
+
+  await t.test("updatePresenceSchema validates ACTIVE, AWAY, DND, OFFLINE", () => {
+    assert.equal(updatePresenceSchema.parse({ status: "DND" }).status, "DND");
+    assert.equal(updatePresenceSchema.parse({ status: "AWAY" }).status, "AWAY");
+    assert.equal(updatePresenceSchema.parse({ status: "ACTIVE" }).status, "ACTIVE");
+    assert.equal(updatePresenceSchema.parse({ status: "OFFLINE" }).status, "OFFLINE");
+    assert.throws(() => updatePresenceSchema.parse({ status: "BUSY" }));
   });
 });

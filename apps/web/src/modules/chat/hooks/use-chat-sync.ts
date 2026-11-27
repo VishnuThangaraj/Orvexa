@@ -6,6 +6,10 @@ import { useChatStore } from "../store/chat.store";
 import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { CHAT_QUERY_KEYS } from "./use-conversations";
+import {
+  applyReadReceiptToConversation,
+  applyReadReceiptToConversationsResult,
+} from "../utils/chat.utils";
 import type {
   ChatMessage,
   ChatReactionItem,
@@ -26,7 +30,7 @@ export const useChatSync = () => {
   const {
     addOnlineUser,
     removeOnlineUser,
-    setOnlineUsers,
+    setPresenceSnapshot,
     myPresenceStatus,
     setMyPresenceStatus,
   } = useSocketStore();
@@ -59,8 +63,19 @@ export const useChatSync = () => {
     }
   }, []);
 
-  // Task 5.4: Missed messages & initial online presence sync upon connect/reconnect
+  // Task 5.4: Missed messages & initial online presence sync upon mount & connect/reconnect
   useEffect(() => {
+    const syncPresenceSnapshot = () => {
+      chatApi
+        .getOnlinePresence()
+        .then(({ onlineUserIds, presenceMap }) => {
+          setPresenceSnapshot(onlineUserIds, presenceMap);
+        })
+        .catch(() => {});
+    };
+
+    syncPresenceSnapshot();
+
     if (isConnected) {
       if (!wasConnectedRef.current) {
         queryClient.invalidateQueries({
@@ -75,33 +90,81 @@ export const useChatSync = () => {
             queryKey: CHAT_QUERY_KEYS.conversation(currentConvoId),
           });
         }
-        // Seed initial online presence list
-        chatApi
-          .getOnlinePresence()
-          .then((ids) => {
-            if (Array.isArray(ids)) {
-              setOnlineUsers(ids);
-            }
-          })
-          .catch(() => {});
       }
       wasConnectedRef.current = true;
     } else {
       wasConnectedRef.current = false;
     }
-  }, [isConnected, queryClient, setOnlineUsers]);
+  }, [isConnected, queryClient, setPresenceSnapshot]);
+
+  // Fallback real-time sync when WebSocket is disconnected (e.g. serverless Vercel deployments)
+  useEffect(() => {
+    if (isConnected) return;
+
+    let tick = 0;
+    const syncNow = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: CHAT_QUERY_KEYS.conversations,
+      });
+
+      const currentConvoId = activeConversationIdRef.current;
+      if (currentConvoId) {
+        queryClient.invalidateQueries({
+          queryKey: CHAT_QUERY_KEYS.messages(currentConvoId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: CHAT_QUERY_KEYS.conversation(currentConvoId),
+        });
+      }
+
+      if (tick % 3 === 0) {
+        chatApi
+          .getOnlinePresence()
+          .then(({ onlineUserIds, presenceMap }) => {
+            setPresenceSnapshot(onlineUserIds, presenceMap);
+          })
+          .catch(() => {});
+      }
+      tick += 1;
+    };
+
+    const interval = setInterval(syncNow, 3000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncNow();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [isConnected, queryClient, setPresenceSnapshot]);
 
   // Task 5.1: Idle detection (10 minutes) & presence status broadcast
   useEffect(() => {
-    if (!isConnected) return;
-
     const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+    const pushPresence = (status: "ACTIVE" | "AWAY" | "DND") => {
+      setMyPresenceStatus(status);
+      if (isConnected) {
+        emit("presence:update", { status });
+      }
+      chatApi.updatePresence(status).catch(() => {});
+    };
 
     const resetIdleTimer = () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       idleTimerRef.current = setTimeout(() => {
-        setMyPresenceStatus("AWAY");
-        emit("presence:update", { status: "AWAY" });
+        // Never overwrite manual Do Not Disturb status with AWAY
+        if (myPresenceRef.current === "ACTIVE") {
+          pushPresence("AWAY");
+        }
       }, IDLE_TIMEOUT_MS);
     };
 
@@ -113,8 +176,7 @@ export const useChatSync = () => {
       lastActivityRef.current = now;
 
       if (myPresenceRef.current === "AWAY") {
-        setMyPresenceStatus("ACTIVE");
-        emit("presence:update", { status: "ACTIVE" });
+        pushPresence("ACTIVE");
       }
 
       resetIdleTimer();
@@ -269,10 +331,10 @@ export const useChatSync = () => {
       setUserTyping(conversationId, String(message.senderId), senderName, false);
 
       const isIncoming = String(message.senderId) !== String(currentUser?.id);
-      const isTabFocused =
+      const isTabVisible =
         typeof document !== "undefined" &&
-        document.visibilityState === "visible" &&
-        document.hasFocus();
+        document.visibilityState === "visible";
+      const isTabFocused = isTabVisible && document.hasFocus();
 
       if (isIncoming && !isTabFocused) {
         const conv = queryClient.getQueryData<Conversation>(
@@ -306,8 +368,34 @@ export const useChatSync = () => {
       if (
         activeConversationIdRef.current === conversationId &&
         isIncoming &&
-        isTabFocused
+        isTabVisible
       ) {
+        const readAtIso = new Date().toISOString();
+        if (currentUser?.id) {
+          queryClient.setQueryData<Conversation>(
+            CHAT_QUERY_KEYS.conversation(conversationId),
+            (old) =>
+              old
+                ? applyReadReceiptToConversation(
+                    old,
+                    String(currentUser.id),
+                    String(message.id),
+                    readAtIso,
+                  )
+                : old,
+          );
+          queryClient.setQueriesData<FetchConversationsResult>(
+            { queryKey: CHAT_QUERY_KEYS.conversations },
+            (old) =>
+              applyReadReceiptToConversationsResult(
+                old,
+                conversationId,
+                String(currentUser.id),
+                String(message.id),
+                readAtIso,
+              ),
+          );
+        }
         emit("message:read", {
           conversationId,
           messageId: message.id,
@@ -372,30 +460,28 @@ export const useChatSync = () => {
     const unsubReceipt = subscribe("message:read_receipt", (data) => {
       queryClient.setQueryData<Conversation>(
         CHAT_QUERY_KEYS.conversation(data.conversationId),
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            participants: old.participants.map((p) => {
-              if (String(p.userId) === String(data.userId)) {
-                return {
-                  ...p,
-                  lastReadMessageId: data.messageId,
-                  lastReadAt: data.readAt,
-                };
-              }
-              return p;
-            }),
-          };
-        },
+        (old) =>
+          old
+            ? applyReadReceiptToConversation(
+                old,
+                data.userId,
+                data.messageId,
+                data.readAt,
+              )
+            : old,
       );
 
-      queryClient.invalidateQueries({
-        queryKey: CHAT_QUERY_KEYS.conversation(data.conversationId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: CHAT_QUERY_KEYS.conversations,
-      });
+      queryClient.setQueriesData<FetchConversationsResult>(
+        { queryKey: CHAT_QUERY_KEYS.conversations },
+        (old) =>
+          applyReadReceiptToConversationsResult(
+            old,
+            data.conversationId,
+            data.userId,
+            data.messageId,
+            data.readAt,
+          ),
+      );
     });
 
     // 6. Reaction updated

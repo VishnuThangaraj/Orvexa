@@ -123,6 +123,13 @@ class SocketService {
       for (const room of socketStore.activeRooms) {
         this.socket?.emit("chat:join", { conversationId: room });
       }
+
+      // Sync current user's selected presence status (e.g. DND/AWAY) after connect/reconnect
+      if (socketStore.myPresenceStatus) {
+        this.socket?.emit("presence:update", {
+          status: socketStore.myPresenceStatus,
+        });
+      }
     });
 
     this.socket.on("disconnect", (reason) => {

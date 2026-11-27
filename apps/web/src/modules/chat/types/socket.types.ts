@@ -114,6 +114,23 @@ export interface ServerToClientEvents {
     settings: unknown;
   }) => void;
   "meet:ended": (data: { meetingCode: string }) => void;
+  "meet:signal": (data: {
+    id: string;
+    fromUserId: string;
+    fromName: string;
+    avatarUrl: string | null;
+    toUserId: string | null;
+    kind:
+      | "offer"
+      | "answer"
+      | "ice"
+      | "media_state"
+      | "reaction"
+      | "hand_raise"
+      | "leave";
+    payload: Record<string, unknown>;
+    createdAt: string;
+  }) => void;
   error: (err: { message: string; code?: string | number }) => void;
 }
 

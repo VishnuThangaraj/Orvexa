@@ -16,6 +16,7 @@ import { useSocketStore } from "../store/socket.store";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { chatApi } from "../api/chat.api";
 import { CHAT_QUERY_KEYS } from "../hooks/use-conversations";
+import { resolvePresenceInfo } from "../utils/chat.utils";
 import { meetApi } from "@/modules/meet/api/meet.api";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "../types/chat.types";
@@ -43,10 +44,8 @@ export const ThreadHeader: React.FC<ThreadHeaderProps> = ({
     (p) => String(p.userId) !== String(currentUser?.id),
   )?.user;
 
-  const isOnline = other?.id ? Boolean(onlineUsers[String(other.id)]) : false;
-  const otherPresence = other?.id
-    ? presenceStatuses[String(other.id)] || (isOnline ? "ACTIVE" : "OFFLINE")
-    : "OFFLINE";
+  const presence = resolvePresenceInfo(other?.id, onlineUsers, presenceStatuses);
+  const otherPresence = presence.status;
 
   const title = isGroup
     ? conversation.name || "Space"
@@ -54,13 +53,7 @@ export const ThreadHeader: React.FC<ThreadHeaderProps> = ({
 
   const subtitle = isGroup
     ? `${conversation.participants.length} Members`
-    : otherPresence === "ACTIVE"
-      ? "Active now"
-      : otherPresence === "AWAY"
-        ? "Away"
-        : otherPresence === "DND"
-          ? "Do not disturb"
-          : "Offline";
+    : presence.label;
 
   const initials = isGroup
     ? conversation.name

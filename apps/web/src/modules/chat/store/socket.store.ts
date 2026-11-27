@@ -16,6 +16,13 @@ interface SocketState {
   setUserPresenceStatus: (userId: string, status: "ACTIVE" | "AWAY" | "DND") => void;
   setMyPresenceStatus: (status: "ACTIVE" | "AWAY" | "DND") => void;
   setOnlineUsers: (userIds: string[]) => void;
+  setPresenceSnapshot: (
+    userIds: string[],
+    presenceMap?: Record<
+      string,
+      { isOnline: boolean; status: "ACTIVE" | "AWAY" | "DND" }
+    >,
+  ) => void;
   addOnlineUser: (userId: string, status?: "ACTIVE" | "AWAY" | "DND") => void;
   removeOnlineUser: (userId: string) => void;
   addActiveRoom: (room: string) => void;
@@ -64,6 +71,30 @@ export const useSocketStore = create<SocketState>((set) => ({
       }, {}),
     }),
 
+  setPresenceSnapshot: (userIds, presenceMap) =>
+    set(() => {
+      const nextOnline: Record<string, boolean> = {};
+      const nextStatuses: Record<string, "ACTIVE" | "AWAY" | "DND"> = {};
+
+      for (const id of userIds) {
+        nextOnline[id] = true;
+      }
+
+      if (presenceMap) {
+        for (const [id, info] of Object.entries(presenceMap)) {
+          if (info?.isOnline) {
+            nextOnline[id] = true;
+            nextStatuses[id] = info.status || "ACTIVE";
+          }
+        }
+      }
+
+      return {
+        onlineUsers: nextOnline,
+        presenceStatuses: nextStatuses,
+      };
+    }),
+
   addOnlineUser: (userId, status = "ACTIVE") =>
     set((state) => ({
       onlineUsers: { ...state.onlineUsers, [userId]: true },
@@ -99,6 +130,7 @@ export const useSocketStore = create<SocketState>((set) => ({
       connectionError: null,
       activeRooms: [],
       onlineUsers: {},
+      presenceStatuses: {},
     }),
 }));
 

@@ -124,9 +124,57 @@ export interface MeetingMessageResponse {
   createdAt: string;
 }
 
+export type MeetSignalKind =
+  | "offer"
+  | "answer"
+  | "ice"
+  | "media_state"
+  | "reaction"
+  | "hand_raise"
+  | "leave";
+
+export interface PostMeetSignalDto {
+  toUserId?: string | number | bigint | null;
+  kind: MeetSignalKind;
+  payload?: Record<string, unknown>;
+}
+
+export interface MeetSignalItem {
+  id: string;
+  fromUserId: string;
+  fromName: string;
+  avatarUrl: string | null;
+  toUserId: string | null;
+  kind: MeetSignalKind;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface MeetActivePeerSummary {
+  userId: string;
+  fullName: string;
+  avatarUrl: string | null;
+  role: MeetingRole;
+}
+
+export interface MeetWaitingPeerSummary {
+  userId: string;
+  displayName: string;
+  avatarUrl?: string;
+}
+
+export interface MeetSignalsPollResponse {
+  latestId: string | null;
+  signals: MeetSignalItem[];
+  activeParticipants: MeetActivePeerSummary[];
+  waitingParticipants: MeetWaitingPeerSummary[];
+  meetingStatus: MeetingStatus;
+}
+
 export interface LiveKitTokenResponse {
   token: string;
   url: string;
+  mode: "livekit" | "webrtc";
   roomName: string;
   meetingCode: string;
   participantId: string;

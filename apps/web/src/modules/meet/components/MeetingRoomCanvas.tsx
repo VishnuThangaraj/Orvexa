@@ -2,6 +2,7 @@ import React from "react";
 import { Participant, LocalParticipant, RemoteParticipant } from "livekit-client";
 import { ParticipantTile } from "./ParticipantTile";
 import type { ReactionItem, HandRaiseItem } from "../hooks/useMeetingRoom";
+import type { FallbackParticipantTileData } from "../types/meet.types";
 
 export type MeetLayoutMode = "tiled" | "spotlight" | "sidebar";
 
@@ -16,6 +17,8 @@ interface MeetingRoomCanvasProps {
   reactions: ReactionItem[];
   fallbackStream?: MediaStream | null;
   fallbackUser?: { fullName?: string; email?: string } | null;
+  localFallbackTile?: FallbackParticipantTileData | null;
+  remoteFallbackPeers?: FallbackParticipantTileData[];
 }
 
 export const MeetingRoomCanvas: React.FC<MeetingRoomCanvasProps> = ({
@@ -29,10 +32,13 @@ export const MeetingRoomCanvas: React.FC<MeetingRoomCanvasProps> = ({
   reactions,
   fallbackStream,
   fallbackUser,
+  localFallbackTile,
+  remoteFallbackPeers = [],
 }) => {
-  // Combine all participants: local + remotes
+  // Combine all participants: local + remotes (LiveKit or WebRTC P2P fallback)
   const allParticipants: Array<{
     participant: Participant | null;
+    fallbackPeer: FallbackParticipantTileData | null;
     isLocal: boolean;
     identity: string;
   }> = [];
@@ -40,25 +46,38 @@ export const MeetingRoomCanvas: React.FC<MeetingRoomCanvasProps> = ({
   if (localParticipant) {
     allParticipants.push({
       participant: localParticipant,
+      fallbackPeer: null,
       isLocal: true,
       identity: localParticipant.identity,
     });
   } else {
-    // If not yet connected to LiveKit room or in local fallback mode
     allParticipants.push({
       participant: null,
+      fallbackPeer: localFallbackTile || null,
       isLocal: true,
-      identity: "local-user",
+      identity: localFallbackTile?.id || "local-user",
     });
   }
 
-  remoteParticipants.forEach((p) => {
-    allParticipants.push({
-      participant: p,
-      isLocal: false,
-      identity: p.identity,
+  if (remoteParticipants.length > 0) {
+    remoteParticipants.forEach((p) => {
+      allParticipants.push({
+        participant: p,
+        fallbackPeer: null,
+        isLocal: false,
+        identity: p.identity,
+      });
     });
-  });
+  } else {
+    remoteFallbackPeers.forEach((fp) => {
+      allParticipants.push({
+        participant: null,
+        fallbackPeer: fp,
+        isLocal: false,
+        identity: fp.id,
+      });
+    });
+  }
 
   const totalCount = allParticipants.length;
 
@@ -98,38 +117,16 @@ export const MeetingRoomCanvas: React.FC<MeetingRoomCanvasProps> = ({
       {/* Mode 1: Spotlight */}
       {layoutMode === "spotlight" && spotlightTarget && (
         <div className="w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center">
-          {spotlightTarget.participant ? (
-            <ParticipantTile
-              participant={spotlightTarget.participant}
-              isLocal={spotlightTarget.isLocal}
-              isPinned={pinnedParticipantId === spotlightTarget.identity}
-              onTogglePin={onTogglePin}
-              isHandRaised={isHandRaised(spotlightTarget.identity)}
-              fallbackStream={spotlightTarget.isLocal ? fallbackStream : null}
-            />
-          ) : (
-            /* Local fallback before room is connected */
-            <div className="w-full h-full bg-[#3c4043] rounded-2xl overflow-hidden flex items-center justify-center border border-neutral-700/60 relative">
-              {fallbackStream ? (
-                <video
-                  autoPlay
-                  playsInline
-                  muted
-                  ref={(el) => {
-                    if (el) el.srcObject = fallbackStream;
-                  }}
-                  className="w-full h-full object-cover -scale-x-100"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-semibold text-white shadow-lg">
-                  {fallbackUser?.fullName?.charAt(0).toUpperCase() || "Y"}
-                </div>
-              )}
-              <div className="absolute bottom-3 left-3 bg-black/60 px-3 py-1.5 rounded-full text-xs text-white">
-                {fallbackUser?.fullName || "You"} (You)
-              </div>
-            </div>
-          )}
+          <ParticipantTile
+            participant={spotlightTarget.participant}
+            fallbackPeer={spotlightTarget.fallbackPeer}
+            isLocal={spotlightTarget.isLocal}
+            isPinned={pinnedParticipantId === spotlightTarget.identity}
+            onTogglePin={onTogglePin}
+            isHandRaised={isHandRaised(spotlightTarget.identity)}
+            fallbackStream={spotlightTarget.isLocal ? fallbackStream : null}
+            fallbackUser={spotlightTarget.isLocal ? fallbackUser : null}
+          />
         </div>
       )}
 
@@ -138,22 +135,16 @@ export const MeetingRoomCanvas: React.FC<MeetingRoomCanvasProps> = ({
         <div className="w-full h-full flex flex-col md:flex-row gap-4 items-center justify-center">
           {/* Main Stage */}
           <div className="flex-1 w-full h-full max-h-[85vh] flex items-center justify-center">
-            {spotlightTarget.participant ? (
-              <ParticipantTile
-                participant={spotlightTarget.participant}
-                isLocal={spotlightTarget.isLocal}
-                isPinned={pinnedParticipantId === spotlightTarget.identity}
-                onTogglePin={onTogglePin}
-                isHandRaised={isHandRaised(spotlightTarget.identity)}
-                fallbackStream={spotlightTarget.isLocal ? fallbackStream : null}
-              />
-            ) : (
-              <div className="w-full h-full bg-[#3c4043] rounded-2xl flex items-center justify-center border border-neutral-700 relative">
-                <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-semibold text-white">
-                  {fallbackUser?.fullName?.charAt(0).toUpperCase() || "Y"}
-                </div>
-              </div>
-            )}
+            <ParticipantTile
+              participant={spotlightTarget.participant}
+              fallbackPeer={spotlightTarget.fallbackPeer}
+              isLocal={spotlightTarget.isLocal}
+              isPinned={pinnedParticipantId === spotlightTarget.identity}
+              onTogglePin={onTogglePin}
+              isHandRaised={isHandRaised(spotlightTarget.identity)}
+              fallbackStream={spotlightTarget.isLocal ? fallbackStream : null}
+              fallbackUser={spotlightTarget.isLocal ? fallbackUser : null}
+            />
           </div>
 
           {/* Right vertical thumbnail strip */}
@@ -161,16 +152,16 @@ export const MeetingRoomCanvas: React.FC<MeetingRoomCanvasProps> = ({
             <div className="w-full md:w-64 md:h-full max-h-[85vh] overflow-y-auto flex md:flex-col gap-3 py-2 shrink-0">
               {sidebarOthers.map((item) => (
                 <div key={item.identity} className="aspect-video w-48 md:w-full shrink-0">
-                  {item.participant ? (
-                    <ParticipantTile
-                      participant={item.participant}
-                      isLocal={item.isLocal}
-                      isPinned={pinnedParticipantId === item.identity}
-                      onTogglePin={onTogglePin}
-                      isHandRaised={isHandRaised(item.identity)}
-                      fallbackStream={item.isLocal ? fallbackStream : null}
-                    />
-                  ) : null}
+                  <ParticipantTile
+                    participant={item.participant}
+                    fallbackPeer={item.fallbackPeer}
+                    isLocal={item.isLocal}
+                    isPinned={pinnedParticipantId === item.identity}
+                    onTogglePin={onTogglePin}
+                    isHandRaised={isHandRaised(item.identity)}
+                    fallbackStream={item.isLocal ? fallbackStream : null}
+                    fallbackUser={item.isLocal ? fallbackUser : null}
+                  />
                 </div>
               ))}
             </div>
@@ -198,37 +189,16 @@ export const MeetingRoomCanvas: React.FC<MeetingRoomCanvasProps> = ({
               key={item.identity}
               className="w-full h-full min-h-[180px] max-h-[70vh] aspect-video flex items-center justify-center"
             >
-              {item.participant ? (
-                <ParticipantTile
-                  participant={item.participant}
-                  isLocal={item.isLocal}
-                  isPinned={pinnedParticipantId === item.identity}
-                  onTogglePin={onTogglePin}
-                  isHandRaised={isHandRaised(item.identity)}
-                  fallbackStream={item.isLocal ? fallbackStream : null}
-                />
-              ) : (
-                <div className="w-full h-full bg-[#3c4043] rounded-2xl overflow-hidden flex items-center justify-center border border-neutral-700/60 relative">
-                  {fallbackStream ? (
-                    <video
-                      autoPlay
-                      playsInline
-                      muted
-                      ref={(el) => {
-                        if (el) el.srcObject = fallbackStream;
-                      }}
-                      className="w-full h-full object-cover -scale-x-100"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-semibold text-white shadow-lg">
-                      {fallbackUser?.fullName?.charAt(0).toUpperCase() || "Y"}
-                    </div>
-                  )}
-                  <div className="absolute bottom-3 left-3 bg-black/60 px-3 py-1.5 rounded-full text-xs text-white">
-                    {fallbackUser?.fullName || "You"} (You)
-                  </div>
-                </div>
-              )}
+              <ParticipantTile
+                participant={item.participant}
+                fallbackPeer={item.fallbackPeer}
+                isLocal={item.isLocal}
+                isPinned={pinnedParticipantId === item.identity}
+                onTogglePin={onTogglePin}
+                isHandRaised={isHandRaised(item.identity)}
+                fallbackStream={item.isLocal ? fallbackStream : null}
+                fallbackUser={item.isLocal ? fallbackUser : null}
+              />
             </div>
           ))}
         </div>

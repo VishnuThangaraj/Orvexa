@@ -63,6 +63,14 @@ const env = {
     optional("LIVEKIT_WEBHOOK_SECRET") ||
     optional("LIVEKIT_API_SECRET") ||
     "secret",
+  isLiveKitConfigured: (() => {
+    const configuredUrl = optional("LIVEKIT_URL").trim();
+    if (!configuredUrl) return false;
+    const isLocal =
+      configuredUrl.includes("localhost") || configuredUrl.includes("127.0.0.1");
+    if (process.env.VERCEL && isLocal) return false;
+    return true;
+  })(),
 };
 
 export default env;

@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { socketService } from "@/modules/chat/services/socket.service";
+import meetApi from "../api/meet.api";
 import { useMeetStore } from "../store/meet.store";
 import type { MeetingMessage } from "../types/meet.types";
 
@@ -108,66 +109,118 @@ export function useMeetSocket({
   ]);
 
   const knock = useCallback(
-    (displayName?: string) => {
+    async (displayName?: string) => {
       const socket = socketService.getSocket();
-      if (!socket) return;
+      if (socket && socket.connected) {
+        socket.emit("meet:knock", { meetingCode, displayName }, (res) => {
+          if (res?.success) {
+            setWaitingState("knocking");
+          }
+        });
+        return;
+      }
 
-      socket.emit("meet:knock", { meetingCode, displayName }, (res) => {
-        if (res?.success) {
+      // HTTP fallback for serverless deployments without WebSocket
+      try {
+        const res = await meetApi.knockMeeting(meetingCode, displayName);
+        if (res.status === "ACCEPTED") {
+          setWaitingState("admitted");
+          onAdmitted?.();
+        } else {
           setWaitingState("knocking");
         }
-      });
+      } catch (err) {
+        console.warn("[MEET] HTTP knock fallback failed:", err);
+      }
     },
-    [meetingCode, setWaitingState]
+    [meetingCode, onAdmitted, setWaitingState]
   );
 
-  const cancelKnock = useCallback(() => {
+  const cancelKnock = useCallback(async () => {
     const socket = socketService.getSocket();
-    if (!socket) return;
+    if (socket && socket.connected) {
+      socket.emit("meet:cancel_knock", { meetingCode });
+      setWaitingState("idle");
+      return;
+    }
 
-    socket.emit("meet:cancel_knock", { meetingCode });
+    try {
+      await meetApi.cancelKnock(meetingCode);
+    } catch {
+      // ignore
+    }
     setWaitingState("idle");
   }, [meetingCode, setWaitingState]);
 
   const admit = useCallback(
-    (userId: string) => {
+    async (userId: string) => {
       const socket = socketService.getSocket();
-      if (!socket) return;
+      if (socket && socket.connected) {
+        socket.emit("meet:admit", { meetingCode, userId }, () => {
+          removeWaitingParticipant(userId);
+        });
+        return;
+      }
 
-      socket.emit("meet:admit", { meetingCode, userId }, () => {
+      try {
+        await meetApi.admitParticipant(meetingCode, userId);
         removeWaitingParticipant(userId);
-      });
+      } catch (err) {
+        console.warn("[MEET] HTTP admit fallback failed:", err);
+      }
     },
     [meetingCode, removeWaitingParticipant]
   );
 
   const deny = useCallback(
-    (userId: string) => {
+    async (userId: string) => {
       const socket = socketService.getSocket();
-      if (!socket) return;
+      if (socket && socket.connected) {
+        socket.emit("meet:deny", { meetingCode, userId }, () => {
+          removeWaitingParticipant(userId);
+        });
+        return;
+      }
 
-      socket.emit("meet:deny", { meetingCode, userId }, () => {
+      try {
+        await meetApi.denyParticipant(meetingCode, userId);
         removeWaitingParticipant(userId);
-      });
+      } catch (err) {
+        console.warn("[MEET] HTTP deny fallback failed:", err);
+      }
     },
     [meetingCode, removeWaitingParticipant]
   );
 
-  const admitAll = useCallback(() => {
+  const admitAll = useCallback(async () => {
     const socket = socketService.getSocket();
-    if (!socket) return;
+    if (socket && socket.connected) {
+      socket.emit("meet:admit_all", { meetingCode }, () => {
+        useMeetStore.getState().clearWaitingParticipants();
+      });
+      return;
+    }
 
-    socket.emit("meet:admit_all", { meetingCode }, () => {
-      useMeetStore.getState().clearWaitingParticipants();
-    });
+    const waiting = useMeetStore.getState().waitingParticipants;
+    await Promise.all(
+      waiting.map((p) => meetApi.admitParticipant(meetingCode, p.userId).catch(() => {})),
+    );
+    useMeetStore.getState().clearWaitingParticipants();
   }, [meetingCode]);
 
   const sendChat = useCallback(
-    (content: string) => {
+    async (content: string) => {
       const socket = socketService.getSocket();
-      if (!socket) return;
+      if (socket && socket.connected) {
+        socket.emit("meet:send_chat", { meetingCode, content });
+        return;
+      }
 
-      socket.emit("meet:send_chat", { meetingCode, content });
+      try {
+        await useMeetStore.getState().sendMessage(meetingCode, content);
+      } catch (err) {
+        console.warn("[MEET] HTTP sendMessage fallback failed:", err);
+      }
     },
     [meetingCode]
   );

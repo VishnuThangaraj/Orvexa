@@ -527,14 +527,43 @@ export class ChatController {
     next: NextFunction,
   ) => {
     try {
-      const onlineUserIds = presenceService.getOnlineUserIds();
-      const presenceMap = presenceService.getPresenceMap();
+      const presenceMap = await presenceService.getHydratedPresenceMap();
+      const onlineUserIds = Object.keys(presenceMap);
       return sendResponse(
         res,
         200,
         "Online presence retrieved successfully",
         { onlineUserIds, presenceMap },
       );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateOnlinePresence = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new AppError("Unauthorized", 401);
+
+      const status = (req.body?.status || "ACTIVE") as
+        | "ACTIVE"
+        | "AWAY"
+        | "DND"
+        | "OFFLINE";
+
+      if (status !== "OFFLINE") {
+        presenceService.setUserStatus(String(userId), status);
+      }
+      await presenceService.persistUserPresence(String(userId), status);
+
+      return sendResponse(res, 200, "Presence status updated successfully", {
+        userId: String(userId),
+        status,
+      });
     } catch (error) {
       next(error);
     }
