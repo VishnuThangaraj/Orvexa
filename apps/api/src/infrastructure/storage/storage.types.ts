@@ -1,11 +1,26 @@
 import type { Readable } from "node:stream";
 
+export interface StoragePutOptions {
+  mimeType?: string;
+  filename?: string;
+}
+
 export interface StoragePutResult {
   key: string;
   size: number;
   sha256: string;
   mimeType?: string;
   absolutePath?: string;
+  storageBackend?: "LOCAL" | "CLOUDINARY";
+  publicId?: string;
+  cloudinaryAssetId?: string | null;
+  resourceType?: "IMAGE" | "VIDEO" | "RAW";
+  deliveryType?: "UPLOAD" | "AUTHENTICATED" | "PRIVATE";
+  version?: number | null;
+  format?: string | null;
+  secureUrl?: string | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 export interface StorageGetOptions {
@@ -32,7 +47,7 @@ export interface IStorageProvider {
   putStream(
     key: string,
     stream: Readable,
-    options?: { mimeType?: string },
+    options?: StoragePutOptions,
   ): Promise<StoragePutResult>;
 
   /**
@@ -41,7 +56,7 @@ export interface IStorageProvider {
   putBuffer(
     key: string,
     buffer: Buffer,
-    options?: { mimeType?: string },
+    options?: StoragePutOptions,
   ): Promise<StoragePutResult>;
 
   /**
@@ -88,7 +103,7 @@ export interface IStorageProvider {
     chunkSessionId: string,
     totalChunks: number,
     finalKey: string,
-    options?: { mimeType?: string },
+    options?: StoragePutOptions,
   ): Promise<StoragePutResult>;
 
   /**

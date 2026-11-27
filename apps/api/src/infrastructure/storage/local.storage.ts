@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { Readable, pipeline } from "node:stream";
@@ -9,6 +10,7 @@ import type {
   IStorageProvider,
   StorageGetOptions,
   StorageGetResult,
+  StoragePutOptions,
   StoragePutResult,
   StorageStats,
 } from "./storage.types.js";
@@ -20,15 +22,19 @@ export class LocalStorageProvider implements IStorageProvider {
   private readonly chunkDir: string;
 
   constructor(baseDir?: string, chunkDir?: string) {
+    const defaultRoot = process.env.VERCEL
+      ? path.join(os.tmpdir(), "orvexa-storage")
+      : path.join(process.cwd(), "storage");
+
     this.baseDir = path.resolve(
       baseDir ||
         process.env.STORAGE_LOCAL_DIR ||
-        path.join(process.cwd(), "storage", "blobs"),
+        path.join(defaultRoot, "blobs"),
     );
     this.chunkDir = path.resolve(
       chunkDir ||
         process.env.STORAGE_CHUNK_DIR ||
-        path.join(process.cwd(), "storage", "chunks"),
+        path.join(defaultRoot, "chunks"),
     );
   }
 
@@ -55,7 +61,7 @@ export class LocalStorageProvider implements IStorageProvider {
   async putStream(
     key: string,
     stream: Readable,
-    options: { mimeType?: string } = {},
+    options: StoragePutOptions = {},
   ): Promise<StoragePutResult> {
     await this.ensureInitialized();
     const targetPath = this.resolveSafePath(key);
@@ -85,6 +91,7 @@ export class LocalStorageProvider implements IStorageProvider {
           sha256: hash.digest("hex"),
           mimeType: options.mimeType,
           absolutePath: targetPath,
+          storageBackend: "LOCAL",
         });
       });
 
@@ -95,7 +102,7 @@ export class LocalStorageProvider implements IStorageProvider {
   async putBuffer(
     key: string,
     buffer: Buffer,
-    options: { mimeType?: string } = {},
+    options: StoragePutOptions = {},
   ): Promise<StoragePutResult> {
     await this.ensureInitialized();
     const targetPath = this.resolveSafePath(key);
@@ -110,6 +117,7 @@ export class LocalStorageProvider implements IStorageProvider {
       sha256: hash,
       mimeType: options.mimeType,
       absolutePath: targetPath,
+      storageBackend: "LOCAL",
     };
   }
 
@@ -227,7 +235,7 @@ export class LocalStorageProvider implements IStorageProvider {
     chunkSessionId: string,
     totalChunks: number,
     finalKey: string,
-    options: { mimeType?: string } = {},
+    options: StoragePutOptions = {},
   ): Promise<StoragePutResult> {
     await this.ensureInitialized();
     const sessionDir = this.resolveSafePath(chunkSessionId, this.chunkDir);
@@ -274,6 +282,7 @@ export class LocalStorageProvider implements IStorageProvider {
         sha256: hash.digest("hex"),
         mimeType: options.mimeType,
         absolutePath: targetPath,
+        storageBackend: "LOCAL",
       };
     } catch (err) {
       writeStream.destroy();

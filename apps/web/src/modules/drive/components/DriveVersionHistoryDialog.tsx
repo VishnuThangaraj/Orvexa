@@ -69,7 +69,34 @@ export const DriveVersionHistoryDialog: React.FC<DriveVersionHistoryDialogProps>
     setActionSuccess(null);
 
     try {
-      await driveApi.uploadNewVersion(item.id, file, (pct) => setUploadProgress(pct));
+      const DIRECT_UPLOAD_LIMIT = 3.5 * 1024 * 1024;
+      if (file.size <= DIRECT_UPLOAD_LIMIT) {
+        await driveApi.uploadNewVersion(item.id, file, (pct) => setUploadProgress(pct));
+      } else {
+        const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB to stay under Vercel's 4.5MB limit
+        const session = await driveApi.initUploadSession({
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+          totalBytes: file.size,
+          targetFileId: item.id,
+          chunkSize: CHUNK_SIZE,
+        });
+
+        const totalChunks = session.totalChunks;
+        for (let c = 0; c < totalChunks; c++) {
+          const start = c * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunkBlob = file.slice(start, end);
+
+          await driveApi.uploadChunk(session.sessionId, c, chunkBlob, (chunkPct) => {
+            const overallPct = Math.round(((c + chunkPct / 100) / totalChunks) * 100);
+            setUploadProgress(overallPct);
+          });
+        }
+
+        await driveApi.completeUploadSession(session.sessionId);
+        setUploadProgress(100);
+      }
       setActionSuccess(`New version uploaded successfully!`);
       await loadVersions();
       onVersionChanged?.();

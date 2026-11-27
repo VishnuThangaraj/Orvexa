@@ -9,7 +9,61 @@ import prisma from "../../infrastructure/database/prisma.js";
 import AppError from "../../common/errors/AppError.js";
 import { driveRepository, type PaginationOptions } from "./drive.repository.js";
 import { drivePermissionService } from "./drive.permission.js";
-import { getStorageProvider } from "../../infrastructure/storage/index.js";
+import {
+  deleteAssetBlob,
+  getStorageProvider,
+  resolveAssetBuffer,
+  resolveAssetStream,
+  resolveCloudThumbnailBuffer,
+  type StoragePutResult,
+} from "../../infrastructure/storage/index.js";
+
+function parseOptionalBigInt(value?: string | null, label = "ID"): bigint | null {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed || trimmed === "root" || trimmed === "null" || trimmed === "undefined") {
+    return null;
+  }
+  if (!/^\d+$/.test(trimmed)) {
+    throw new AppError(`Invalid ${label}`, 400);
+  }
+  return BigInt(trimmed);
+}
+
+function buildFileAssetData(
+  userId: bigint,
+  stored: StoragePutResult,
+  meta: {
+    originalFilename: string;
+    mimeType: string;
+    fallbackStorageKey: string;
+    fallbackResourceType: "IMAGE" | "VIDEO" | "RAW";
+    fallbackFormat: string | null;
+  },
+) {
+  const backend = stored.storageBackend ?? "LOCAL";
+  return {
+    publicId: stored.publicId ?? meta.fallbackStorageKey,
+    cloudinaryAssetId: stored.cloudinaryAssetId ?? null,
+    resourceType: stored.resourceType ?? meta.fallbackResourceType,
+    deliveryType: stored.deliveryType ?? "AUTHENTICATED",
+    version: stored.version ?? null,
+    originalFilename: meta.originalFilename,
+    mimeType: meta.mimeType,
+    bytes: BigInt(stored.size),
+    format: stored.format ?? meta.fallbackFormat,
+    secureUrl: stored.secureUrl ?? null,
+    width: stored.width ?? null,
+    height: stored.height ?? null,
+    storageBackend: backend,
+    storagePath:
+      backend === "CLOUDINARY"
+        ? (stored.publicId ?? meta.fallbackStorageKey)
+        : meta.fallbackStorageKey,
+    sha256: stored.sha256,
+    uploadedBy: userId,
+  };
+}
 
 function getTotalQuota(): bigint {
   if (process.env.DRIVE_TOTAL_QUOTA_BYTES) {
@@ -382,8 +436,6 @@ export class DriveService {
       include: { currentAsset: true },
     });
 
-    const storage = getStorageProvider();
-
     // Delete files in transaction
     await prisma.$transaction(async (tx) => {
       // Delete drive files
@@ -398,8 +450,8 @@ export class DriveService {
 
     // Cleanup storage blobs for assets
     for (const f of files) {
-      if (f.currentAsset.storagePath) {
-        await storage.delete(f.currentAsset.storagePath).catch(() => {});
+      if (f.currentAsset) {
+        await deleteAssetBlob(f.currentAsset).catch(() => {});
       }
     }
 
@@ -581,20 +633,18 @@ export class DriveService {
       include: { asset: true },
     });
 
-    const storage = getStorageProvider();
-
     await prisma.$transaction(async (tx) => {
       await tx.driveFileVersion.deleteMany({ where: { fileId } });
       await tx.driveFile.delete({ where: { id: fileId } });
     });
 
     // Cleanup blobs
-    if (file.currentAsset.storagePath) {
-      await storage.delete(file.currentAsset.storagePath).catch(() => {});
+    if (file.currentAsset) {
+      await deleteAssetBlob(file.currentAsset).catch(() => {});
     }
     for (const v of versions) {
-      if (v.asset.storagePath) {
-        await storage.delete(v.asset.storagePath).catch(() => {});
+      if (v.asset) {
+        await deleteAssetBlob(v.asset).catch(() => {});
       }
     }
 
@@ -824,7 +874,7 @@ export class DriveService {
       throw new AppError("No files uploaded", 400);
     }
 
-    const baseFolderId = targetFolderId ? BigInt(targetFolderId) : null;
+    const baseFolderId = parseOptionalBigInt(targetFolderId, "folderId");
     if (baseFolderId !== null) {
       await drivePermissionService.assertAccess(userId, { folderId: baseFolderId }, "EDITOR");
     }
@@ -884,23 +934,20 @@ export class DriveService {
       // Save blob to storage under unguessable UUID path
       const safeStorageName = sanitizeStorageFilename(file.originalname);
       const storageKey = `drive/${userId}/${Date.now()}_${crypto.randomUUID()}_${safeStorageName}`;
-      const putRes = await storage.putBuffer(storageKey, file.buffer, { mimeType: detectedMime });
+      const putRes = await storage.putBuffer(storageKey, file.buffer, {
+        mimeType: detectedMime,
+        filename: file.originalname,
+      });
 
       // Create FileAsset
       const asset = await prisma.fileAsset.create({
-        data: {
-          publicId: storageKey,
-          resourceType,
-          deliveryType: "AUTHENTICATED",
+        data: buildFileAssetData(userId, putRes, {
           originalFilename: file.originalname,
           mimeType: detectedMime,
-          bytes: BigInt(putRes.size),
-          format: ext || null,
-          storageBackend: "LOCAL",
-          storagePath: storageKey,
-          sha256: putRes.sha256,
-          uploadedBy: userId,
-        },
+          fallbackStorageKey: storageKey,
+          fallbackResourceType: resourceType,
+          fallbackFormat: ext || null,
+        }),
       });
 
       // Create DriveFile
@@ -932,6 +979,7 @@ export class DriveService {
           bytes: String(asset.bytes),
           format: asset.format,
           resourceType: asset.resourceType,
+          secureUrl: asset.secureUrl,
         },
         folderId: resolvedFolderId ? String(resolvedFolderId) : null,
         createdAt: driveFile.createdAt,
@@ -1086,7 +1134,7 @@ export class DriveService {
       sessionId,
       session.totalChunks,
       session.storageKey,
-      { mimeType: session.mimeType },
+      { mimeType: session.mimeType, filename: session.filename },
     );
 
     const ext = path.extname(session.filename).replace(/^\./, "");
@@ -1094,19 +1142,13 @@ export class DriveService {
 
     // Create FileAsset
     const asset = await prisma.fileAsset.create({
-      data: {
-        publicId: session.storageKey,
-        resourceType,
-        deliveryType: "AUTHENTICATED",
+      data: buildFileAssetData(userId, stitched, {
         originalFilename: session.filename,
         mimeType: session.mimeType,
-        bytes: BigInt(stitched.size),
-        format: ext || null,
-        storageBackend: "LOCAL",
-        storagePath: session.storageKey,
-        sha256: stitched.sha256,
-        uploadedBy: userId,
-      },
+        fallbackStorageKey: session.storageKey,
+        fallbackResourceType: resourceType,
+        fallbackFormat: ext || null,
+      }),
     });
 
     let resultFile: any;
@@ -1236,13 +1278,7 @@ export class DriveService {
       throw new AppError("Download disabled by the file owner", 403);
     }
 
-    const storage = getStorageProvider();
-    const storagePath = file.currentAsset.storagePath;
-    if (!storagePath) {
-      throw new AppError("Storage path missing for asset", 500);
-    }
-
-    const { stream, totalLength, mimeType } = await storage.getStream(storagePath);
+    const { stream, totalLength, mimeType } = await resolveAssetStream(file.currentAsset);
 
     this.recordRecentAccess(userId, { fileId }).catch(() => {});
 
@@ -1284,12 +1320,6 @@ export class DriveService {
       options?.linkToken,
     );
 
-    const storage = getStorageProvider();
-    const storagePath = file.currentAsset.storagePath;
-    if (!storagePath) {
-      throw new AppError("Storage path missing for asset", 500);
-    }
-
     this.recordRecentAccess(userId, { fileId }).catch(() => {});
 
     const totalBytes = Number(file.currentAsset.bytes);
@@ -1309,7 +1339,7 @@ export class DriveService {
           end = totalBytes - 1;
         }
 
-        const { stream } = await storage.getStream(storagePath, { start, end });
+        const { stream } = await resolveAssetStream(file.currentAsset, { start, end });
         const contentLength = end - start + 1;
 
         return {
@@ -1323,7 +1353,7 @@ export class DriveService {
       }
     }
 
-    const { stream } = await storage.getStream(storagePath);
+    const { stream } = await resolveAssetStream(file.currentAsset);
     return {
       stream,
       status: 200 as const,
@@ -1361,14 +1391,15 @@ export class DriveService {
       return null;
     }
 
-    const storage = getStorageProvider();
-    const storagePath = file.currentAsset.storagePath;
-    if (!storagePath) return null;
-
-    const buffer = await storage.getBuffer(storagePath);
     const width = Math.min(Math.max(options?.width || 200, 16), 1024);
     const height = Math.min(Math.max(options?.height || 200, 16), 1024);
 
+    const cloudThumb = await resolveCloudThumbnailBuffer(file.currentAsset, width, height);
+    if (cloudThumb) {
+      return cloudThumb;
+    }
+
+    const buffer = await resolveAssetBuffer(file.currentAsset);
     const resizedBuffer = await sharp(buffer)
       .resize(width, height, { fit: "cover", withoutEnlargement: true })
       .webp({ quality: 80 })
@@ -1406,8 +1437,6 @@ export class DriveService {
       }
     });
 
-    const storage = getStorageProvider();
-
     for (const item of items) {
       const itemId = BigInt(item.id);
 
@@ -1431,8 +1460,8 @@ export class DriveService {
           continue; // Skip inaccessible files
         }
 
-        if (file.currentAsset.storagePath) {
-          const { stream } = await storage.getStream(file.currentAsset.storagePath);
+        if (file.currentAsset) {
+          const { stream } = await resolveAssetStream(file.currentAsset);
           archive.append(stream, { name: file.name });
         }
       } else if (item.type === "folder") {
@@ -1480,14 +1509,14 @@ export class DriveService {
 
         for (const file of files) {
           if (file.preventDownload) continue;
-          if (!file.currentAsset.storagePath) continue;
+          if (!file.currentAsset) continue;
 
           const parentPath = file.folderId
             ? folderMap.get(String(file.folderId)) || rootFolder.name
             : rootFolder.name;
           const entryPath = `${parentPath}/${file.name}`;
 
-          const { stream } = await storage.getStream(file.currentAsset.storagePath);
+          const { stream } = await resolveAssetStream(file.currentAsset);
           archive.append(stream, { name: entryPath });
         }
       }
@@ -2399,8 +2428,6 @@ export class DriveService {
       where: { ownerId: userId, deletedAt: { not: null } },
     });
 
-    const storage = getStorageProvider();
-
     // 1. Delete database records in transaction
     await prisma.$transaction(async (tx) => {
       const fileIds = trashedFiles.map((f) => f.id);
@@ -2424,12 +2451,12 @@ export class DriveService {
 
     // 2. Clean up storage blobs
     for (const file of trashedFiles) {
-      if (file.currentAsset?.storagePath) {
-        await storage.delete(file.currentAsset.storagePath).catch(() => {});
+      if (file.currentAsset) {
+        await deleteAssetBlob(file.currentAsset).catch(() => {});
       }
       for (const v of file.versions) {
-        if (v.asset?.storagePath) {
-          await storage.delete(v.asset.storagePath).catch(() => {});
+        if (v.asset) {
+          await deleteAssetBlob(v.asset).catch(() => {});
         }
       }
     }
@@ -2463,8 +2490,6 @@ export class DriveService {
       return { purgedFiles: 0, purgedFolders: 0 };
     }
 
-    const storage = getStorageProvider();
-
     await prisma.$transaction(async (tx) => {
       const fileIds = expiredFiles.map((f) => f.id);
       const folderIds = expiredFolders.map((f) => f.id);
@@ -2487,12 +2512,12 @@ export class DriveService {
 
     // Delete blobs
     for (const f of expiredFiles) {
-      if (f.currentAsset?.storagePath) {
-        await storage.delete(f.currentAsset.storagePath).catch(() => {});
+      if (f.currentAsset) {
+        await deleteAssetBlob(f.currentAsset).catch(() => {});
       }
       for (const v of f.versions) {
-        if (v.asset?.storagePath) {
-          await storage.delete(v.asset.storagePath).catch(() => {});
+        if (v.asset) {
+          await deleteAssetBlob(v.asset).catch(() => {});
         }
       }
     }
@@ -2538,7 +2563,10 @@ export class DriveService {
     const storage = getStorageProvider();
     const safeStorageName = sanitizeStorageFilename(fileData.originalname);
     const storageKey = `drive/${userId}/${Date.now()}_${crypto.randomUUID()}_${safeStorageName}`;
-    const stored = await storage.putBuffer(storageKey, fileData.buffer, { mimeType: detectedMime });
+    const stored = await storage.putBuffer(storageKey, fileData.buffer, {
+      mimeType: detectedMime,
+      filename: fileData.originalname,
+    });
 
     // Extract text content if text-based
     let searchableContent: string | null = null;
@@ -2556,19 +2584,13 @@ export class DriveService {
     }
 
     const newAsset = await prisma.fileAsset.create({
-      data: {
-        publicId: storageKey,
-        resourceType,
-        deliveryType: "AUTHENTICATED",
+      data: buildFileAssetData(userId, stored, {
         originalFilename: fileData.originalname,
         mimeType: detectedMime,
-        bytes: BigInt(stored.size),
-        format: ext || null,
-        storageBackend: "LOCAL",
-        storagePath: storageKey,
-        sha256: stored.sha256,
-        uploadedBy: userId,
-      },
+        fallbackStorageKey: storageKey,
+        fallbackResourceType: resourceType,
+        fallbackFormat: ext || null,
+      }),
     });
 
     const newVersionNumber = file.currentVersion + 1;
@@ -2607,8 +2629,8 @@ export class DriveService {
         const toDelete = versions.slice(0, versions.length - MAX_VERSIONS);
         for (const v of toDelete) {
           await tx.driveFileVersion.delete({ where: { id: v.id } });
-          if (v.asset?.storagePath) {
-            await storage.delete(v.asset.storagePath).catch(() => {});
+          if (v.asset) {
+            await deleteAssetBlob(v.asset).catch(() => {});
           }
         }
       }
@@ -2740,12 +2762,7 @@ export class DriveService {
       throw new AppError("File version not found", 404);
     }
 
-    const storage = getStorageProvider();
-    if (!version.asset.storagePath) {
-      throw new AppError("Storage path missing for version asset", 500);
-    }
-
-    const { stream, totalLength, mimeType } = await storage.getStream(version.asset.storagePath);
+    const { stream, totalLength, mimeType } = await resolveAssetStream(version.asset);
 
     return {
       stream,
@@ -2840,13 +2857,12 @@ export class DriveService {
     await prisma.driveFileVersion.delete({ where: { id: versionId } });
 
     // Clean up blob if not referenced by another record
-    if (targetVersion.asset?.storagePath) {
+    if (targetVersion.asset) {
       const isReferenced = await prisma.driveFile.findFirst({
         where: { assetId: targetVersion.assetId },
       });
       if (!isReferenced) {
-        const storage = getStorageProvider();
-        await storage.delete(targetVersion.asset.storagePath).catch(() => {});
+        await deleteAssetBlob(targetVersion.asset).catch(() => {});
       }
     }
 

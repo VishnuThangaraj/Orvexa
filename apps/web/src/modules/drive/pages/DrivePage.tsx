@@ -291,8 +291,9 @@ export const DrivePage: React.FC = () => {
       try {
         updateUploadProgress(uploadId, 20, "uploading");
 
-        // Small / moderate files: standard multipart upload
-        if (file.size <= 50 * 1024 * 1024) {
+        // Small files (<= 3.5MB): standard multipart upload (fits within Vercel's 4.5MB payload limit)
+        const DIRECT_UPLOAD_LIMIT = 3.5 * 1024 * 1024;
+        if (file.size <= DIRECT_UPLOAD_LIMIT) {
           await driveApi.uploadFiles(
             [file],
             currentFolderId,
@@ -300,8 +301,8 @@ export const DrivePage: React.FC = () => {
             (pct) => updateUploadProgress(uploadId, pct, "uploading"),
           );
         } else {
-          // Large files (> 50MB): chunked / resumable upload
-          const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+          // Larger files (> 3.5MB): chunked / resumable upload with 3MB chunks
+          const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB
           const session = await driveApi.initUploadSession({
             filename: file.name,
             mimeType: file.type || "application/octet-stream",

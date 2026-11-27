@@ -1,5 +1,6 @@
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 import multer from "multer";
+import AppError from "../../common/errors/AppError.js";
 import { authenticate } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { driveController } from "./drive.controller.js";
@@ -44,11 +45,42 @@ const chunkUpload = multer({
   },
 });
 
+const handleMulter =
+  (middleware: (req: Request, res: Response, next: NextFunction) => void) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    middleware(req, res, (err: unknown) => {
+      if (!err) return next();
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return next(new AppError("File size exceeds maximum allowed limit", 400));
+        }
+        if (err.code === "LIMIT_FILE_COUNT") {
+          return next(new AppError("Too many files uploaded in a single request", 400));
+        }
+        return next(new AppError(`Upload error: ${err.message}`, 400));
+      }
+      if (err instanceof AppError) {
+        return next(err);
+      }
+      return next(
+        new AppError(
+          err instanceof Error ? err.message : "Failed to process file upload",
+          400,
+        ),
+      );
+    });
+  };
+
 // Storage usage
 router.get("/storage", authenticate, driveController.getStorage);
 
 // Multipart file & folder upload
-router.post("/upload", authenticate, upload.any(), driveController.uploadFiles);
+router.post(
+  "/upload",
+  authenticate,
+  handleMulter(upload.any()),
+  driveController.uploadFiles,
+);
 
 // Resumable / chunked upload sessions
 router.post(
@@ -60,7 +92,7 @@ router.post(
 router.patch(
   "/upload/:sessionId/chunk",
   authenticate,
-  chunkUpload.single("chunk"),
+  handleMulter(chunkUpload.single("chunk")),
   driveController.uploadChunk,
 );
 router.post(
@@ -340,7 +372,7 @@ router.post(
   "/files/:id/versions",
   authenticate,
   validate(idParamSchema, "params"),
-  upload.single("file"),
+  handleMulter(upload.single("file")),
   driveController.uploadNewVersion,
 );
 router.get(

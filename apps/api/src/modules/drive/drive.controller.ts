@@ -294,6 +294,14 @@ export class DriveController {
       );
       res.setHeader("Content-Length", result.size);
 
+      result.stream.on("error", (streamErr) => {
+        if (!res.headersSent) {
+          next(streamErr);
+        } else {
+          res.destroy(streamErr);
+        }
+      });
+
       result.stream.pipe(res);
     } catch (error) {
       next(error);
@@ -327,6 +335,14 @@ export class DriveController {
         res.status(200);
         res.setHeader("Content-Length", result.contentLength);
       }
+
+      result.stream.on("error", (streamErr) => {
+        if (!res.headersSent) {
+          next(streamErr);
+        } else {
+          res.destroy(streamErr);
+        }
+      });
 
       result.stream.pipe(res);
     } catch (error) {
@@ -618,6 +634,14 @@ export class DriveController {
         `attachment; filename="${encodeURIComponent(result.filename)}"; filename*=UTF-8''${encodeURIComponent(result.filename)}`,
       );
       res.setHeader("Content-Length", result.size);
+
+      result.stream.on("error", (streamErr) => {
+        if (!res.headersSent) {
+          next(streamErr);
+        } else {
+          res.destroy(streamErr);
+        }
+      });
 
       result.stream.pipe(res);
     } catch (error) {

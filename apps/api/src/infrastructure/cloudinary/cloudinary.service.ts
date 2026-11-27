@@ -9,6 +9,8 @@ export interface CloudinaryUploadOptions {
   resource_type?: "auto" | "image" | "video" | "raw";
   filename_override?: string;
   public_id?: string;
+  overwrite?: boolean;
+  type?: "upload" | "authenticated" | "private";
 }
 
 /**
@@ -23,16 +25,29 @@ export const uploadBufferToCloudinary = (
   }
 
   return new Promise((resolve, reject) => {
+    const uploadOptions: Record<string, unknown> = {
+      resource_type: options.resource_type || "auto",
+      filename_override: options.filename_override,
+      public_id: options.public_id,
+      overwrite: options.overwrite,
+      type: options.type,
+    };
+
+    if (options.folder !== undefined) {
+      uploadOptions.folder = options.folder;
+    } else if (!options.public_id) {
+      uploadOptions.folder = "orvexa/general";
+    }
+
     const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: options.folder || "orvexa/general",
-        resource_type: options.resource_type || "auto",
-        filename_override: options.filename_override,
-        public_id: options.public_id,
-      },
+      uploadOptions,
       (error?: UploadApiErrorResponse, result?: UploadApiResponse) => {
         if (error || !result) {
-          return reject(error || new Error("Cloudinary upload failed"));
+          return reject(
+            error instanceof Error
+              ? error
+              : new Error(error?.message || "Cloudinary upload failed"),
+          );
         }
         resolve(result);
       },
@@ -47,11 +62,15 @@ export const uploadBufferToCloudinary = (
 export const deleteFromCloudinary = async (
   publicId: string,
   resourceType: "image" | "video" | "raw" = "raw",
+  deliveryType: "upload" | "authenticated" | "private" = "upload",
 ): Promise<void> => {
   if (!isCloudinaryConfigured) {
     throw new AppError("Cloudinary is not configured", 500);
   }
-  await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+  await cloudinary.uploader.destroy(publicId, {
+    resource_type: resourceType,
+    type: deliveryType,
+  });
 };
 
 export default {
