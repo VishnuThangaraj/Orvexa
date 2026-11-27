@@ -12,6 +12,7 @@ import type { DriveItem, DriveActivityItem } from "../types/drive.types";
 import { useDriveStore } from "../store/drive.store";
 import { formatBytes, formatDate, getFileTypeInfo } from "../utils/drive.utils";
 import { driveApi } from "../api/drive.api";
+import { DriveThumbnail } from "./DriveThumbnail";
 import { cn } from "@/lib/utils";
 
 interface DriveDetailsPanelProps {
@@ -140,10 +141,20 @@ export const DriveDetailsPanel: React.FC<DriveDetailsPanelProps> = ({
                     className="fill-opacity-20"
                   />
                 ) : typeInfo?.category === "image" ? (
-                  <img
-                    src={driveApi.getThumbnailUrl(targetItem.id, 320, 200)}
+                  <DriveThumbnail
+                    fileId={targetItem.id}
                     alt={targetItem.name}
+                    width={320}
+                    height={200}
                     className="w-full h-full object-cover"
+                    fallback={
+                      <div className="flex flex-col items-center gap-1.5 text-slate-400">
+                        <FileText size={48} className={typeInfo?.color} />
+                        <span className="text-xs uppercase font-semibold">
+                          {typeInfo?.label || "IMAGE"}
+                        </span>
+                      </div>
+                    }
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-1.5 text-slate-400">

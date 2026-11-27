@@ -211,7 +211,7 @@ export const DrivePage: React.FC = () => {
       driveApi
         .getFile(previewId, linkToken)
         .then((file) => {
-          setPreviewFile(file, [file]);
+          setPreviewFile(file, [file], linkToken ?? null);
         })
         .catch(console.error);
     }
@@ -380,18 +380,18 @@ export const DrivePage: React.FC = () => {
 
   const handleDownloadItem = async (item: DriveItem) => {
     if (item.type === "file") {
-      const url = driveApi.getDownloadUrl(item.id);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = item.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      try {
+        await driveApi.downloadFile(item.id, item.name);
+      } catch (err: unknown) {
+        console.error("Failed to download file:", err);
+        alert(err instanceof Error ? err.message : "Failed to download file");
+      }
     } else {
       try {
         await driveApi.downloadZip([{ id: item.id, type: "folder" }]);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Failed to download folder as ZIP:", err);
+        alert(err instanceof Error ? err.message : "Failed to download folder as ZIP");
       }
     }
   };

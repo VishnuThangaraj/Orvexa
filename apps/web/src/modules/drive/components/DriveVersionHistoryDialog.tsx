@@ -111,13 +111,22 @@ export const DriveVersionHistoryDialog: React.FC<DriveVersionHistoryDialogProps>
     }
   };
 
-  const handleDownloadVersion = (versionId: string) => {
-    if (versionId === "current") {
-      const url = driveApi.getDownloadUrl(item.id);
-      window.open(url, "_blank");
-    } else {
-      const url = driveApi.getVersionDownloadUrl(item.id, versionId);
-      window.open(url, "_blank");
+  const handleDownloadVersion = async (versionId: string, versionNumber?: number) => {
+    setActionError(null);
+    try {
+      if (versionId === "current") {
+        await driveApi.downloadFile(item.id, item.name);
+      } else {
+        const dotIdx = item.name.lastIndexOf(".");
+        const versionFilename =
+          dotIdx > 0 && versionNumber !== undefined
+            ? `${item.name.slice(0, dotIdx)}_v${versionNumber}${item.name.slice(dotIdx)}`
+            : item.name;
+        await driveApi.downloadVersion(item.id, versionId, versionFilename);
+      }
+    } catch (err: unknown) {
+      console.error("Failed to download version:", err);
+      setActionError(err instanceof Error ? err.message : "Failed to download file version");
     }
   };
 
@@ -286,7 +295,7 @@ export const DriveVersionHistoryDialog: React.FC<DriveVersionHistoryDialogProps>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
-                        onClick={() => handleDownloadVersion(ver.id)}
+                        onClick={() => handleDownloadVersion(ver.id, ver.versionNumber)}
                         title="Download this version"
                         className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md cursor-pointer transition-colors"
                       >

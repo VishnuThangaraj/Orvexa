@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Folder,
   FileText,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { DriveItem } from "../types/drive.types";
 import { formatBytes, formatDate, getFileTypeInfo } from "../utils/drive.utils";
-import { driveApi } from "../api/drive.api";
+import { DriveThumbnail } from "./DriveThumbnail";
 import { cn } from "@/lib/utils";
 
 interface DriveItemCardProps {
@@ -35,16 +35,12 @@ export const DriveItemCard: React.FC<DriveItemCardProps> = ({
   onToggleStar,
   onMenuClick,
 }) => {
-  const [thumbError, setThumbError] = useState(false);
   const isFolder = item.type === "folder";
   const typeInfo = !isFolder
     ? getFileTypeInfo((item as any).asset?.mimeType, item.name)
     : null;
 
   const isImage = typeInfo?.category === "image";
-  const thumbnailUrl = !isFolder && isImage
-    ? driveApi.getThumbnailUrl(item.id, 320, 200)
-    : null;
 
   const renderIcon = () => {
     if (isFolder) {
@@ -135,12 +131,21 @@ export const DriveItemCard: React.FC<DriveItemCardProps> = ({
 
       {/* Middle Preview Box */}
       <div className="w-full h-32 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-center justify-center overflow-hidden mb-3">
-        {thumbnailUrl && !thumbError ? (
-          <img
-            src={thumbnailUrl}
+        {!isFolder && isImage ? (
+          <DriveThumbnail
+            fileId={item.id}
             alt={item.name}
-            onError={() => setThumbError(true)}
+            width={320}
+            height={200}
             className="w-full h-full object-cover rounded-xl transition-transform group-hover:scale-105"
+            fallback={
+              <div className="flex flex-col items-center gap-1.5 text-slate-400">
+                {renderIcon()}
+                <span className="text-xs uppercase font-semibold tracking-wider">
+                  {typeInfo?.label || "FILE"}
+                </span>
+              </div>
+            }
           />
         ) : isFolder ? (
           <Folder

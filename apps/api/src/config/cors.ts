@@ -39,6 +39,7 @@ const corsOptions: CorsOptions = {
     callback(null, false);
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  exposedHeaders: ["Content-Disposition"],
   credentials: true,
 };
 

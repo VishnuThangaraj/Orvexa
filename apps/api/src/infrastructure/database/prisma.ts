@@ -46,6 +46,7 @@ globalForPrisma.prisma = prisma;
 export const connectDatabase = async (): Promise<void> => {
   try {
     await prisma.$connect();
+    await prisma.$queryRaw`SELECT 1`;
     console.log("[DATABASE] Connected successfully to PostgreSQL via Prisma.");
   } catch (error) {
     console.error("[DATABASE] Connection error:", error);

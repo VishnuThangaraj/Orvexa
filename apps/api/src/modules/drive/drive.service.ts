@@ -1353,11 +1353,11 @@ export class DriveService {
       }
     }
 
-    const { stream } = await resolveAssetStream(file.currentAsset);
+    const { stream, contentLength, totalLength } = await resolveAssetStream(file.currentAsset);
     return {
       stream,
       status: 200 as const,
-      contentLength: totalBytes,
+      contentLength: totalBytes || contentLength || totalLength,
       mimeType,
       filename: file.name,
     };

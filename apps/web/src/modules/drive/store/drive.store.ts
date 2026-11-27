@@ -28,6 +28,7 @@ export interface DriveState {
   activeDetailsTab: "details" | "activity";
   previewFile: DriveFileItem | null;
   previewFolderFiles: DriveFileItem[];
+  previewLinkToken: string | null;
   activeUploads: DriveUploadItem[];
   isUploadManagerCollapsed: boolean;
   storageUsage: StorageUsageResult | null;
@@ -53,7 +54,11 @@ export interface DriveState {
   clearSelection: () => void;
   toggleDetailsPanel: (force?: boolean) => void;
   setActiveDetailsTab: (tab: "details" | "activity") => void;
-  setPreviewFile: (file: DriveFileItem | null, folderFiles?: DriveFileItem[]) => void;
+  setPreviewFile: (
+    file: DriveFileItem | null,
+    folderFiles?: DriveFileItem[],
+    linkToken?: string | null,
+  ) => void;
   navigatePreview: (direction: "prev" | "next") => void;
   addUpload: (upload: DriveUploadItem) => void;
   updateUploadProgress: (
@@ -92,6 +97,7 @@ export const useDriveStore = create<DriveState>((set, get) => ({
   activeDetailsTab: "details",
   previewFile: null,
   previewFolderFiles: [],
+  previewLinkToken: null,
   activeUploads: [],
   isUploadManagerCollapsed: false,
   storageUsage: null,
@@ -182,10 +188,11 @@ export const useDriveStore = create<DriveState>((set, get) => ({
   setActiveDetailsTab: (tab) =>
     set({ activeDetailsTab: tab }),
 
-  setPreviewFile: (file, folderFiles = []) =>
+  setPreviewFile: (file, folderFiles = [], linkToken = null) =>
     set({
       previewFile: file,
-      previewFolderFiles: folderFiles.length > 0 ? folderFiles : (file ? [file] : []),
+      previewFolderFiles: folderFiles.length > 0 ? folderFiles : file ? [file] : [],
+      previewLinkToken: file ? linkToken ?? null : null,
     }),
 
   navigatePreview: (direction) => {

@@ -17,6 +17,77 @@ import type {
   StorageUsageResult,
 } from "../types/drive.types";
 
+/**
+ * Extract a human-readable error message from an Axios error whose responseType was "blob".
+ */
+async function extractBlobErrorMessage(err: unknown, fallback: string): Promise<string> {
+  const errObj = err as {
+    response?: { data?: unknown };
+    message?: string;
+  };
+  const blobData = errObj?.response?.data;
+  if (blobData instanceof Blob) {
+    try {
+      const text = await blobData.text();
+      const parsed = JSON.parse(text) as { message?: unknown; error?: unknown };
+      if (parsed?.message) return String(parsed.message);
+      if (parsed?.error) return String(parsed.error);
+    } catch {
+      // fall through to generic Axios error message
+    }
+  } else if (
+    blobData &&
+    typeof blobData === "object" &&
+    "message" in blobData &&
+    (blobData as { message?: unknown }).message
+  ) {
+    return String((blobData as { message: unknown }).message);
+  }
+  return errObj?.message || fallback;
+}
+
+/**
+ * Trigger a browser file download from an authenticated Blob response.
+ */
+function saveBlobAsFile(blob: Blob, filename: string): void {
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => {
+    window.URL.revokeObjectURL(downloadUrl);
+  }, 1000);
+}
+
+/**
+ * Fetch an authenticated binary endpoint as a Blob and trigger download.
+ */
+async function triggerAuthenticatedDownload(
+  endpoint: string,
+  filename: string,
+  token?: string,
+): Promise<void> {
+  try {
+    const res = await api.get(endpoint, {
+      params: token ? { token } : undefined,
+      responseType: "blob",
+    });
+    const contentType =
+      res.headers?.["content-type"] || res.data?.type || "application/octet-stream";
+    const blob =
+      res.data instanceof Blob
+        ? new Blob([res.data], { type: contentType })
+        : new Blob([res.data], { type: contentType });
+    saveBlobAsFile(blob, filename);
+  } catch (err) {
+    const message = await extractBlobErrorMessage(err, "Failed to download file");
+    throw new Error(message, { cause: err });
+  }
+}
+
 export const driveApi = {
   /**
    * List folders and files inside a folder (or root).
@@ -333,6 +404,82 @@ export const driveApi = {
   },
 
   /**
+   * Fetch authenticated file stream as a typed Blob and Object URL for previewing.
+   * Caller is responsible for revoking the returned `url` via URL.revokeObjectURL.
+   */
+  fetchFileStreamBlob: async (
+    fileId: string,
+    options?: { token?: string; mimeType?: string; signal?: AbortSignal },
+  ): Promise<{ blob: Blob; url: string; mimeType: string }> => {
+    try {
+      const res = await api.get(`/drive/files/${fileId}/stream`, {
+        params: options?.token ? { token: options.token } : undefined,
+        responseType: "blob",
+        signal: options?.signal,
+      });
+      const contentType =
+        res.headers?.["content-type"] ||
+        options?.mimeType ||
+        res.data?.type ||
+        "application/octet-stream";
+      const blob = new Blob([res.data], { type: contentType });
+      return {
+        blob,
+        url: window.URL.createObjectURL(blob),
+        mimeType: contentType,
+      };
+    } catch (err) {
+      const message = await extractBlobErrorMessage(err, "Failed to load file preview");
+      throw new Error(message, { cause: err });
+    }
+  },
+
+  /**
+   * Fetch authenticated thumbnail image as an Object URL.
+   * Caller is responsible for revoking the returned URL via URL.revokeObjectURL.
+   */
+  fetchThumbnailBlobUrl: async (
+    fileId: string,
+    options?: { width?: number; height?: number; token?: string; signal?: AbortSignal },
+  ): Promise<string> => {
+    const res = await api.get(`/drive/files/${fileId}/thumbnail`, {
+      params: {
+        width: options?.width ?? 200,
+        height: options?.height ?? 200,
+        ...(options?.token ? { token: options.token } : {}),
+      },
+      responseType: "blob",
+      signal: options?.signal,
+    });
+    const contentType = res.headers?.["content-type"] || res.data?.type || "image/webp";
+    const blob = new Blob([res.data], { type: contentType });
+    return window.URL.createObjectURL(blob);
+  },
+
+  /**
+   * Download a file through the authenticated Axios client.
+   */
+  downloadFile: async (fileId: string, filename: string, token?: string): Promise<void> => {
+    return triggerAuthenticatedDownload(`/drive/files/${fileId}/download`, filename, token);
+  },
+
+  /**
+   * Download a specific historical file version through the authenticated Axios client.
+   */
+  downloadVersion: async (
+    fileId: string,
+    versionId: string,
+    filename: string,
+    token?: string,
+  ): Promise<void> => {
+    return triggerAuthenticatedDownload(
+      `/drive/files/${fileId}/versions/${versionId}/download`,
+      filename,
+      token,
+    );
+  },
+
+  /**
    * Helper to construct authenticated download URL.
    */
   getDownloadUrl: (fileId: string, token?: string): string => {
@@ -361,16 +508,14 @@ export const driveApi = {
    * Trigger streamed ZIP download for multiple files or folders.
    */
   downloadZip: async (items: Array<{ id: string; type: "file" | "folder" }>) => {
-    const res = await api.post("/drive/download-zip", { items }, { responseType: "blob" });
-    const blob = new Blob([res.data], { type: "application/zip" });
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = `drive_export_${Date.now()}.zip`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
+    try {
+      const res = await api.post("/drive/download-zip", { items }, { responseType: "blob" });
+      const blob = new Blob([res.data], { type: "application/zip" });
+      saveBlobAsFile(blob, `drive_export_${Date.now()}.zip`);
+    } catch (err) {
+      const message = await extractBlobErrorMessage(err, "Failed to download ZIP archive");
+      throw new Error(message, { cause: err });
+    }
   },
 
   /**
